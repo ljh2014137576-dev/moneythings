@@ -116,3 +116,20 @@
   1. 导入对话框在关闭动画期间 dispose controller → "TextEditingController used after being disposed" 崩溃 → 改为对话框自持 controller 的 StatefulWidget（随组件卸载释放）。
   2. 测试中行备注渲染为「咖啡 · 支付宝」导致 `find.text` 精确匹配失败 → 改用 `find.textContaining`。
 - 下一步计划：本地预算预警通知、多账本切换、深色模式、上架素材与隐私说明。
+
+## 2026-08-07 04:00 — 迭代 v1.4：初始余额 / 结余走势 / 首启引导 / 文档
+
+- 任务内容：
+  - A. 账户初始余额：账户列表持久化（repository `accounts_v1`），`AppState.accounts` + `setAccountInitialBalance`；「我的→账户」点账户编辑初始余额（对话框自持 controller）；记一笔的账户选择同步使用真实余额；总资产按账户初始余额计算。
+  - B. 统计结余走势：`AppState.recentBalanceSeries(endMonth, count)` 近 6 月月度结余序列；统计页「结余走势（近 6 月）」柱状图（正=黑、负=红，可点击看月度金额）。
+  - C. 首次启动引导：3 页 PageView（记录每一笔/统计一目了然/数据属于你）+ 圆点指示 + 跳过/下一步/开始使用；prefs `onboarded_v1` 标记，完成后进首页。
+  - D. 文档：README.md（功能/截图/技术栈/构建/签名/版本历史）、PRIVACY.md（本地存储、不上传、可清除）；「关于」版本号改为 1.1.0。
+- 修改文件：
+  - `lib/models/account.dart`（toJson/fromJson 已有）、`lib/data/transaction_repository.dart`、`lib/data/app_state.dart`
+  - `lib/pages/profile_page.dart`（账户编辑 UI + 初始余额对话框）、`lib/pages/add_transaction_page.dart`（账户选择用真实余额）
+  - `lib/pages/stats_page.dart`（结余走势图）、`lib/pages/onboarding_page.dart`（新增）、`lib/main.dart`（首启路由）
+  - `README.md`、`PRIVACY.md`（新增）、`test/widget_test.dart`（22 测试）、`screenshots/3-stats-v1.4.png`、`4-profile-v1.4.png`、`9-onboarding.png`
+- commit hash：`eb3b29d`（功能）；截图与日志随本次提交。
+- 验证：`flutter analyze` 0 问题；`flutter test` 22/22；web 实测：首启引导三页→首页、结余走势图渲染、账户初始余额对话框设置 ¥500 后余额更新，零控制台错误。
+- 遇到的问题与解决方案：无阻塞性问题（沿用自持 controller 的对话框模式避免 dispose 崩溃）。
+- 下一步计划：本地预算预警通知、多账本切换、深色模式、商店上架素材。
