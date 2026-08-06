@@ -458,3 +458,16 @@
 - commit hash：`854405b`；已 push。
 - 验证：`flutter analyze` 0 问题；`flutter test` 55/55；release 构建+签名校验。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-08 04:00 — 迭代 v3.8：账本图标 + 明细最近搜索
+
+- 任务内容：
+  - A. 账本图标：`Book.iconKey`（默认 menu_book，复用分类图标集）；新建/重命名账本可选图标（图标选择器）；账本弹层行显示各账本图标。
+  - B. 明细最近搜索：`AppState.recordSearch/clearRecentSearches`（去重置顶，最多 5 条，持久化）；搜索框防抖 600ms 记录；搜索框下（无查询时）展示「最近搜索」chips，点击快速搜索、可清除。
+- 修改文件：
+  - `lib/models/book.dart`、`lib/data/transaction_repository.dart`、`lib/data/app_state.dart`、`lib/widgets/book_switcher.dart`、`lib/pages/ledger_page.dart`
+  - `test/widget_test.dart`（57 测试）、`screenshots/40-book-icon.png`、`41-recent-searches.png`
+- commit hash：`c093c65`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 57/57（账本图标持久化、最近搜索去重置顶）；web 实测账本弹层与新建图标选择器，零控制台错误。
+- 遇到的问题与解决方案：仓库追加方法落在类外 → 移到类内；浏览器输入焦点受 harness 干扰（最近搜索由单元测试权威验证）。
+- 下一步：上架执行（RELEASE.md）、真机通知冒烟（SMOKE_TEST.md）。
