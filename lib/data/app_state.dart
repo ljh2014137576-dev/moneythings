@@ -267,6 +267,23 @@ class AppState extends ChangeNotifier {
     final now = DateTime.now();
     return summaryOf(DateTime(now.year, now.month)).expense;
   }
+
+  /// 本月预算剩余（分，不小于 0）
+  int get budgetRemaining {
+    final r = monthlyBudget - currentMonthExpense;
+    return r < 0 ? 0 : r;
+  }
+
+  /// 本月剩余天数（含今天）
+  int get budgetDaysLeft {
+    final now = DateTime.now();
+    final last = DateTime(now.year, now.month + 1, 0).day;
+    return last - now.day + 1;
+  }
+
+  /// 剩余日均可用（分）
+  int get budgetDailyRemaining =>
+      budgetDaysLeft == 0 ? 0 : budgetRemaining ~/ budgetDaysLeft;
 }
 
 

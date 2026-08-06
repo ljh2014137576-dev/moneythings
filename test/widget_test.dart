@@ -464,6 +464,79 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('¥500.00'), findsWidgets);
   });
+ 
+  test('预算剩余/日均可用计算', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.setBudget(100000);
+    expect(state.budgetRemaining, 100000);
+    final now = DateTime.now();
+    final last = DateTime(now.year, now.month + 1, 0).day;
+    final daysLeft = last - now.day + 1;
+    expect(state.budgetDaysLeft, daysLeft);
+    expect(state.budgetDailyRemaining, 100000 ~/ daysLeft);
+
+    // 超支后剩余归 0
+    await state.addTransaction(Transaction(
+      id: 'big',
+      type: TxType.expense,
+      amount: 120000,
+      categoryId: 'home',
+      accountId: 'alipay',
+      date: now,
+    ));
+    expect(state.budgetRemaining, 0);
+  });
+
+  testWidgets('首页显示预算剩余/日均与结余走势', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.setBudget(100000);
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+
+    expect(find.text('结余走势'), findsOneWidget);
+    expect(find.textContaining('剩余 ¥1,000.00'), findsOneWidget);
+    expect(find.textContaining('日均可用'), findsOneWidget);
+  });
+
+  testWidgets('明细左滑删除可撤销', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'c1',
+      type: TxType.expense,
+      amount: 1600,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '咖啡',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('咖啡'), findsOneWidget);
+
+    // 左滑删除
+    await tester.drag(find.textContaining('咖啡'), const Offset(-500, 0));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('咖啡'), findsNothing);
+    expect(state.transactions, isEmpty);
+
+    // 撤销恢复
+    await tester.tap(find.text('撤销'));
+    await tester.pumpAndSettle();
+    expect(state.transactions.length, 1);
+    expect(find.textContaining('咖啡'), findsOneWidget);
+  });
 }
 
 

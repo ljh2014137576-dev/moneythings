@@ -127,6 +127,7 @@ class _LedgerPageState extends State<LedgerPage> {
                           date: group.key,
                           items: group.value,
                           onTapItem: (tx) => _edit(tx),
+                          onDismiss: _deleteWithUndo,
                         ),
                       ],
                     ],
@@ -200,6 +201,25 @@ class _LedgerPageState extends State<LedgerPage> {
       MaterialPageRoute(builder: (_) => AddTransactionPage(editing: tx)),
     );
   }
+
+  Future<void> _deleteWithUndo(Transaction tx) async {
+    final state = context.read<AppState>();
+    await state.deleteTransaction(tx.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('已删除 ${AmountText.format(tx.amount)}'),
+          action: SnackBarAction(
+            label: '撤销',
+            textColor: kAccentBlue,
+            onPressed: () => state.addTransaction(tx),
+          ),
+        ),
+      );
+  }
+
 }
 
 class _FilterTag extends StatelessWidget {
@@ -247,11 +267,13 @@ class _DayGroup extends StatelessWidget {
     required this.date,
     required this.items,
     required this.onTapItem,
+    required this.onDismiss,
   });
 
   final DateTime date;
   final List<Transaction> items;
   final ValueChanged<Transaction> onTapItem;
+  final ValueChanged<Transaction> onDismiss;
 
   @override
   Widget build(BuildContext context) {
@@ -299,9 +321,21 @@ class _DayGroup extends StatelessWidget {
           const Divider(indent: kSpace4, endIndent: kSpace4),
           for (int i = 0; i < items.length; i++) ...[
             if (i > 0) const Divider(indent: 68),
-            TransactionTile(
-              transaction: items[i],
-              onTap: () => onTapItem(items[i]),
+            Dismissible(
+              key: ValueKey(items[i].id),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                color: kDanger,
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: kSpace4),
+                child: const Icon(Icons.delete_outline_rounded,
+                    color: Colors.white, size: 22),
+              ),
+              onDismissed: (_) => onDismiss(items[i]),
+              child: TransactionTile(
+                transaction: items[i],
+                onTap: () => onTapItem(items[i]),
+              ),
             ),
           ],
         ],
@@ -309,5 +343,4 @@ class _DayGroup extends StatelessWidget {
     );
   }
 }
-
 

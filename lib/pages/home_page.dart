@@ -1,4 +1,4 @@
-﻿/// 首页：本月概览 + 记一笔 + 最近流水 + 支出分类
+﻿/// 首页：本月概览 + 记一笔 + 最近流水 + 支出分类 + 结余走势
 library;
 
 import 'package:flutter/material.dart';
@@ -51,6 +51,7 @@ class _HomePageState extends State<HomePage> {
     final isCurrentMonth = _isCurrent(_month);
     final budget = isCurrentMonth ? state.monthlyBudget : 0;
     final spent = isCurrentMonth ? state.currentMonthExpense : 0;
+    final balanceSeries = state.recentBalanceSeries(DateTime.now(), 6);
 
     return SafeArea(
       bottom: false,
@@ -67,7 +68,14 @@ class _HomePageState extends State<HomePage> {
               onChanged: (m) => setState(() => _month = m),
             ),
             const SizedBox(height: kSpace3),
-            _buildSummary(summary, budget, spent, isCurrentMonth),
+            _buildSummary(
+              summary,
+              budget,
+              spent,
+              isCurrentMonth,
+              state.budgetRemaining,
+              state.budgetDailyRemaining,
+            ),
             const SizedBox(height: kSpace3),
             FilledButton.icon(
               onPressed: widget.onAdd,
@@ -78,6 +86,8 @@ class _HomePageState extends State<HomePage> {
             _buildRecent(recent),
             const SizedBox(height: kSpace4),
             _buildRanking(ranking),
+            const SizedBox(height: kSpace4),
+            _buildBalanceMini(balanceSeries),
           ],
         ),
       ),
@@ -122,7 +132,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildSummary(MonthSummary summary, int budget, int spent,
-      bool isCurrentMonth) {
+      bool isCurrentMonth, int remaining, int daily) {
     return PaperGroup(
       padding: const EdgeInsets.fromLTRB(kSpace4, kSpace5, kSpace4, kSpace4),
       child: Column(
@@ -167,7 +177,12 @@ class _HomePageState extends State<HomePage> {
               ),
             )
           else
-            _BudgetBar(budget: budget, spent: spent),
+            _BudgetBar(
+              budget: budget,
+              spent: spent,
+              remaining: remaining,
+              daily: daily,
+            ),
         ],
       ),
     );
@@ -223,9 +238,8 @@ class _HomePageState extends State<HomePage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           CategoryRanking(items: ranking, maxItems: 5),
-          if (ranking.isNotEmpty)
+          if (ranking.isNotEmpty) ...[
             const SizedBox(height: kSpace3),
-          if (ranking.isNotEmpty)
             TextButton(
               onPressed: widget.onGoStats,
               style: TextButton.styleFrom(
@@ -233,6 +247,30 @@ class _HomePageState extends State<HomePage> {
                 padding: EdgeInsets.zero,
               ),
               child: const Text('查看完整统计 ›'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBalanceMini(
+      List<({DateTime month, int balance})> series) {
+    final maxAbs = series.fold<int>(
+        0, (m, e) => e.balance.abs() > m ? e.balance.abs() : m);
+    return PaperGroup(
+      title: '结余走势',
+      padding: const EdgeInsets.all(kSpace4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          for (final e in series)
+            Expanded(
+              child: _MiniBar(
+                month: e.month,
+                balance: e.balance,
+                maxAbs: maxAbs,
+              ),
             ),
         ],
       ),
@@ -283,10 +321,17 @@ class _VDivider extends StatelessWidget {
 }
 
 class _BudgetBar extends StatelessWidget {
-  const _BudgetBar({required this.budget, required this.spent});
+  const _BudgetBar({
+    required this.budget,
+    required this.spent,
+    required this.remaining,
+    required this.daily,
+  });
 
   final int budget;
   final int spent;
+  final int remaining;
+  final int daily;
 
   @override
   Widget build(BuildContext context) {
@@ -337,7 +382,9 @@ class _BudgetBar extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            over ? '已超出预算 ¥${AmountText.format(spent - budget, showSymbol: false)}' : '点击调整预算',
+            over
+                ? '已超出预算 ¥${AmountText.format(spent - budget, showSymbol: false)}'
+                : '剩余 ¥${AmountText.format(remaining, showSymbol: false)} · 日均可用 ¥${AmountText.format(daily, showSymbol: false)}',
             style: TextStyle(
                 fontSize: 11, color: over ? kDanger : kInkDisabled),
           ),
@@ -347,3 +394,56 @@ class _BudgetBar extends StatelessWidget {
   }
 }
 
+class _MiniBar extends StatelessWidget {
+  const _MiniBar({
+    required this.month,
+    required this.balance,
+    required this.maxAbs,
+  });
+
+  final DateTime month;
+  final int balance;
+  final int maxAbs;
+
+  @override
+  Widget build(BuildContext context) {
+    final ratio = maxAbs == 0
+        ? 0.0
+        : (balance.abs() / maxAbs).clamp(0.0, 1.0);
+    final barH = (ratio * 56).clamp(2.0, 56.0);
+    final isPos = balance >= 0;
+    return Column(
+      children: [
+        Text('${month.month}月',
+            style: const TextStyle(fontSize: 10, color: kInkSecondary)),
+        const SizedBox(height: kSpace2),
+        SizedBox(
+          height: 72,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 10,
+                height: isPos ? barH : 1.5,
+                color: isPos ? kInkPrimary : kDividerSubtle,
+              ),
+              Container(width: 10, height: 1, color: kDividerDefault),
+              Container(
+                width: 10,
+                height: isPos ? 1.5 : barH,
+                color: isPos ? kDividerSubtle : kDanger,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: kSpace2),
+        Text('${(balance / 100).round()}',
+            style: TextStyle(
+              fontSize: 9,
+              color: isPos ? kInkSecondary : kDanger,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            )),
+      ],
+    );
+  }
+}

@@ -271,6 +271,15 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
             ),
+            const SizedBox(height: kSpace2),
+            Text(
+              over
+                  ? '已超出预算 ¥{AmountText.format(spent - budget, showSymbol: false)}'
+                  : '剩余 ¥${AmountText.format(state.budgetRemaining, showSymbol: false)} · 日均可用 ¥${AmountText.format(state.budgetDailyRemaining, showSymbol: false)}',
+              style: TextStyle(
+                  fontSize: 11,
+                  color: over ? kDanger : kInkDisabled),
+            ),
           ],
         ],
       ),
