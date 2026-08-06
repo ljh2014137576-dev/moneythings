@@ -1,6 +1,8 @@
 ﻿/// 全局应用状态（ChangeNotifier + Provider）
 library;
 
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 
 import '../models/account.dart';
@@ -187,7 +189,67 @@ class AppState extends ChangeNotifier {
 
  
   /// 导入 CSV，返回解析结果（已合并去重）
-  Future<CsvImportResult> importCsv(String csv) async {
+  
+
+  /// 导出全量数据为 JSON（备份）
+  String exportJson() => jsonEncode({
+        'version': 1,
+        'transactions': [for (final t in _transactions) t.toJson()],
+        'accounts': [for (final a in _accounts) a.toJson()],
+        'customCategories': [for (final c in _customCategories) c.toJson()],
+        'books': [for (final b in _books) b.toJson()],
+        'currentBookId': _currentBookId,
+        'bookBudgets': _bookBudgets,
+        'budgetNotify': _budgetNotify,
+        'dailyReminder': _dailyReminder,
+      });
+
+  /// 从 JSON 备份恢复；成功返回 null，失败返回错误信息
+  Future<String?> importJson(String raw) async {
+    try {
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+      if (map['version'] != 1) return '备份文件版本不受支持';
+      _transactions = [
+        for (final e in (map['transactions'] as List<dynamic>? ?? []))
+          Transaction.fromJson(e as Map<String, dynamic>),
+      ];
+      _accounts = [
+        for (final e in (map['accounts'] as List<dynamic>? ?? []))
+          Account.fromJson(e as Map<String, dynamic>),
+      ];
+      if (_accounts.isEmpty) _accounts = kDefaultAccounts;
+      _customCategories = [
+        for (final e in (map['customCategories'] as List<dynamic>? ?? []))
+          TxCategory.fromJson(e as Map<String, dynamic>),
+      ];
+      _books = [
+        for (final e in (map['books'] as List<dynamic>? ?? []))
+          Book.fromJson(e as Map<String, dynamic>),
+      ];
+      if (_books.isEmpty || !_books.any((b) => b.id == kDefaultBook.id)) {
+        _books = [kDefaultBook, ..._books];
+      }
+      _currentBookId = (map['currentBookId'] as String?) ?? kDefaultBook.id;
+      _bookBudgets = Map<String, int>.from(
+          (map['bookBudgets'] as Map<dynamic, dynamic>?) ?? {});
+      _budgetNotify = (map['budgetNotify'] as bool?) ?? true;
+      _dailyReminder = (map['dailyReminder'] as bool?) ?? false;
+      TxCategories.setCustom(_customCategories);
+      await _persist();
+      await _repository.saveAccounts(_accounts);
+      await _repository.saveCustomCategories(_customCategories);
+      await _repository.saveBooks(_books);
+      await _repository.saveCurrentBookId(_currentBookId);
+      await _repository.saveBookBudgets(_bookBudgets);
+      await _repository.saveBudgetNotify(_budgetNotify);
+      await _repository.saveDailyReminder(_dailyReminder);
+      notifyListeners();
+      return null;
+    } catch (_) {
+      return '备份文件解析失败，请检查内容是否完整';
+    }
+  }
+Future<CsvImportResult> importCsv(String csv) async {
     final result = CsvImporter.parseCsv(csv, existing: _transactions);
     if (result.transactions.isNotEmpty) {
     final imported = [
@@ -237,6 +299,18 @@ class AppState extends ChangeNotifier {
         list[t.date.day - 1] += t.amount;
       }
 
+    }
+    return list;
+  }
+
+  /// 某月每日收入序列（1..daysInMonth）
+  List<int> dailyIncomeSeries(DateTime month) {
+    final days = DateTime(month.year, month.month + 1, 0).day;
+    final list = List<int>.filled(days, 0);
+    for (final t in ofMonth(month)) {
+      if (t.type == TxType.income) {
+        list[t.date.day - 1] += t.amount;
+      }
     }
     return list;
   }

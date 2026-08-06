@@ -25,6 +25,7 @@ class _StatsPageState extends State<StatsPage> {
   int _selectedDay = -1;
   int _selectedWeek = -1;
   bool _weekly = false;
+  bool _incomeChart = false;
   int _balanceMonths = 6;
 
   @override
@@ -44,6 +45,7 @@ class _StatsPageState extends State<StatsPage> {
     final balanceSeries = state.recentBalanceSeries(_month, _balanceMonths);
     final weekSeries = state.weeklyExpenseSeries(_month);
     final series = state.dailyExpenseSeries(_month);
+    final incomeSeries = state.dailyIncomeSeries(_month);
     final days = series.length;
 
     // 默认选中支出最高的一天
@@ -115,7 +117,11 @@ class _StatsPageState extends State<StatsPage> {
                       const SizedBox(height: kSpace3),
                       _buildDailyWeeklyToggle(),
                       const SizedBox(height: kSpace3),
-                      _buildBarChart(series, weekly: weekSeries),
+                      _buildIncomeToggle(),
+                      const SizedBox(height: kSpace3),
+                      _buildBarChart(series,
+                          weekly: weekSeries,
+                          incomeSeries: incomeSeries),
                       const SizedBox(height: kSpace4),
                       PaperGroup(
                         title: '支出分类排行',
@@ -138,6 +144,24 @@ class _StatsPageState extends State<StatsPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildIncomeToggle() {
+    return Row(
+      children: [
+        _ChartModeTag(
+          label: '支出',
+          selected: !_incomeChart,
+          onTap: () => setState(() => _incomeChart = false),
+        ),
+        const SizedBox(width: kSpace2),
+        _ChartModeTag(
+          label: '收入',
+          selected: _incomeChart,
+          onTap: () => setState(() => _incomeChart = true),
+        ),
+      ],
     );
   }
 
@@ -322,12 +346,15 @@ class _StatsPageState extends State<StatsPage> {
   Widget _buildBarChart(
     List<int> seriesCents, {
     required List<({String label, int amount})> weekly,
+    required List<int> incomeSeries,
   }) {
     final useWeekly = _weekly && weekly.isNotEmpty;
+    final useIncome = _incomeChart && !useWeekly;
     final days = seriesCents.length;
     final n = useWeekly ? weekly.length : days;
-    double valueAt(int i) =>
-        useWeekly ? weekly[i].amount / 100.0 : seriesCents[i] / 100.0;
+    double valueAt(int i) => useWeekly
+        ? weekly[i].amount / 100.0
+        : (useIncome ? incomeSeries[i] : seriesCents[i]) / 100.0;
     final maxValue = [
       for (int i = 0; i < n; i++) valueAt(i),
     ].fold<double>(0, (a, b) => a > b ? a : b);
@@ -341,12 +368,14 @@ class _StatsPageState extends State<StatsPage> {
     }
 
     return PaperGroup(
-      title: useWeekly ? '每周支出' : '每日支出',
+      title: useWeekly ? '每周支出' : (useIncome ? '每日收入' : '每日支出'),
       padding: const EdgeInsets.fromLTRB(kSpace3, kSpace2, kSpace3, kSpace4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildSelectionCaption(seriesCents, weekly: weekly),
+          _buildSelectionCaption(
+              useIncome ? incomeSeries : seriesCents,
+              weekly: weekly),
           const SizedBox(height: kSpace3),
           SizedBox(
             height: 200,

@@ -302,6 +302,17 @@ class _HomePageState extends State<HomePage> {
     return PaperGroup(
       title: '结余走势',
       padding: const EdgeInsets.all(kSpace4),
+      trailing: Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Text(
+          '总资产 ${AmountText.format(context.read<AppState>().totalAssets)}',
+          style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: kInkPrimary,
+              fontFeatures: [FontFeature.tabularFigures()]),
+        ),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [

@@ -114,6 +114,31 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Future<void> _backupJson() async {
+    final state = context.read<AppState>();
+    final json = state.exportJson();
+    await Clipboard.setData(ClipboardData(text: json));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('已备份到剪贴板（JSON）')),
+      );
+    }
+  }
+
+  Future<void> _restoreJson() async {
+    final state = context.read<AppState>();
+    final pasted = await showDialog<String>(
+      context: context,
+      builder: (context) => const _JsonRestoreDialog(),
+    );
+    if (pasted == null || pasted.trim().isEmpty || !mounted) return;
+    final error = await state.importJson(pasted);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(error ?? '已从备份恢复全部数据')),
+    );
+  }
+
   Future<void> _exportCsv() async {
     final state = context.read<AppState>();
     final scope = await showModalBottomSheet<String>(
@@ -576,6 +601,18 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           _DataRow(
             icon: Icons.upload_file_outlined,
+            label: '备份到剪贴板 (JSON)',
+            color: kInkPrimary,
+            onTap: _backupJson,
+          ),
+          _DataRow(
+            icon: Icons.restore_outlined,
+            label: '从备份恢复 (JSON)',
+            color: kInkPrimary,
+            onTap: _restoreJson,
+          ),
+          _DataRow(
+            icon: Icons.upload_file_outlined,
             label: '导入数据 (CSV)',
             color: kInkPrimary,
             onTap: _importCsv,
@@ -972,6 +1009,67 @@ class _InitialBalanceDialogState extends State<_InitialBalanceDialog> {
             Navigator.of(context).pop(v);
           },
           child: const Text('保存'),
+        ),
+      ],
+    );
+  }
+}
+
+
+class _JsonRestoreDialog extends StatefulWidget {
+  const _JsonRestoreDialog();
+
+  @override
+  State<_JsonRestoreDialog> createState() => _JsonRestoreDialogState();
+}
+
+class _JsonRestoreDialogState extends State<_JsonRestoreDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('从备份恢复',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+      content: SizedBox(
+        width: 360,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              '粘贴之前「备份到剪贴板」生成的 JSON 内容，将覆盖当前全部数据。',
+              style: TextStyle(fontSize: 12, color: kInkSecondary, height: 1.5),
+            ),
+            const SizedBox(height: kSpace3),
+            TextField(
+              controller: _controller,
+              maxLines: 6,
+              maxLength: 1000000,
+              style: const TextStyle(fontSize: 11, height: 1.4),
+              decoration: const InputDecoration(
+                hintText: '{"version":1,...}',
+                hintStyle: TextStyle(fontSize: 11, color: kInkDisabled),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(minimumSize: const Size(96, 44)),
+          onPressed: () => Navigator.of(context).pop(_controller.text),
+          child: const Text('恢复'),
         ),
       ],
     );

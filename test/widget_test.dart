@@ -956,6 +956,57 @@ void main() {
     await tester.pumpAndSettle();
     expect(state.transactions.length, 2);
   });
+
+  test('每日收入序列 dailyIncomeSeries', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addTransaction(Transaction(
+      id: 'inc1',
+      type: TxType.income,
+      amount: 3000,
+      categoryId: 'salary',
+      accountId: 'card',
+      date: DateTime(2026, 8, 15),
+    ));
+    final s = state.dailyIncomeSeries(DateTime(2026, 8));
+    expect(s.length, 31);
+    expect(s[14], 3000);
+    expect(s[0], 0);
+  });
+
+  test('JSON 全量备份与恢复', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addTransaction(Transaction(
+      id: 'j1',
+      type: TxType.expense,
+      amount: 1234,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(2026, 8, 6),
+      note: 'json备份',
+    ));
+    await state.addBook('备份账本');
+    await state.setBudget(50000);
+    final json = state.exportJson();
+    expect(json, contains('j1'));
+    expect(json, contains('备份账本'));
+
+    // 新实例恢复
+    final state2 = AppState();
+    await state2.load();
+    await state2.clearAll();
+    final err = await state2.importJson(json);
+    expect(err, isNull);
+    expect(state2.transactions.length, 1);
+    expect(state2.transactions.first.note, 'json备份');
+    expect(state2.books.any((b) => b.name == '备份账本'), isTrue);
+    expect(state2.monthlyBudget, 50000);
+  });
 }
 
 
