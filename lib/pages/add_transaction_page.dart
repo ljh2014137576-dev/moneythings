@@ -59,7 +59,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     final src = e ?? widget.copyFrom;
     _type = src?.type ?? TxType.expense;
     _categoryId = src?.categoryId ?? TxCategories.expense.first.id;
-    _accountId = src?.accountId ?? 'alipay';
+    _accountId = src?.accountId ??
+        context.read<AppState>().lastAccountId;
     _date = e?.date ?? DateTime.now();
     _note = src?.note ?? '';
     _noteController.text = _note;

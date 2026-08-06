@@ -417,8 +417,8 @@ class _StatsPageState extends State<StatsPage> {
     final daily = count == 0 ? 0 : summary.expense ~/ daysInMonth;
     return PaperGroup(
       padding: EdgeInsets.zero,
-      child: SizedBox(
-        height: 96,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: kSpace3),
         child: Row(
           children: [
             _StatCell(

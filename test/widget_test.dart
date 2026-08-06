@@ -1,7 +1,16 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moneythings_goal/data/app_state.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'package:moneythings_goal/main.dart';
+import 'package:moneythings_goal/pages/add_transaction_page.dart';
+import 'package:moneythings_goal/pages/home_page.dart';
+import 'package:moneythings_goal/pages/ledger_page.dart';
+import 'package:moneythings_goal/pages/profile_page.dart';
+import 'package:moneythings_goal/pages/stats_page.dart';
+import 'package:moneythings_goal/theme/app_theme.dart';
+import 'package:provider/provider.dart';
 import 'package:moneythings_goal/models/transaction.dart';
 import 'package:moneythings_goal/services/csv_exporter.dart';
 import 'package:moneythings_goal/services/csv_importer.dart';
@@ -694,8 +703,14 @@ void main() {
     await tester.tap(find.text('近 7 天'));
     await tester.pumpAndSettle();
     expect(find.textContaining('~ '), findsOneWidget);
-    expect(find.textContaining('一号'), findsWidgets);
     expect(find.textContaining('今天'), findsWidgets);
+    // 8月1日的行在列表下方，先滚动到可见
+    await tester.drag(
+      find.byType(ListView).first,
+      const Offset(0, -600),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('一号'), findsWidgets);
 
     // 清除范围
     await tester.tap(find.text('清除'));
@@ -1111,6 +1126,33 @@ void main() {
     expect(find.text('支付宝 · 流水'), findsOneWidget);
     expect(find.textContaining('支付宝A'), findsWidgets);
     expect(find.textContaining('银行卡B'), findsNothing);
+  });
+
+  testWidgets('大字体 2.0x 无障碍冒烟：四页与记一笔无溢出', (tester) async {
+    Intl.defaultLocale = 'zh_CN';
+    await initializeDateFormatting('zh_CN');
+    tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+    addTearDown(
+        tester.platformDispatcher.clearTextScaleFactorTestValue);
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    Future<void> pumpPage(Widget page) async {
+      await tester.pumpWidget(ChangeNotifierProvider.value(
+        value: state,
+        child: MaterialApp(
+          theme: buildAppTheme(),
+          home: Scaffold(body: page),
+        ),
+      ));
+      await tester.pumpAndSettle();
+    }
+    await pumpPage(
+        HomePage(onAdd: () {}, onGoLedger: () {}, onGoStats: () {}));
+    await pumpPage(const LedgerPage());
+    await pumpPage(const StatsPage());
+    await pumpPage(const ProfilePage());
+    await pumpPage(const AddTransactionPage());
   });
 }
 

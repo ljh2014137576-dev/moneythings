@@ -33,6 +33,7 @@ class AppState extends ChangeNotifier {
   String _currentBookId = kDefaultBook.id;
   bool _budgetNotify = true;
   bool _dailyReminder = false;
+  String _lastAccountId = 'alipay';
   bool _onboarded = false;
   bool _loaded = false;
 
@@ -67,6 +68,7 @@ class AppState extends ChangeNotifier {
     _accounts = await _repository.loadAccounts();
     _books = await _repository.loadBooks();
     _currentBookId = await _repository.loadCurrentBookId();
+    _lastAccountId = await _repository.loadLastAccountId();
     _dailyReminder = await _repository.loadDailyReminder();
     _budgetNotify = await _repository.loadBudgetNotify();
     _onboarded = await _repository.loadOnboarded();
@@ -81,6 +83,10 @@ class AppState extends ChangeNotifier {
   Future<void> _persist() => _repository.saveTransactions(_transactions);
 
   Future<void> addTransaction(Transaction tx) async {
+    if (tx.accountId.isNotEmpty) {
+      _lastAccountId = tx.accountId;
+      await _repository.saveLastAccountId(tx.accountId);
+    }
     _transactions = [..._transactions, tx.copyWith(bookId: _currentBookId)]
       ..sort((a, b) => b.date.compareTo(a.date));
     await _persist();
@@ -114,6 +120,8 @@ class AppState extends ChangeNotifier {
  
 
 
+
+  String get lastAccountId => _lastAccountId;
   bool get dailyReminder => _dailyReminder;
 
   Future<void> setDailyReminder(bool value) async {

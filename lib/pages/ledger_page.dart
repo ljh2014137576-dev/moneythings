@@ -117,88 +117,94 @@ class _LedgerPageState extends State<LedgerPage> {
 
     return SafeArea(
       bottom: false,
+      child: (monthTx.isEmpty || (visible.isEmpty && _query.isNotEmpty))
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHeaderColumn(),
+                const SizedBox(height: kSpace3),
+                Expanded(
+                  child: EmptyState(
+                    title: _query.isNotEmpty
+                        ? '没有找到相关流水'
+                        : '本月还没有流水',
+                    message: _query.isNotEmpty
+                        ? '换个关键词或清除搜索试试'
+                        : '回到首页点击「记一笔」开始记录',
+                    onAction: null,
+                  ),
+                ),
+              ],
+            )
+          : ListView(
+              padding:
+                  const EdgeInsets.only(top: kSpace3, bottom: kSpace6),
+              children: [
+                _buildHeaderColumn(),
+                if (visible.isNotEmpty) ...[
+                  const SizedBox(height: kSpace3),
+                  _LedgerSummary(
+                    count: visible.length,
+                    expense: sumExpense,
+                    income: sumIncome,
+                  ),
+                ],
+                const SizedBox(height: kSpace3),
+                for (final group in groups.entries) ...[
+                  if (group.key != groups.keys.first)
+                    const SizedBox(height: kSpace3),
+                  _DayGroup(
+                    date: group.key,
+                    items: group.value,
+                    onTapItem: (tx) => _edit(tx),
+                    onDismiss: _deleteWithUndo,
+                    onLongPressItem: _longPress,
+                  ),
+                ],
+              ],
+            ),
+    );
+  }
+
+  Widget _buildHeaderColumn() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          kPagePadding, kSpace3, kPagePadding, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-                kPagePadding, kSpace3, kPagePadding, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text('明细',
-                          style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w700,
-                              color: kInkPrimary)),
-                    ),
-                    IconButton(
-                      tooltip: '导出当前筛选结果',
-                      onPressed: _exportVisible,
-                      icon: const Icon(Icons.ios_share_outlined,
-                          size: 20, color: kInkPrimary),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: kSpace2),
-                MonthSelector(
-                  month: _month,
-                  onChanged: (m) => setState(() => _month = m),
-                ),
-                const SizedBox(height: kSpace2),
-                const SizedBox(height: kSpace2),
-                _buildSearchField(),
-                const SizedBox(height: kSpace2),
-                _buildTimeRow(),
-                _buildFilterRow(),
-                const SizedBox(height: kSpace2),
-                _buildAccountFilterRow(),
-                const SizedBox(height: kSpace2),
-                _buildRangeRow(),
-              ],
-            ),
-          ),
-          const SizedBox(height: kSpace3),
-          if (visible.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  kPagePadding, 0, kPagePadding, kSpace2),
-              child: _LedgerSummary(
-                count: visible.length,
-                expense: sumExpense,
-                income: sumIncome,
+          Row(
+            children: [
+              const Expanded(
+                child: Text('明细',
+                    style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                        color: kInkPrimary)),
               ),
-            ),
-          Expanded(
-            child: (monthTx.isEmpty || (visible.isEmpty && _query.isNotEmpty))
-                ? EmptyState(
-                    title: _query.isNotEmpty ? "没有找到相关流水" : "本月还没有流水",
-                    message: _query.isNotEmpty
-                        ? "换个关键词或清除搜索试试"
-                        : "回到首页点击「记一笔」开始记录",
-                    onAction: null,
-                  )
-                : ListView(
-                    padding: const EdgeInsets.fromLTRB(
-                        kPagePadding, 0, kPagePadding, kSpace6),
-                    children: [
-                      for (final group in groups.entries) ...[
-                        if (group.key != groups.keys.first)
-                          const SizedBox(height: kSpace3),
-                        _DayGroup(
-                          date: group.key,
-                          items: group.value,
-                          onTapItem: (tx) => _edit(tx),
-                          onDismiss: _deleteWithUndo,
-                          onLongPressItem: _longPress,
-                        ),
-                      ],
-                    ],
-                  ),
+              IconButton(
+                tooltip: '导出当前筛选结果',
+                onPressed: _exportVisible,
+                icon: const Icon(Icons.ios_share_outlined,
+                    size: 20, color: kInkPrimary),
+              ),
+            ],
           ),
+          const SizedBox(height: kSpace2),
+          MonthSelector(
+            month: _month,
+            onChanged: (m) => setState(() => _month = m),
+          ),
+          const SizedBox(height: kSpace2),
+          _buildSearchField(),
+          const SizedBox(height: kSpace2),
+          _buildTimeRow(),
+          const SizedBox(height: kSpace2),
+          _buildFilterRow(),
+          const SizedBox(height: kSpace2),
+          _buildAccountFilterRow(),
+          const SizedBox(height: kSpace2),
+          _buildRangeRow(),
         ],
       ),
     );
@@ -701,12 +707,12 @@ class _LedgerSummary extends StatelessWidget {
         border: Border.all(color: kDividerDefault, width: 1),
         borderRadius: BorderRadius.circular(kRadiusTable),
       ),
-      child: Row(
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Text('共 $count 笔',
               style: const TextStyle(
                   fontSize: 12, color: kInkSecondary)),
-          const Spacer(),
           if (expense > 0) ...[
             const Text('支出 ',
                 style: TextStyle(fontSize: 12, color: kInkSecondary)),
