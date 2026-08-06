@@ -483,3 +483,16 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 57/57；release 构建+签名校验。
 - 遇到的问题与解决方案：IncrementalSplitter 打包失败（守护进程）→ 杀进程后 22s 构建成功。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-08 06:00 — 迭代 v4.0：明细按金额排序 + 金额清除按钮
+
+- 任务内容：
+  - A. 明细排序：筛选行末尾「日期/金额」切换，按金额降序排列流水（与其他筛选/搜索叠加）。
+  - B. 记一笔金额清除：金额输入框非空时显示「×」清除按钮，一键清空。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`、`lib/pages/add_transaction_page.dart`
+  - `test/widget_test.dart`（59 测试）、`screenshots/42-ledger-sort.png`、`43-amount-clear.png`
+- commit hash：`403c422`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 59/59（金额排序首位=大额、清除后金额消失）；web 实测清除金额按钮，零控制台错误。
+- 遇到的问题与解决方案：排序逻辑放在 _visible 早退之后未生效 → 移到 build 层对 visible 排序；金额输入框显示原始文本非格式化 → 测试断言改 '88'。
+- 下一步：上架执行（RELEASE.md）、真机通知冒烟（SMOKE_TEST.md）。
