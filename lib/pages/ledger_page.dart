@@ -93,7 +93,7 @@ class _LedgerPageState extends State<LedgerPage> {
             child: monthTx.isEmpty
                 ? EmptyState(
                     title: '本月还没有流水',
-                    message: '点击底部「记一笔」开始记录',
+                    message: '回到首页点击「记一笔」开始记录',
                     onAction: null,
                   )
                 : ListView(
@@ -251,4 +251,5 @@ class _DayGroup extends StatelessWidget {
     );
   }
 }
+
 

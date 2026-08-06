@@ -29,6 +29,7 @@ class MonthSelector extends StatelessWidget {
       children: [
         _ArrowButton(
           icon: Icons.chevron_left_rounded,
+          tooltip: '上个月',
           onTap: () => _shift(context, -1),
         ),
         Expanded(
@@ -45,6 +46,7 @@ class MonthSelector extends StatelessWidget {
         ),
         _ArrowButton(
           icon: Icons.chevron_right_rounded,
+          tooltip: '下个月',
           onTap: () => _shift(context, 1),
         ),
       ],
@@ -56,22 +58,26 @@ class MonthSelector extends StatelessWidget {
 }
 
 class _ArrowButton extends StatelessWidget {
-  const _ArrowButton({required this.icon, required this.onTap});
+  const _ArrowButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
 
   final IconData icon;
+  final String tooltip;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(kRadiusTable),
-      child: Container(
-        width: 32,
-        height: 32,
-        alignment: Alignment.center,
-        child: Icon(icon, size: 20, color: kInkPrimary),
-      ),
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onTap,
+      icon: Icon(icon, size: 20, color: kInkPrimary),
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+      splashRadius: 18,
     );
   }
 }
+

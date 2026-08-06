@@ -64,14 +64,21 @@ class _HomeShellState extends State<HomeShell> {
       body: IndexedStack(
         index: _index,
         children: [
-          HomePage(
-            onAdd: _openAdd,
-            onGoLedger: () => setState(() => _index = 1),
-            onGoStats: () => setState(() => _index = 2),
-          ),
-          const LedgerPage(),
-          const StatsPage(),
-          const ProfilePage(),
+          for (int i = 0; i < 4; i++)
+            ExcludeSemantics(
+              // 只暴露当前页的语义，避免 offstage 页面干扰读屏
+              excluding: i != _index,
+              child: switch (i) {
+                0 => HomePage(
+                      onAdd: _openAdd,
+                      onGoLedger: () => setState(() => _index = 1),
+                      onGoStats: () => setState(() => _index = 2),
+                    ),
+                1 => const LedgerPage(),
+                2 => const StatsPage(),
+                _ => const ProfilePage(),
+              },
+            ),
         ],
       ),
       bottomNavigationBar: AppBottomNav(
@@ -87,3 +94,4 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 }
+

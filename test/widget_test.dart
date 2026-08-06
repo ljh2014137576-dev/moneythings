@@ -1,4 +1,5 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:moneythings_goal/data/app_state.dart';
 import 'package:moneythings_goal/main.dart';
 import 'package:moneythings_goal/models/transaction.dart';
@@ -65,6 +66,41 @@ void main() {
     });
   });
 
+  testWidgets('记一笔 -> 明细 -> 编辑 -> 删除 全流程', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+
+    // 记一笔：金额 42，分类餐饮
+    await tester.tap(find.text('记一笔').first);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, '42');
+    await tester.tap(find.text('餐饮'));
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+    expect(find.text('¥42.00'), findsWidgets);
+
+    // 切到明细，账目应出现
+    await tester.tap(find.text('明细').first);
+    await tester.pumpAndSettle();
+    expect(find.text('¥42.00'), findsWidgets);
+
+    // 点行进入编辑
+    await tester.tap(find.text('¥42.00').first);
+    await tester.pumpAndSettle();
+    expect(find.text('编辑账目'), findsOneWidget);
+
+    // 删除并确认
+    await tester.tap(find.byTooltip('删除账目'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('删除').last);
+    await tester.pumpAndSettle();
+    expect(find.text('¥42.00'), findsNothing);
+  });
+
   testWidgets('应用启动并渲染首页概览', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final state = AppState();
@@ -82,4 +118,6 @@ void main() {
     expect(find.text('我的'), findsOneWidget);
   });
 }
+
+
 

@@ -227,9 +227,16 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       padding: const EdgeInsets.symmetric(horizontal: kSpace2, vertical: kSpace2),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close_rounded, color: kInkPrimary, size: 22),
+          Semantics(
+            container: true,
+            button: true,
+            label: '关闭',
+            child: IconButton(
+              tooltip: '关闭',
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.close_rounded,
+                  color: kInkPrimary, size: 22),
+            ),
           ),
           Expanded(
             child: Center(
@@ -246,10 +253,16 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           SizedBox(
             width: 48,
             child: _isEdit
-                ? IconButton(
-                    onPressed: _delete,
-                    icon: const Icon(Icons.delete_outline_rounded,
-                        color: kDanger, size: 22),
+                ? Semantics(
+                    container: true,
+                    button: true,
+                    label: '删除账目',
+                    child: IconButton(
+                      tooltip: '删除账目',
+                      onPressed: _delete,
+                      icon: const Icon(Icons.delete_outline_rounded,
+                          color: kDanger, size: 22),
+                    ),
                   )
                 : null,
           ),
@@ -591,4 +604,6 @@ class _AccountSheet extends StatelessWidget {
     );
   }
 }
+
+
 

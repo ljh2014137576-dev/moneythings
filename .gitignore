@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# QA 临时文件
+.qa_*.png
+.flutter_web.log*
+.web*.log
+.web*.err
+screenshots/.gitkeep
