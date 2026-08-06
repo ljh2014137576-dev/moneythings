@@ -784,7 +784,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 1.1.0',
+            Text('版本 3.0.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -793,7 +793,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v2.2 本周概览 · 导入预览 · 预算剩余天数\nv2.1 复制上一条 · 每周统计 · 每日记账提醒\nv2.0 全部时间 · 系统通知 · 多账本完善\nv1.x 明细搜索/左滑删除/统计/自定义分类等',
+            Text('v3.0 本月小结 · JSON 备份文件分享\nv2.9 年度对比 · 导入错误详情\nv2.6 占比环图 · 账户联动 · 日期预设\nv2.0 多账本 · 系统通知 · 全部时间\nv1.x 明细搜索/统计/自定义分类等',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),

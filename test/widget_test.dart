@@ -1240,6 +1240,55 @@ void main() {
     expect(text, contains('笔数：2 笔'));
     expect(text, contains('支出最多：餐饮 50.00'));
   });
+
+ 
+  testWidgets('明细多选批量删除', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'm1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '待删1',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'm2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '待删2',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    // 长按进入多选
+    await tester.longPress(find.textContaining('待删1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('多选删除'));
+    await tester.pumpAndSettle();
+    expect(find.text('已选 0 项'), findsOneWidget);
+    // 全选
+    await tester.tap(find.text('全选'));
+    await tester.pumpAndSettle();
+    expect(find.text('已选 2 项'), findsOneWidget);
+    // 删除
+    await tester.tap(find.byTooltip('删除选中'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('删除').last);
+    await tester.pumpAndSettle();
+    expect(state.transactions, isEmpty);
+    // 删除后退出多选，标题恢复
+    expect(find.text('明细'), findsWidgets);
+  });
 }
 
 

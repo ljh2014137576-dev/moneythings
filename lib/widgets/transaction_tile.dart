@@ -16,12 +16,14 @@ class TransactionTile extends StatelessWidget {
     this.onTap,
     this.onLongPress,
     this.showAccount = true,
+    this.selected = false,
   });
 
   final Transaction transaction;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   final bool showAccount;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +34,11 @@ class TransactionTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       onLongPress: onLongPress,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: kSpace3, horizontal: kSpace4),
+      child: Container(
+        color: selected ? kAccentSoft : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+              vertical: kSpace3, horizontal: kSpace4),
         child: Row(
           children: [
             CategoryIcon(category),
@@ -72,6 +77,7 @@ class TransactionTile extends StatelessWidget {
               plusSign: !isExpense,
             ),
           ],
+        ),
         ),
       ),
     );

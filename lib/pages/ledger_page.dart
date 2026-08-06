@@ -37,6 +37,8 @@ class _LedgerPageState extends State<LedgerPage> {
   String _query = '';
   bool _showAll = false;
   String _accountFilter = 'all';
+  bool _selectionMode = false;
+  final Set<String> _selectedIds = {};
   DateTime? _rangeStart;
   DateTime? _rangeEnd;
 
@@ -117,52 +119,95 @@ class _LedgerPageState extends State<LedgerPage> {
 
     return SafeArea(
       bottom: false,
-      child: (monthTx.isEmpty || (visible.isEmpty && _query.isNotEmpty))
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildHeaderColumn(),
-                const SizedBox(height: kSpace3),
-                Expanded(
-                  child: EmptyState(
-                    title: _query.isNotEmpty
-                        ? '没有找到相关流水'
-                        : '本月还没有流水',
-                    message: _query.isNotEmpty
-                        ? '换个关键词或清除搜索试试'
-                        : '回到首页点击「记一笔」开始记录',
-                    onAction: null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_selectionMode) _buildSelectionBar(),
+          Expanded(
+            child: (monthTx.isEmpty ||
+                    (visible.isEmpty && _query.isNotEmpty))
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildHeaderColumn(),
+                      const SizedBox(height: kSpace3),
+                      Expanded(
+                        child: EmptyState(
+                          title: _query.isNotEmpty
+                              ? '没有找到相关流水'
+                              : '本月还没有流水',
+                          message: _query.isNotEmpty
+                              ? '换个关键词或清除搜索试试'
+                              : '回到首页点击「记一笔」开始记录',
+                          onAction: null,
+                        ),
+                      ),
+                    ],
+                  )
+                : ListView(
+                    padding: const EdgeInsets.only(
+                        top: kSpace3, bottom: kSpace6),
+                    children: [
+                      _buildHeaderColumn(),
+                      if (visible.isNotEmpty) ...[
+                        const SizedBox(height: kSpace3),
+                        _LedgerSummary(
+                          count: visible.length,
+                          expense: sumExpense,
+                          income: sumIncome,
+                        ),
+                      ],
+                      const SizedBox(height: kSpace3),
+                      for (final group in groups.entries) ...[
+                        if (group.key != groups.keys.first)
+                          const SizedBox(height: kSpace3),
+                        _DayGroup(
+                          date: group.key,
+                          items: group.value,
+                          onTapItem: _onRowTap,
+                          onDismiss: _deleteWithUndo,
+                          onLongPressItem: _longPress,
+                          selectedIds: _selectedIds,
+                        ),
+                      ],
+                    ],
                   ),
-                ),
-              ],
-            )
-          : ListView(
-              padding:
-                  const EdgeInsets.only(top: kSpace3, bottom: kSpace6),
-              children: [
-                _buildHeaderColumn(),
-                if (visible.isNotEmpty) ...[
-                  const SizedBox(height: kSpace3),
-                  _LedgerSummary(
-                    count: visible.length,
-                    expense: sumExpense,
-                    income: sumIncome,
-                  ),
-                ],
-                const SizedBox(height: kSpace3),
-                for (final group in groups.entries) ...[
-                  if (group.key != groups.keys.first)
-                    const SizedBox(height: kSpace3),
-                  _DayGroup(
-                    date: group.key,
-                    items: group.value,
-                    onTapItem: (tx) => _edit(tx),
-                    onDismiss: _deleteWithUndo,
-                    onLongPressItem: _longPress,
-                  ),
-                ],
-              ],
-            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSelectionBar() {
+    return Container(
+      color: kPaperSurface,
+      padding: const EdgeInsets.symmetric(horizontal: kSpace2, vertical: 2),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: '取消多选',
+            onPressed: _exitSelection,
+            icon: const Icon(Icons.close_rounded,
+                size: 20, color: kInkPrimary),
+          ),
+          Expanded(
+            child: Text('已选 ${_selectedIds.length} 项',
+                style: const TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w600)),
+          ),
+          TextButton(
+            onPressed: _selectAllVisible,
+            child: const Text('全选',
+                style: TextStyle(fontSize: 13, color: kAccentBlue)),
+          ),
+          IconButton(
+            tooltip: '删除选中',
+            onPressed: _deleteSelected,
+            icon: const Icon(Icons.delete_outline_rounded,
+                size: 20, color: kDanger),
+          ),
+        ],
+      ),
     );
   }
 
@@ -463,6 +508,70 @@ class _LedgerPageState extends State<LedgerPage> {
       );
   }
 
+  void _onRowTap(Transaction tx) {
+    if (_selectionMode) {
+      setState(() {
+        if (!_selectedIds.remove(tx.id)) _selectedIds.add(tx.id);
+      });
+    } else {
+      _edit(tx);
+    }
+  }
+
+  void _enterSelection() {
+    setState(() {
+      _selectionMode = true;
+      _selectedIds.clear();
+    });
+  }
+
+  void _exitSelection() {
+    setState(() {
+      _selectionMode = false;
+      _selectedIds.clear();
+    });
+  }
+
+  void _selectAllVisible() {
+    final state = context.read<AppState>();
+    final source = _showAll
+        ? state.currentBookTransactions
+        : state.ofMonth(_month);
+    final ids = _visible(source).map((t) => t.id).toSet();
+    setState(() => _selectedIds.addAll(ids));
+  }
+
+  Future<void> _deleteSelected() async {
+    if (_selectedIds.isEmpty) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除选中的流水？',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+        content: Text('将删除选中的 ${_selectedIds.length} 笔流水，无法恢复。',
+            style: const TextStyle(fontSize: 14, color: kInkSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: kDanger),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && mounted) {
+      final state = context.read<AppState>();
+      for (final id in _selectedIds.toList()) {
+        await state.deleteTransaction(id);
+      }
+      if (mounted) _exitSelection();
+    }
+  }
+
   Future<void> _longPress(Transaction tx) async {
     final action = await showModalBottomSheet<String>(
       context: context,
@@ -492,6 +601,15 @@ class _LedgerPageState extends State<LedgerPage> {
                   size: 20, color: kInkPrimary),
               title: const Text('复制为新的账目'),
               onTap: () => Navigator.of(context).pop('copy'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.checklist_rounded,
+                  size: 20, color: kInkPrimary),
+              title: const Text('多选删除'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _enterSelection();
+              },
             ),
             ListTile(
               leading:
@@ -606,6 +724,7 @@ class _DayGroup extends StatelessWidget {
     required this.date,
     required this.items,
     required this.onTapItem,
+    required this.selectedIds,
     required this.onLongPressItem,
     required this.onDismiss,
   });
@@ -613,6 +732,7 @@ class _DayGroup extends StatelessWidget {
   final DateTime date;
   final List<Transaction> items;
   final ValueChanged<Transaction> onTapItem;
+  final Set<String> selectedIds;
   final ValueChanged<Transaction> onLongPressItem;
   final ValueChanged<Transaction> onDismiss;
 
@@ -677,6 +797,7 @@ class _DayGroup extends StatelessWidget {
                 transaction: items[i],
                 onTap: () => onTapItem(items[i]),
                 onLongPress: () => onLongPressItem(items[i]),
+                selected: selectedIds.contains(items[i].id),
               ),
             ),
           ],
