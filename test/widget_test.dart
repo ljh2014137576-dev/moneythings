@@ -699,6 +699,62 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('日期：全部日期'), findsOneWidget);
   });
+
+  test('最近使用分类与账本重命名', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'n1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 1),
+    ));
+    await state.addTransaction(Transaction(
+      id: 'n2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'transport',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 2),
+    ));
+    // 最近分类按时间倒序
+    expect(state.recentCategoryIds(TxType.expense), ['transport', 'food']);
+    expect(state.recentCategoryIds(TxType.income), isEmpty);
+
+    // 账本重命名
+    await state.addBook('工作');
+    final work = state.books.firstWhere((b) => b.name == '工作');
+    await state.renameBook(work.id, '上班');
+    expect(state.books.any((b) => b.name == '上班'), isTrue);
+    expect(state.books.any((b) => b.name == '工作'), isFalse);
+  });
+
+  testWidgets('记一笔显示最近使用分类', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'n3',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 1),
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('记一笔').first);
+    await tester.pumpAndSettle();
+    expect(find.text('最近'), findsOneWidget);
+    expect(find.text('餐饮'), findsWidgets);
+  });
 }
 
 

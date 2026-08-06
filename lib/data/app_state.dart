@@ -241,12 +241,26 @@ class AppState extends ChangeNotifier {
       if (t.type == TxType.income) {
         map[t.categoryId] = (map[t.categoryId] ?? 0) + t.amount;
       }
+
     }
     final ranked = map.entries.map((e) {
       return (category: TxCategories.byId(e.key), amount: e.value);
     }).toList()
       ..sort((a, b) => b.amount.compareTo(a.amount));
     return ranked;
+  }
+
+  /// 最近使用过的分类 id（按时间倒序，去重）
+  List<String> recentCategoryIds(TxType type, {int limit = 4}) {
+    final seen = <String>[];
+    final sorted = [..._bookTx]..sort((a, b) => b.date.compareTo(a.date));
+    for (final t in sorted) {
+      if (t.type == type && !seen.contains(t.categoryId)) {
+        seen.add(t.categoryId);
+        if (seen.length >= limit) break;
+      }
+    }
+    return seen;
   }
  
   /// 以某月为终点，往前 count 个月的月度结余序列（时间升序）
@@ -309,6 +323,16 @@ class AppState extends ChangeNotifier {
       name: trimmed,
     );
     _books = [..._books, book];
+    await _repository.saveBooks(_books);
+    notifyListeners();
+  }
+
+  Future<void> renameBook(String id, String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty || id == kDefaultBook.id) return;
+    _books = [
+      for (final b in _books) b.id == id ? b.copyWith(name: trimmed) : b,
+    ];
     await _repository.saveBooks(_books);
     notifyListeners();
   }

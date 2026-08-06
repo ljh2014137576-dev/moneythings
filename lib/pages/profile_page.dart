@@ -86,10 +86,46 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _exportCsv() async {
     final state = context.read<AppState>();
-    final txs = state.currentBookTransactions;
+    final scope = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding:
+                  EdgeInsets.fromLTRB(kSpace4, kSpace4, kSpace4, kSpace2),
+              child: Text('导出范围',
+                  style: TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.menu_book_outlined,
+                  size: 20, color: kInkPrimary),
+              title: Text('当前账本（${state.currentBook.name}）',
+                  style: const TextStyle(fontSize: 15)),
+              onTap: () => Navigator.of(context).pop('current'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.library_books_outlined,
+                  size: 20, color: kInkPrimary),
+              title: const Text('全部账本',
+                  style: TextStyle(fontSize: 15)),
+              onTap: () => Navigator.of(context).pop('all'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (scope == null || !mounted) return;
+    final txs = scope == 'all'
+        ? state.transactions
+        : state.currentBookTransactions;
     if (txs.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('当前账本暂无数据可导出')),
+        const SnackBar(content: Text('所选范围暂无数据可导出')),
       );
       return;
     }

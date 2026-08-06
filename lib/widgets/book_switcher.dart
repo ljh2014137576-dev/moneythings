@@ -55,6 +55,20 @@ class _BookSwitcherSheet extends StatelessWidget {
     if (ok == true) {
       await state.removeBook(book.id);
     }
+
+  }
+  Future<void> _rename(BuildContext context, Book book) async {
+    final state = context.read<AppState>();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => _NewBookDialog(
+        title: '重命名账本',
+        initialName: book.name,
+      ),
+    );
+    if (name != null && name.trim().isNotEmpty) {
+      await state.renameBook(book.id, name);
+    }
   }
 
   @override
@@ -90,13 +104,20 @@ class _BookSwitcherSheet extends StatelessWidget {
                   if (b.id == state.currentBook.id)
                     const Icon(Icons.check_rounded,
                         size: 18, color: kAccentBlue),
-                  if (b.id != kDefaultBook.id)
+                  if (b.id != kDefaultBook.id) ...[
+                    IconButton(
+                      tooltip: '重命名账本',
+                      onPressed: () => _rename(context, b),
+                      icon: const Icon(Icons.edit_outlined,
+                          size: 18, color: kInkDisabled),
+                    ),
                     IconButton(
                       tooltip: '删除账本',
                       onPressed: () => _remove(context, b),
                       icon: const Icon(Icons.delete_outline_rounded,
                           size: 18, color: kInkDisabled),
                     ),
+                  ],
                 ],
               ),
               onTap: () async {
@@ -122,14 +143,17 @@ class _BookSwitcherSheet extends StatelessWidget {
 }
 
 class _NewBookDialog extends StatefulWidget {
-  const _NewBookDialog();
+  const _NewBookDialog({this.title = '新建账本', this.initialName});
+
+  final String title;
+  final String? initialName;
 
   @override
   State<_NewBookDialog> createState() => _NewBookDialogState();
 }
 
 class _NewBookDialogState extends State<_NewBookDialog> {
-  final _controller = TextEditingController();
+  late final _controller = TextEditingController(text: widget.initialName ?? '');
 
   @override
   void dispose() {
@@ -140,7 +164,7 @@ class _NewBookDialogState extends State<_NewBookDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('新建账本',
+      title: Text(widget.title,
           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
       content: TextField(
         controller: _controller,

@@ -244,6 +244,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     const SizedBox(height: kSpace3),
                     _buildAmountField(),
                     const SizedBox(height: kSpace4),
+                    _buildRecentRow(categories),
+                    const SizedBox(height: kSpace3),
                     _buildCategoryGrid(categories),
                     const SizedBox(height: kSpace4),
                     _buildMetaRows(),
@@ -390,6 +392,38 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRecentRow(List<TxCategory> categories) {
+    final recentIds = context.read<AppState>().recentCategoryIds(_type);
+    if (recentIds.isEmpty) return const SizedBox.shrink();
+    final recentCats = <TxCategory>[
+      for (final id in recentIds)
+        for (final c in categories)
+          if (c.id == id) c,
+    ];
+    if (recentCats.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('最近',
+            style: TextStyle(fontSize: 12, color: kInkSecondary)),
+        const SizedBox(height: kSpace2),
+        Row(
+          children: [
+            for (final c in recentCats)
+              Padding(
+                padding: const EdgeInsets.only(right: kSpace2),
+                child: _RecentChip(
+                  category: c,
+                  selected: _categoryId == c.id,
+                  onTap: () => setState(() => _categoryId = c.id),
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -655,3 +689,49 @@ class _AccountSheet extends StatelessWidget {
 
 
 
+
+
+class _RecentChip extends StatelessWidget {
+  const _RecentChip({
+    required this.category,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final TxCategory category;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? kAccentBlue : kInkPrimary;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(kRadiusTable),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: kSpace3, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? kAccentSoft : const Color(0xFFF0F1EF),
+          borderRadius: BorderRadius.circular(kRadiusTable),
+          border: selected
+              ? Border.all(color: kAccentBlue, width: 1.5)
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(category.icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Text(category.name,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  color: color,
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+}

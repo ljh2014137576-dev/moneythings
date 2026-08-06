@@ -7,6 +7,8 @@ class Book {
   final String id;
   final String name;
 
+  Book copyWith({String? name}) => Book(id: id, name: name ?? this.name);
+
   Map<String, dynamic> toJson() => {'id': id, 'name': name};
 
   factory Book.fromJson(Map<String, dynamic> json) => Book(
