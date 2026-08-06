@@ -213,3 +213,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 31/31（最近分类顺序/收入为空、重命名生效、记一笔显示最近分类）；web 实测：记一笔「最近」分类行渲染，零控制台错误。
 - 遇到的问题与解决方案：node 多次 splice 导致 book_switcher 括号错位/方法嵌套（_rename 插进 _remove）→ 用括号深度扫描定位并修正。
 - 下一步计划：本地预算预警系统通知、深色模式、上架执行。
+
+## 2026-08-07 10:00 — 迭代 v2.0：全部时间视图 / 预算超支系统通知 / release 重建
+
+- 任务内容：
+  - A. 明细「全部时间」视图：明细页新增「时间：本月/全部时间」切换，全部时展示当前账本所有流水（跨月）。
+  - C. 预算超支系统通知：引入 flutter_local_notifications 22.2.0；AndroidManifest 加 POST_NOTIFICATIONS；`NotificationService`（渠道+运行时权限+超支通知）；「我的→预算管理」加「超支系统通知」开关（持久化，默认开，开启时请求权限）；记一笔超预算「继续保存」后触发系统通知；core library desugaring 开启。
+  - D. release 重建：`flutter build apk --release` 成功（51.7MB），SHA-256 `DF58373D...4BC9`，MoneyThings 签名验证通过。
+  - 顺手修复：profile「已超出预算」文案丢失 `$` 的遗留 bug。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`（全部时间）、`lib/services/notification_service.dart`（新增）、`lib/main.dart`、`lib/pages/add_transaction_page.dart`、`lib/pages/profile_page.dart`、`lib/data/transaction_repository.dart`、`lib/data/app_state.dart`
+  - `android/app/src/main/AndroidManifest.xml`、`android/app/build.gradle.kts`（desugaring）、`pubspec.yaml`
+  - `test/widget_test.dart`（33 测试）、`screenshots/17-all-time.png`、`18-notify-switch.png`
+- commit hash：`c5f5a0a`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 33/33（通知开关持久化、全部时间视图）；web 实测：时间切换、通知开关渲染，零控制台错误；release APK 构建+签名验证。
+- 说明：系统通知实际弹出需 Android 真机验证（本环境无设备）；代码/权限/渠道/触发均已就绪。
+- 遇到的问题与解决方案：flutter_local_notifications 22.x API 具名参数化（initialize/show）→ 查包源码适配；需 core library desugaring → build.gradle.kts 开启；Metaspace OOM → 杀守护进程重试。
+- 下一步计划：深色模式、上架执行（CHECKLIST）、真机通知冒烟。
