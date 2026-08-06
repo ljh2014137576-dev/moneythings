@@ -100,3 +100,19 @@
   2. storeFile 相对 app 模块解析路径错误 → 改 `rootProject.file()`。
   3. release 构建 Metaspace OOM → 杀旧 Gradle 守护进程重试（读取 -Xmx8G/MaxMetaspace4G）。
 - 下一步计划：本地预算预警通知、多账本、深色模式、release 上架准备（图标已就绪）。
+
+## 2026-08-07 03:10 — 迭代 v1.3：搜索 / 月份跳转 / CSV 导入
+
+- 任务内容：
+  - A. 明细搜索：明细页顶部搜索框（备注/分类名，不区分大小写），带清除按钮；无结果时显示空状态提示。
+  - B. 月份快速跳转：月份选择器点击月份文字打开年份+12 月网格弹层，可翻年、选中即跳转（首页/明细/统计共用）。
+  - C. CSV 导入：`lib/services/csv_importer.dart` 解析器（支持 BOM/表头/引号转义/自定义分类名/账户名映射/非法行报错）；`AppState.importCsv` 按「日期|类型|分类|金额|备注」指纹去重合并；「我的→数据→导入数据 (CSV)」粘贴对话框，结果提示「导入 N 笔，跳过 M 行，错误 K 行」。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`（搜索）、`lib/widgets/month_selector.dart`（月份弹层）、`lib/services/csv_importer.dart`（新增）、`lib/data/app_state.dart`（importCsv）、`lib/pages/profile_page.dart`（导入入口+对话框）
+  - `test/widget_test.dart`（18 测试）、`screenshots/6-month-picker.png`、`7-ledger-search.png`、`8-profile-import.png`
+- commit hash：`ea40e87`（三功能）→ `3cc076f`（导入对话框 dispose 修复+测试）；均已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 18/18；web 实测：搜索过滤、月份跳转到 7 月、导入对话框取消/导入均正常，导入后账户余额实时更新（银行卡 +8000、支付宝 -35.50），零控制台错误。
+- 遇到的问题与解决方案：
+  1. 导入对话框在关闭动画期间 dispose controller → "TextEditingController used after being disposed" 崩溃 → 改为对话框自持 controller 的 StatefulWidget（随组件卸载释放）。
+  2. 测试中行备注渲染为「咖啡 · 支付宝」导致 `find.text` 精确匹配失败 → 改用 `find.textContaining`。
+- 下一步计划：本地预算预警通知、多账本切换、深色模式、上架素材与隐私说明。
