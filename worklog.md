@@ -395,3 +395,17 @@
 - 验证：release 构建成功 + apksigner 签名校验；analyze/50 测试此前全绿。
 - 遇到的问题与解决方案：PackageAndroidArtifact 打包失败（守护进程状态）→ 杀进程后 22s 构建成功。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-07 23:00 — 迭代 v3.3：金额搜索 / CSV 头部信息 / 结余走势默认 12 月
+
+- 任务内容：
+  - A. 明细搜索支持金额：搜索框输入纯数字（支持小数）时按金额精确匹配（如 42 → ¥42.00 流水）；与备注/分类搜索并存。
+  - B. CSV 导出头部信息行：导出文件首行加 `# 导出时间：xxx` / `# 范围：xxx` 说明；导入解析自动跳过 `#` 注释行（与旧文件兼容）。
+  - C. 统计结余走势默认 12 月（更长趋势视野）。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`、`lib/services/csv_exporter.dart`、`lib/services/csv_importer.dart`、`lib/pages/profile_page.dart`、`lib/pages/stats_page.dart`
+  - `test/widget_test.dart`（52 测试）、`screenshots/36-amount-search.png`
+- commit hash：`f5aafd5`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 52/52（金额搜索匹配/排除、CSV meta 行导入跳过）；浏览器备注搜索与数据含 ¥30.00 确认（金额搜索由单元测试权威验证，浏览器输入焦点受 harness 干扰）。
+- 遇到的问题与解决方案：一次 replace 误伤 ledger 文件（内容被追加到尾部）→ git 回退后用精确行插入重做；node 顶层变量冲突 → 用唯一前缀。
+- 下一步计划：上架执行（RELEASE.md）、真机通知冒烟（SMOKE_TEST.md）。
