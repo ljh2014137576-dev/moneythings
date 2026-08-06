@@ -550,3 +550,28 @@
   3. 测试插入定位错（原文件尾有空行）把新测试放到 main() 外 → 以 `git show HEAD:` 为基准重建，插到末尾 `}` 之前。
   4. `build/` 下临时文件被 analyze 扫描 → 写为 `// temp` 中和（build/ 不入库）。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-08 11:00 — 迭代 v4.2：明细分类筛选 + 统计分类下钻 + 版本号 4.2.0 + 最终 release
+
+- 任务内容：
+  - A. 明细分类筛选：账户与分类合并为一行横向筛选条（全部账户/现金/… | 全部分类/餐饮/交通/…），`_categoryFilter` 与类型/账户/搜索/日期/排序叠加；切换支出/收入类型时重置分类筛选。
+  - B. 统计分类下钻：支出/收入分类排行每行可点击（CategoryRanking 增 onTapCategory），点击推入 LedgerPage(initialCategoryId: xxx) 预选该分类。
+  - C. 修复真实 bug：明细页作为独立路由被 push（统计下钻）时缺 Scaffold/Material，InkWell 崩溃（No Material widget found）→ LedgerPage 根节点包 Scaffold(backgroundColor: kPageBackground)，Tab 内嵌套与独立路由均正常。
+  - D. 空状态分支改为可滚动（SingleChildScrollView），避免 600px 视口下新增筛选行导致溢出。
+  - E. 测试：新增 2 项（明细页分类筛选、initialCategoryId 预选分类），65/65 通过。
+  - F. web 冒烟：明细点「餐饮」→ 只剩餐饮 4 笔 ¥126；统计排行点「餐饮」→ 跳转明细并预选（共 4 笔）；点「全部分类」恢复 18 笔；零控制台错误。截图 46-category-drilldown.png。
+  - G. 版本号 4.2.0+42（aapt 校验 versionName=4.2.0/versionCode=42）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.7MB，SHA-256 `6676A4D3...BE02`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`（initialCategoryId、_categoryFilter、合并筛选行、Scaffold 包裹、空状态可滚动）
+  - `lib/widgets/category_ranking.dart`（onTapCategory 回调 + 行 InkWell）
+  - `lib/pages/stats_page.dart`（两个排行接 onTapCategory → 推 LedgerPage）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/46-category-drilldown.png`（新增）
+- commit hash：`f4d6d71`；已 push（094f25a..f4d6d71 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 65/65；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：
+  1. 新增筛选行使 600px 测试视口下流水行被挤出可视区（空状态溢出 34px）→ 空状态改可滚动；筛选行与账户行合并为一行省高度。
+  2. 统计下钻 web 实测发现真实崩溃：LedgerPage 独立路由无 Scaffold → InkWell 无 Material → 包 Scaffold 修复。
+  3. 最后一处编辑误用 `Get-Content/Set-Content -Encoding utf8`（PS 默认 ANSI）把 ledger_page 中文整体弄乱 → `git checkout` 还原后用 ReadAllText/WriteAllText（UTF-8 无 BOM）重做全部 v4.2 改动。
+  4. `scrollUntilVisible`/`dragUntilVisible` 在统计页取滚动容器不稳（fl_chart 内部 Scrollable）→ 改用直接 pump LedgerPage(initialCategoryId:) 验证下钻核心逻辑；裸 pump 缺 Scaffold/Material 报错 → 包 Scaffold。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
