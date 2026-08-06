@@ -303,3 +303,17 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 43/43（账户筛选隔离、+50/+100 累加 50→150）；web 实测：账户筛选行、导出按钮、常用金额 chips，零控制台错误。
 - 遇到的问题与解决方案：_exportVisible 插入时 _longPress 未闭合导致 static _p2 在方法内 → 括号深度定位修复。
 - 下一步计划：上架执行（CHECKLIST）、真机通知冒烟、深色模式评估。
+
+## 2026-08-07 16:00 — 迭代 v2.6：支出占比环图 / 账户联动 / 日期预设
+
+- 任务内容：
+  - A. 统计页「支出占比」环图：Top5 分类（最大项蓝、其余黑灰阶）+ 图例百分比；符合规范（唯一蓝重点、无彩虹）。
+  - B. 账户→明细联动：我的页点账户弹菜单「查看该账户流水 / 设置初始余额」；查看流水打开按账户预筛选的明细页（`LedgerPage.initialAccountId`）。
+  - C. 日期范围快速预设：明细日期范围改为底部弹层「本月/上月/近 7 天/近 30 天/自定义」，一键设置。
+- 修改文件：
+  - `lib/pages/stats_page.dart`、`lib/pages/profile_page.dart`、`lib/pages/ledger_page.dart`
+  - `test/widget_test.dart`（45 测试）、`screenshots/29-donut.png`、`30-account-ledger.png`、`31-range-presets.png`
+- commit hash：`6bf442c`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 45/45（环图渲染、账户流水筛选隔离、日期预设/初始余额测试适配）；web 实测：环图、账户菜单与流水页、日期预设弹层，零控制台错误。
+- 遇到的问题与解决方案：JS 模板字面量中 `${}` 被插值 → 改用数组拼接写 Dart 插值；环图块插入位置挤进 PaperGroup → 括号/结构修正。
+- 下一步计划：上架执行（CHECKLIST）、真机通知冒烟、深色模式评估。
