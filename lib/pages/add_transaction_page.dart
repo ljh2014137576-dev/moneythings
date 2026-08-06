@@ -468,18 +468,30 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               controller: _amountController,
               focusNode: _amountFocus,
               autofocus: !_isEdit,
+              onChanged: (_) => setState(() {}),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: [_AmountInputFormatter()],
               style: amountStyle(size: 32),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: '0.00',
-                hintStyle: TextStyle(color: kInkDisabled, fontSize: 32),
+                hintStyle: const TextStyle(color: kInkDisabled, fontSize: 32),
                 filled: false,
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
                 isDense: true,
+                suffixIcon: _amountController.text.isNotEmpty
+                    ? IconButton(
+                        tooltip: '清除金额',
+                        onPressed: () {
+                          _amountController.clear();
+                          setState(() {});
+                        },
+                        icon: const Icon(Icons.close_rounded,
+                            size: 18, color: kInkSecondary),
+                      )
+                    : null,
               ),
             ),
             ),

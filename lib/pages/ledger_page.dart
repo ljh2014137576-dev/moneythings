@@ -41,6 +41,7 @@ class _LedgerPageState extends State<LedgerPage> {
   String _accountFilter = 'all';
   bool _selectionMode = false;
   final Set<String> _selectedIds = {};
+  bool _sortByAmount = false;
   DateTime? _rangeStart;
   DateTime? _rangeEnd;
 
@@ -95,12 +96,16 @@ class _LedgerPageState extends State<LedgerPage> {
       return [for (final t in byType) if (t.amount == cents) t];
     }
 
-    return [
+    final matched = [
       for (final t in byType)
         if (t.note.toLowerCase().contains(q) ||
             TxCategories.byId(t.categoryId).name.contains(q))
           t,
     ];
+    if (_sortByAmount) {
+      matched.sort((a, b) => b.amount.compareTo(a.amount));
+    }
+    return matched;
   }
 
   Map<DateTime, List<Transaction>> _groupByDay(List<Transaction> list) {
@@ -121,6 +126,9 @@ class _LedgerPageState extends State<LedgerPage> {
         ? state.currentBookTransactions
         : state.ofMonth(_month);
     final visible = _visible(monthTx);
+    if (_sortByAmount) {
+      visible.sort((a, b) => b.amount.compareTo(a.amount));
+    }
     final groups = _groupByDay(visible);
     int sumExpense = 0, sumIncome = 0;
     for (final t in visible) {
@@ -562,6 +570,12 @@ class _LedgerPageState extends State<LedgerPage> {
               onTap: () => setState(() => _filter = f),
             ),
           ),
+        const Spacer(),
+        _FilterTag(
+          label: _sortByAmount ? '金额' : '日期',
+          selected: _sortByAmount,
+          onTap: () => setState(() => _sortByAmount = !_sortByAmount),
+        ),
       ],
     );
   }

@@ -1432,6 +1432,58 @@ void main() {
     await state.clearRecentSearches();
     expect(state.recentSearches, isEmpty);
   });
+ 
+  testWidgets('明细按金额排序', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'srt1',
+      type: TxType.expense,
+      amount: 500,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '小额',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'srt2',
+      type: TxType.expense,
+      amount: 9000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '大额',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    // 切到金额排序
+    await tester.tap(find.text('日期'));
+    await tester.pumpAndSettle();
+    // 金额排序后大额在前：第一个 TransactionTile 金额应 90.00
+    final first = tester.widgetList<TransactionTile>(find.byType(TransactionTile)).first;
+    expect(first.transaction.amount, 9000);
+  });
+
+  testWidgets('记一笔金额清除按钮', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('记一笔').first);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, '88');
+    await tester.pumpAndSettle();
+    expect(find.text('88'), findsOneWidget);
+    await tester.tap(find.byTooltip('清除金额'));
+    await tester.pumpAndSettle();
+    expect(find.text('88'), findsNothing);
+  });
 }
 
 
