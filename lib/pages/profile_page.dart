@@ -369,12 +369,24 @@ class _ProfilePageState extends State<ProfilePage> {
             if (i > 0) const Divider(indent: 64),
             _RecurringRow(
               rule: rules[i],
+              onEdit: () => _editRecurring(state, rules[i]),
               onToggle: (v) => state.updateRecurringRule(
                   rules[i].copyWith(active: v)),
               onDelete: () => state.deleteRecurringRule(rules[i].id),
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Future<void> _editRecurring(AppState state, RecurringRule rule) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => _RecurringEditSheet(
+        initial: rule,
+        onSave: (edited) => state.updateRecurringRule(edited),
       ),
     );
   }
@@ -837,7 +849,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.6.0',
+            Text('版本 4.7.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -846,7 +858,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.6 周期记账（每周/每月/每年自动生成）\nv4.5 常用备注 · 账户月度收支\nv4.4 统计柱状图下钻当日流水\nv4.3 金额区间筛选 · 账户名搜索\nv4.2 明细分类筛选 · 统计下钻',
+            Text('v4.7 周期规则编辑\nv4.6 周期记账（每周/每月/每年自动生成）\nv4.5 常用备注 · 账户月度收支\nv4.4 统计柱状图下钻当日流水\nv4.3 金额区间筛选 · 账户名搜索',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),
@@ -1279,11 +1291,13 @@ class _JsonRestoreDialogState extends State<_JsonRestoreDialog> {
 class _RecurringRow extends StatelessWidget {
   const _RecurringRow({
     required this.rule,
+    required this.onEdit,
     required this.onToggle,
     required this.onDelete,
   });
 
   final RecurringRule rule;
+  final VoidCallback onEdit;
   final ValueChanged<bool> onToggle;
   final VoidCallback onDelete;
 
@@ -1291,9 +1305,11 @@ class _RecurringRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final category = TxCategories.byId(rule.categoryId);
     final fmt = DateFormat('M月d日', 'zh_CN');
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(kSpace4, kSpace2, kSpace2, kSpace2),
-      child: Row(
+    return InkWell(
+      onTap: onEdit,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(kSpace4, kSpace2, kSpace2, kSpace2),
+        child: Row(
         children: [
           Container(
             width: 36,
@@ -1331,6 +1347,229 @@ class _RecurringRow extends StatelessWidget {
                 size: 20, color: kDanger),
           ),
         ],
+      ),
+    )
+    );
+  }
+}
+
+class _RecurringEditSheet extends StatefulWidget {
+  const _RecurringEditSheet({required this.initial, required this.onSave});
+
+  final RecurringRule initial;
+  final ValueChanged<RecurringRule> onSave;
+
+  @override
+  State<_RecurringEditSheet> createState() => _RecurringEditSheetState();
+}
+
+class _RecurringEditSheetState extends State<_RecurringEditSheet> {
+  late final TextEditingController _amountCtrl;
+  late final TextEditingController _noteCtrl;
+  late String _categoryId;
+  late String _accountId;
+  late RecurFrequency _frequency;
+  late DateTime _nextDate;
+
+  TxType get _type => widget.initial.type;
+
+  @override
+  void initState() {
+    super.initState();
+    _amountCtrl = TextEditingController(
+        text: (widget.initial.amount / 100).toStringAsFixed(2));
+    _noteCtrl = TextEditingController(text: widget.initial.note);
+    _categoryId = widget.initial.categoryId;
+    _accountId = widget.initial.accountId;
+    _frequency = widget.initial.frequency;
+    _nextDate = widget.initial.nextDate;
+  }
+
+  @override
+  void dispose() {
+    _amountCtrl.dispose();
+    _noteCtrl.dispose();
+    super.dispose();
+  }
+
+  int _parseAmount() {
+    final v = double.tryParse(_amountCtrl.text.trim());
+    if (v == null || v < 0) return 0;
+    return (v * 100).round();
+  }
+
+  Future<void> _pickNextDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _nextDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      helpText: '下次生成日期',
+      cancelText: '取消',
+      confirmText: '确定',
+    );
+    if (picked != null && mounted) {
+      setState(() => _nextDate = picked);
+    }
+  }
+
+  Widget _editChip(String label, bool selected, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(kRadiusTable),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: kSpace3, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? kAccentSoft : const Color(0xFFF0F1EF),
+          borderRadius: BorderRadius.circular(kRadiusTable),
+          border:
+              selected ? Border.all(color: kAccentBlue, width: 1) : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: selected ? kAccentBlue : kInkPrimary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final categories = TxCategories.of(_type);
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: kSpace4,
+          right: kSpace4,
+          top: kSpace4,
+          bottom: MediaQuery.of(context).viewInsets.bottom + kSpace4,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('编辑周期规则',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+              const SizedBox(height: kSpace3),
+              TextField(
+                controller: _amountCtrl,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                    labelText: '金额（元）', isDense: true, prefixText: '¥ '),
+              ),
+              const SizedBox(height: kSpace3),
+              const Text('分类',
+                  style: TextStyle(fontSize: 12, color: kInkSecondary)),
+              const SizedBox(height: kSpace2),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (final c in categories)
+                      Padding(
+                        padding: const EdgeInsets.only(right: kSpace2),
+                        child: _editChip(c.name, _categoryId == c.id,
+                            () => setState(() => _categoryId = c.id)),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: kSpace3),
+              const Text('账户',
+                  style: TextStyle(fontSize: 12, color: kInkSecondary)),
+              const SizedBox(height: kSpace2),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (final a in kDefaultAccounts)
+                      Padding(
+                        padding: const EdgeInsets.only(right: kSpace2),
+                        child: _editChip(a.name, _accountId == a.id,
+                            () => setState(() => _accountId = a.id)),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: kSpace3),
+              const Text('频率',
+                  style: TextStyle(fontSize: 12, color: kInkSecondary)),
+              const SizedBox(height: kSpace2),
+              Row(
+                children: [
+                  for (final f in [
+                    RecurFrequency.weekly,
+                    RecurFrequency.monthly,
+                    RecurFrequency.yearly,
+                  ])
+                    Padding(
+                      padding: const EdgeInsets.only(right: kSpace2),
+                      child: _editChip(f.label, _frequency == f,
+                          () => setState(() => _frequency = f)),
+                    ),
+                ],
+              ),
+              const SizedBox(height: kSpace3),
+              InkWell(
+                onTap: _pickNextDate,
+                borderRadius: BorderRadius.circular(kRadiusTable),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.event_outlined,
+                          size: 18, color: kInkSecondary),
+                      const SizedBox(width: 6),
+                      Text(
+                        '下次：${DateFormat('yyyy年M月d日', 'zh_CN').format(_nextDate)}',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      const Icon(Icons.expand_more_rounded,
+                          size: 16, color: kInkSecondary),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: kSpace2),
+              TextField(
+                controller: _noteCtrl,
+                maxLength: 40,
+                decoration: const InputDecoration(
+                    labelText: '备注（可选）',
+                    counterText: '',
+                    isDense: true),
+              ),
+              const SizedBox(height: kSpace3),
+              FilledButton(
+                onPressed: () {
+                  final amount = _parseAmount();
+                  if (amount <= 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('请输入有效金额')),
+                    );
+                    return;
+                  }
+                  widget.onSave(widget.initial.copyWith(
+                    amount: amount,
+                    categoryId: _categoryId,
+                    accountId: _accountId,
+                    note: _noteCtrl.text.trim(),
+                    frequency: _frequency,
+                    nextDate: _nextDate,
+                  ));
+                  Navigator.of(context).pop();
+                },
+                child: const Text('保存'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

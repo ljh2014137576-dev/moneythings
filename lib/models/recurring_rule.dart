@@ -77,20 +77,25 @@ class RecurringRule {
   }
 
   RecurringRule copyWith({
+    int? amount,
+    String? categoryId,
+    String? accountId,
+    String? note,
     DateTime? nextDate,
+    RecurFrequency? frequency,
     bool? active,
   }) {
     return RecurringRule(
       id: id,
       type: type,
-      amount: amount,
-      categoryId: categoryId,
-      accountId: accountId,
+      amount: amount ?? this.amount,
+      categoryId: categoryId ?? this.categoryId,
+      accountId: accountId ?? this.accountId,
       transferToAccountId: transferToAccountId,
-      note: note,
+      note: note ?? this.note,
       date: date,
       nextDate: nextDate ?? this.nextDate,
-      frequency: frequency,
+      frequency: frequency ?? this.frequency,
       bookId: bookId,
       active: active ?? this.active,
     );

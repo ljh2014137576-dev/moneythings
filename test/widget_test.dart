@@ -2021,4 +2021,74 @@ void main() {
     expect(find.textContaining('每月 · 居住'), findsOneWidget);
     expect(find.textContaining('下次 9月1日'), findsOneWidget);
   });
+  test('周期规则 copyWith 支持编辑字段', () {
+    final r = RecurringRule(
+      id: 'cw1',
+      type: TxType.expense,
+      amount: 100000,
+      categoryId: 'home',
+      accountId: 'alipay',
+      note: '房租',
+      date: DateTime(2026, 8, 1),
+      nextDate: DateTime(2026, 9, 1),
+      frequency: RecurFrequency.monthly,
+    );
+    final edited = r.copyWith(
+      amount: 500,
+      categoryId: 'food',
+      frequency: RecurFrequency.weekly,
+      nextDate: DateTime(2026, 9, 8),
+    );
+    expect(edited.id, r.id);
+    expect(edited.amount, 500);
+    expect(edited.categoryId, 'food');
+    expect(edited.frequency, RecurFrequency.weekly);
+    expect(edited.nextDate, DateTime(2026, 9, 8));
+  });
+
+  testWidgets('编辑周期规则保存生效', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addRecurringRule(RecurringRule(
+      id: 'er1',
+      type: TxType.expense,
+      amount: 100000,
+      categoryId: 'home',
+      accountId: 'alipay',
+      note: '房租',
+      date: DateTime(2026, 8, 1),
+      nextDate: DateTime(2026, 9, 1),
+      frequency: RecurFrequency.monthly,
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    // 滚动到周期记账区块并点击规则行
+    await tester.scrollUntilVisible(
+      find.textContaining('每月 · 居住'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.textContaining('每月 · 居住'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('每月 · 居住'));
+    await tester.pumpAndSettle();
+    expect(find.text('编辑周期规则'), findsOneWidget);
+    // 改金额 2000 元、频率改为每年
+    await tester.enterText(
+        find.widgetWithText(TextField, '金额（元）'), '2000');
+    await tester.tap(find.text('每年'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('保存'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+    expect(state.recurringRules.first.amount, 200000);
+    expect(state.recurringRules.first.frequency, RecurFrequency.yearly);
+    expect(state.recurringRules.first.note, '房租');
+  });
 }
