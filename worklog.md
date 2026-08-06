@@ -344,3 +344,16 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 47/47；release APK 构建+签名校验。
 - 遇到的问题与解决方案：R8 Java heap OOM（30 分钟构建失败）→ jvmargs 提至 -Xmx12G 后 79s 构建成功；测试被保存 SnackBar 遮挡点击 → 显式 clearSnackBars。
 - 下一步：用户注册 Play 账号后按 `RELEASE.md` + `SMOKE_TEST.md` 上架；真机确认系统通知与定时提醒。
+
+## 2026-08-07 19:00 — 迭代 v2.9：年度对比 + 导入错误详情
+
+- 任务内容：
+  - A. 统计「年度对比」：`AppState.yearComparison(year)` 逐月支出今年 vs 去年；统计页新增分组柱状图（今年=黑、去年=灰、图例+悬停提示）。
+  - B. 导入预览错误详情：CSV 导入预览弹窗在存在错误行时展示前 3 条错误示例（红字）。
+- 修改文件：
+  - `lib/data/app_state.dart`、`lib/pages/stats_page.dart`、`lib/pages/profile_page.dart`
+  - `test/widget_test.dart`（48 测试）、`screenshots/33-year-compare.png`
+- commit hash：`f6d9664`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 48/48（年度对比月份/金额、导入预览错误）；web 实测年度对比图渲染，零控制台错误。
+- 遇到的问题与解决方案：yearComparison 插入时嵌套进 recentBalanceSeries → 括号深度定位修复。
+- 下一步计划：上架执行（RELEASE.md）、真机通知冒烟（SMOKE_TEST.md）、深色模式评估。
