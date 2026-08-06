@@ -1782,4 +1782,55 @@ void main() {
     expect(find.textContaining('流水A'), findsOneWidget);
     expect(find.textContaining('流水B'), findsNothing);
   });
+  testWidgets('统计柱状图查看当日流水', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'dd1',
+      type: TxType.expense,
+      amount: 1000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 5),
+      note: '当天午餐',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'dd2',
+      type: TxType.expense,
+      amount: 2000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 5),
+      note: '当天晚餐',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'dd3',
+      type: TxType.expense,
+      amount: 500,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 10),
+      note: '其他日',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('统计'));
+    await tester.pumpAndSettle();
+    // 滚动到每日图表 caption 的「查看流水」入口
+    await tester.scrollUntilVisible(
+      find.text('查看流水'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('查看流水'));
+    await tester.pumpAndSettle();
+    // 默认选中支出最高的一天（5 日）：弹层显示当日两笔，不含其他日
+    expect(find.textContaining('当天午餐'), findsOneWidget);
+    expect(find.textContaining('当天晚餐'), findsOneWidget);
+    expect(find.textContaining('其他日'), findsNothing);
+  });
 }

@@ -9,7 +9,9 @@ import 'package:provider/provider.dart';
 import '../data/app_state.dart';
 import '../models/transaction.dart';
 import 'ledger_page.dart';
+import 'add_transaction_page.dart';
 import '../theme/app_colors.dart';
+import '../widgets/transaction_tile.dart';
 import '../widgets/amount_text.dart';
 import '../widgets/category_ranking.dart';
 import '../widgets/month_selector.dart';
@@ -34,6 +36,129 @@ class _StatsPageState extends State<StatsPage> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => LedgerPage(initialCategoryId: category.id),
+      ),
+    );
+  }
+
+  Future<void> _showSelectionDay() async {
+    final day = _selectedDay + 1;
+    if (day < 1) return;
+    final date = DateTime(_month.year, _month.month, day);
+    final txs = context
+        .read<AppState>()
+        .ofMonth(_month)
+        .where((t) =>
+            t.date.year == date.year &&
+            t.date.month == date.month &&
+            t.date.day == date.day)
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    await _showTransactionsSheet(date, txs);
+  }
+
+  Future<void> _showSelectionWeekly() async {
+    final week = _selectedWeek;
+    if (week < 0) return;
+    final last = DateTime(_month.year, _month.month + 1, 0).day;
+    final startDay = week * 7 + 1;
+    final endDay = startDay + 6 > last ? last : startDay + 6;
+    final txs = context
+        .read<AppState>()
+        .ofMonth(_month)
+        .where((t) => t.date.day >= startDay && t.date.day <= endDay)
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    await _showTransactionsSheet(DateTime(_month.year, _month.month, startDay), txs);
+  }
+
+  Future<void> _showTransactionsSheet(
+      DateTime date, List<Transaction> txs) async {
+    int exp = 0, inc = 0;
+    for (final t in txs) {
+      if (t.type == TxType.expense) {
+        exp += t.amount;
+      } else if (t.type == TxType.income) {
+        inc += t.amount;
+      }
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  kSpace4, kSpace4, kSpace4, kSpace2),
+              child: Row(
+                children: [
+                  Text(
+                    DateFormat('M月d日 EEEE', 'zh_CN').format(date),
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(width: kSpace2),
+                  Text('${txs.length} 笔',
+                      style: const TextStyle(
+                          fontSize: 12, color: kInkSecondary)),
+                  const Spacer(),
+                  if (exp > 0)
+                    Text('支出 ${AmountText.format(exp, showSymbol: false)}',
+                        style: const TextStyle(
+                            fontSize: 12, color: kInkSecondary)),
+                  if (exp > 0 && inc > 0)
+                    const Text(' · ',
+                        style: TextStyle(fontSize: 12)),
+                  if (inc > 0)
+                    Text('收入 ${AmountText.format(inc, showSymbol: false)}',
+                        style: const TextStyle(
+                            fontSize: 12, color: kSuccess)),
+                ],
+              ),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                child: txs.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: kSpace6),
+                        child: Text('当日暂无流水',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                fontSize: 13, color: kInkSecondary)),
+                      )
+                    : Container(
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: kPagePadding),
+                        decoration: BoxDecoration(
+                          color: kPaperSurface,
+                          borderRadius: BorderRadius.circular(kRadiusTable),
+                          border: Border.all(
+                              color: kDividerDefault, width: 1),
+                        ),
+                        child: Column(
+                          children: [
+                            for (final t in txs)
+                              TransactionTile(
+                                transaction: t,
+                                onTap: () {
+                                  Navigator.of(sheetContext).pop();
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          AddTransactionPage(editing: t),
+                                    ),
+                                  );
+                                },
+                              ),
+                          ],
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(height: kSpace3),
+          ],
+        ),
       ),
     );
   }
@@ -639,7 +764,10 @@ class _StatsPageState extends State<StatsPage> {
         children: [
           _buildSelectionCaption(
               useIncome ? incomeSeries : seriesCents,
-              weekly: weekly),
+              weekly: weekly,
+              onView: useWeekly
+                  ? _showSelectionWeekly
+                  : _showSelectionDay),
           const SizedBox(height: kSpace3),
           SizedBox(
             height: 200,
@@ -782,6 +910,7 @@ class _StatsPageState extends State<StatsPage> {
   Widget _buildSelectionCaption(
     List<int> series, {
     required List<({String label, int amount})> weekly,
+    VoidCallback? onView,
   }) {
     if (_weekly && weekly.isNotEmpty) {
       if (_selectedWeek < 0 || _selectedWeek >= weekly.length) {
@@ -795,6 +924,7 @@ class _StatsPageState extends State<StatsPage> {
           const Spacer(),
           AmountText(weekly[_selectedWeek].amount,
               size: 18, weight: FontWeight.w700, color: kAccentBlue),
+          if (onView != null) _viewHint(onView),
         ],
       );
     }
@@ -815,7 +945,27 @@ class _StatsPageState extends State<StatsPage> {
         const Spacer(),
         AmountText(series[_selectedDay],
             size: 18, weight: FontWeight.w700, color: kAccentBlue),
+        if (onView != null) _viewHint(onView),
       ],
+    );
+  }
+
+  Widget _viewHint(VoidCallback onTap) {
+    return Padding(
+      padding: const EdgeInsets.only(left: kSpace3),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(kRadiusTable),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('查看流水',
+                style: TextStyle(fontSize: 12, color: kAccentBlue)),
+            Icon(Icons.chevron_right_rounded,
+                size: 16, color: kAccentBlue),
+          ],
+        ),
+      ),
     );
   }
 
