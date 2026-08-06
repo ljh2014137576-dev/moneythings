@@ -520,3 +520,33 @@
   1. PowerShell 5.1 `Set-Content -Encoding utf8` 给 pubspec 加了 BOM 且把中文注释按 ANSI 读成乱码 → `git checkout` 还原后用 UTF-8 无 BOM 显式读写只改版本行；README/RELEASE/CHECKLIST 的 BOM 也一并剥离。
   2. 行级替换误删 `_groupByDay` 方法体 → 先还原区域再按行插入重建，`flutter analyze` 确认结构。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-08 09:00 — 迭代 v4.1：账户转账 + 版本号 4.1.0 + 最终 release
+
+- 任务内容：
+  - 新增「账户转账」核心功能：记一笔支持 支出/收入/转账 三态；转账模式选转出/转入账户 + 金额 + 日期 + 备注，隐藏分类，提示「转账仅调整账户余额，不计入收支统计」；转出=转入账户时拦截。
+  - 数据层：`TxType.transfer`、`Transaction.transferToAccountId`（JSON 持久化，旧数据兼容）；`summaryOf`/`weekSummary` 转账不计收支；`balanceOf` 转出账户扣款、转入账户入账，总资产不变。
+  - 展示层：流水行转账样式（swap 图标、标题「转账」、副标题「A → B」、金额无 +/-）；明细合计/日分组不计转账；分类对话框排除转账。
+  - CSV：导出新增「转入账户」列（类型=转账）；导入解析转账行、校验转出≠转入、指纹含转入账户。
+  - 测试：新增 4 项（余额双向变动与总资产不变/CSV 转账往返/明细页转账显示且不计入合计/记一笔转账模式 UI），63/63 通过。
+  - web 冒烟：记一笔转账模式 → 保存 ¥88（支付宝→现金）→ 明细「转账 支付宝 → 现金 ¥88.00」；首页收支/结余/总资产不变；我的账户 支付宝 -2949→-3037、现金 0→88；零控制台错误。截图 44/45。
+  - 版本号 4.1.0+41；README/RELEASE/CHECKLIST 同步；最终 release 重建（53.7MB，SHA-256 `6DC7E48E...31BE`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/models/transaction.dart`（TxType.transfer + transferToAccountId + TxCategories 适配）
+  - `lib/data/app_state.dart`（summaryOf/weekSummary/balanceOf 转账处理）
+  - `lib/pages/add_transaction_page.dart`（转账模式 UI/校验/保存/复制上一条）
+  - `lib/pages/ledger_page.dart`（合计与日分组不计转账）
+  - `lib/widgets/transaction_tile.dart`（转账行样式）
+  - `lib/widgets/category_dialog.dart`（类型切换排除转账）
+  - `lib/services/csv_exporter.dart`、`csv_importer.dart`（转账列往返）
+  - `lib/pages/profile_page.dart`（关于：4.1.0 + 更新日志）
+  - `pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/44-transfer-add.png`、`45-transfer-ledger.png`（新增）
+- commit hash：`db69aca`；已 push（82f45e3..db69aca master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 63/63；release 构建 + apksigner 签名校验（CN=MoneyThings）；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：
+  1. Dart collection-if 的 `] else` 不允许换行（解析报 Expected ']'）→ 改为 `] else ...[` 同行写法。
+  2. PS 5.1 正则/行尾陷阱：`-match` 含括号与 `\r\n` 不匹配 → 改用 `[System.IO.File]::ReadAllText/WriteAllText` + `.Replace()`（注意文件行尾 LF vs CRLF 差异）。
+  3. 测试插入定位错（原文件尾有空行）把新测试放到 main() 外 → 以 `git show HEAD:` 为基准重建，插到末尾 `}` 之前。
+  4. `build/` 下临时文件被 analyze 扫描 → 写为 `// temp` 中和（build/ 不入库）。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
