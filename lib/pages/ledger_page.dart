@@ -29,6 +29,8 @@ class _LedgerPageState extends State<LedgerPage> {
   _Filter _filter = _Filter.all;
   final _searchController = TextEditingController();
   String _query = '';
+  DateTime? _rangeStart;
+  DateTime? _rangeEnd;
 
   @override
   void initState() {
@@ -44,12 +46,20 @@ class _LedgerPageState extends State<LedgerPage> {
   }
 
   List<Transaction> _visible(List<Transaction> all) {
-    final byType = switch (_filter) {
+    var byType = switch (_filter) {
       _Filter.all => all,
       _Filter.expense =>
         all.where((t) => t.type == TxType.expense).toList(),
       _Filter.income => all.where((t) => t.type == TxType.income).toList(),
     };
+    if (_rangeStart != null || _rangeEnd != null) {
+      final s = _rangeStart ?? DateTime(2000);
+      final e = _rangeEnd ?? DateTime(2100);
+      byType = [
+        for (final t in byType)
+          if (!t.date.isBefore(s) && !t.date.isAfter(e)) t,
+      ];
+    }
     if (_query.isEmpty) return byType;
     final q = _query.toLowerCase();
     return [
@@ -111,6 +121,8 @@ class _LedgerPageState extends State<LedgerPage> {
                 const SizedBox(height: kSpace3),
                 _buildSearchField(),
                 _buildFilterRow(),
+                const SizedBox(height: kSpace3),
+                _buildRangeRow(),
               ],
             ),
           ),
@@ -192,6 +204,82 @@ class _LedgerPageState extends State<LedgerPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildRangeRow() {
+    final hasRange = _rangeStart != null || _rangeEnd != null;
+    final fmt = DateFormat('M月d日', 'zh_CN');
+    final label = hasRange
+        ? '${fmt.format(_rangeStart!)} ~ ${fmt.format(_rangeEnd!)}'
+        : '全部日期';
+    return Row(
+      children: [
+        InkWell(
+          onTap: _showRangeSheet,
+          borderRadius: BorderRadius.circular(kRadiusTable),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                const Icon(Icons.date_range_outlined,
+                    size: 18, color: kInkSecondary),
+                const SizedBox(width: 6),
+                Text('日期：$label',
+                    style: const TextStyle(
+                        fontSize: 13, color: kInkPrimary)),
+                const Icon(Icons.expand_more_rounded,
+                    size: 16, color: kInkSecondary),
+              ],
+            ),
+          ),
+        ),
+        if (hasRange)
+          TextButton(
+            onPressed: () => setState(() {
+              _rangeStart = null;
+              _rangeEnd = null;
+            }),
+            style: TextButton.styleFrom(
+              minimumSize: const Size(48, 32),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            child: const Text('清除',
+                style: TextStyle(fontSize: 13, color: kAccentBlue)),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _showRangeSheet() async {
+    final now = DateTime.now();
+    final start = _rangeStart ?? DateTime(now.year, now.month, 1);
+    final end = _rangeEnd ?? now;
+    final pickedStart = await showDatePicker(
+      context: context,
+      initialDate: start,
+      firstDate: DateTime(2000),
+      lastDate: now,
+      helpText: '选择开始日期',
+      cancelText: '取消',
+      confirmText: '确定',
+    );
+    if (pickedStart == null || !mounted) return;
+    final pickedEnd = await showDatePicker(
+      context: context,
+      initialDate: pickedStart.isAfter(end) ? pickedStart : end,
+      firstDate: pickedStart,
+      lastDate: now,
+      helpText: '选择结束日期',
+      cancelText: '取消',
+      confirmText: '确定',
+    );
+    if (pickedEnd == null || !mounted) return;
+    setState(() {
+      _rangeStart =
+          DateTime(pickedStart.year, pickedStart.month, pickedStart.day);
+      _rangeEnd =
+          DateTime(pickedEnd.year, pickedEnd.month, pickedEnd.day);
+    });
   }
 
   Widget _buildFilterRow() {

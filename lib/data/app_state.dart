@@ -24,7 +24,7 @@ class AppState extends ChangeNotifier {
   final TransactionRepository _repository;
 
   List<Transaction> _transactions = [];
-  int _monthlyBudget = 0;
+  Map<String, int> _bookBudgets = {};
   List<TxCategory> _customCategories = [];
   List<Account> _accounts = kDefaultAccounts;
   List<Book> _books = [kDefaultBook];
@@ -52,13 +52,13 @@ class AppState extends ChangeNotifier {
 
   /// 当前账本的流水（用于导出）
   List<Transaction> get currentBookTransactions => _bookTx;
-  int get monthlyBudget => _monthlyBudget;
+  int get monthlyBudget => _bookBudgets[_currentBookId] ?? 0;
   bool get loaded => _loaded;
 
   Future<void> load() async {
     await _repository.seedIfFirstLaunch();
     _transactions = await _repository.loadTransactions();
-    _monthlyBudget = await _repository.loadBudget();
+    _bookBudgets = await _repository.loadBookBudgets();
     _customCategories = await _repository.loadCustomCategories();
     _accounts = await _repository.loadAccounts();
     _books = await _repository.loadBooks();
@@ -99,8 +99,8 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> setBudget(int cents) async {
-    _monthlyBudget = cents;
-    await _repository.saveBudget(cents);
+    _bookBudgets = {..._bookBudgets, _currentBookId: cents};
+    await _repository.saveBookBudgets(_bookBudgets);
     notifyListeners();
   }
 
@@ -323,6 +323,8 @@ class AppState extends ChangeNotifier {
     ];
     if (_currentBookId == id) _currentBookId = kDefaultBook.id;
     await _repository.saveBooks(_books);
+    _bookBudgets = {..._bookBudgets}..remove(id);
+    await _repository.saveBookBudgets(_bookBudgets);
     await _repository.saveCurrentBookId(_currentBookId);
     await _persist();
     notifyListeners();

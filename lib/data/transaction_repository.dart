@@ -19,6 +19,7 @@ class TransactionRepository {
   static const String _kOnboardedKey = 'onboarded_v1';
   static const String _kBooksKey = 'books_v1';
   static const String _kCurrentBookKey = 'current_book_v1';
+  static const String _kBookBudgetsKey = 'book_budgets_v1';
 
   Future<List<Transaction>> loadTransactions() async {
     final prefs = await SharedPreferences.getInstance();
@@ -45,6 +46,34 @@ class TransactionRepository {
   Future<int> loadBudget() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_kBudgetKey) ?? 0;
+  }
+
+  Future<Map<String, int>> loadBookBudgets() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kBookBudgetsKey);
+    final map = <String, int>{};
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw) as Map<String, dynamic>;
+        for (final e in decoded.entries) {
+          map[e.key] = (e.value as num).toInt();
+        }
+      } catch (_) {}
+    }
+    // 兼容旧版单一预算（归入默认账本）
+    final legacy = prefs.getInt(_kBudgetKey);
+    if (legacy != null && legacy > 0 && !map.containsKey(kDefaultBook.id)) {
+      map[kDefaultBook.id] = legacy;
+    }
+    return map;
+  }
+
+  Future<void> saveBookBudgets(Map<String, int> budgets) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _kBookBudgetsKey,
+      jsonEncode(budgets),
+    );
   }
 
   Future<void> saveBudget(int cents) async {

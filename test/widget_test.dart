@@ -621,6 +621,84 @@ void main() {
     expect(find.text('¥1,000.00'), findsNothing);
     expect(find.text('¥0.00'), findsWidgets);
   });
+
+  test('预算按账本独立', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.setBudget(100000); // 默认账本 ¥1000
+    expect(state.monthlyBudget, 100000);
+
+    await state.addBook('工作');
+    final work = state.books.firstWhere((b) => b.name == '工作');
+    await state.setCurrentBook(work.id);
+    expect(state.monthlyBudget, 0);
+    await state.setBudget(200000); // 工作账本 ¥2000
+    expect(state.monthlyBudget, 200000);
+
+    await state.setCurrentBook('default');
+    expect(state.monthlyBudget, 100000);
+
+    // 重启持久化
+    final state2 = AppState();
+    await state2.load();
+    expect(state2.monthlyBudget, 100000);
+    await state2.setCurrentBook(work.id);
+    expect(state2.monthlyBudget, 200000);
+
+    // 删除账本后预算清理
+    await state2.removeBook(work.id);
+    await state2.setCurrentBook('default');
+    expect(state2.monthlyBudget, 100000);
+  });
+
+  testWidgets('明细日期范围筛选入口与清除', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'r1',
+      type: TxType.expense,
+      amount: 1100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 1),
+      note: '一号',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'r2',
+      type: TxType.expense,
+      amount: 2200,
+      categoryId: 'transport',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '今天',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    expect(find.text('日期：全部日期'), findsOneWidget);
+
+    // 打开范围：两次确定（1 号 ~ 今天）
+    await tester.tap(find.textContaining('日期：'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('确定'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('确定'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('~ '), findsOneWidget);
+    expect(find.textContaining('一号'), findsWidgets);
+    expect(find.textContaining('今天'), findsWidgets);
+
+    // 清除范围
+    await tester.tap(find.text('清除'));
+    await tester.pumpAndSettle();
+    expect(find.text('日期：全部日期'), findsOneWidget);
+  });
 }
 
 
