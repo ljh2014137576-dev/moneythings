@@ -6,6 +6,7 @@ import 'package:moneythings_goal/models/transaction.dart';
 import 'package:moneythings_goal/services/csv_exporter.dart';
 import 'package:moneythings_goal/services/csv_importer.dart';
 import 'package:moneythings_goal/widgets/amount_text.dart';
+import 'package:moneythings_goal/widgets/transaction_tile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -93,7 +94,7 @@ void main() {
     });
   });
 
-  test('CsvExporter 生成 CSV（含转义）', () {
+  test('CsvExporter 生成 CSV（含账本列与转义）', () {
     final txs = [
       Transaction(
         id: 'a',
@@ -111,13 +112,17 @@ void main() {
         categoryId: 'salary',
         accountId: 'card',
         date: DateTime(2026, 8, 10, 9, 0),
+        bookId: 'b_work',
       ),
     ];
-    final csv = CsvExporter.exportCsv(txs);
+    final csv = CsvExporter.exportCsv(
+      txs,
+      bookNames: {'b_work': '工作'},
+    );
     expect(csv, startsWith('\uFEFF'));
-    expect(csv, contains('日期,类型,分类,金额(元),账户,备注'));
-    expect(csv, contains('2026-08-06 12:30,支出,餐饮,1234.56,支付宝,"午饭,咖啡"'));
-    expect(csv, contains('2026-08-10 09:00,收入,工资,5.00,银行卡,'));
+    expect(csv, contains('日期,类型,分类,金额(元),账户,账本,备注'));
+    expect(csv, contains('2026-08-06 12:30,支出,餐饮,1234.56,支付宝,default,"午饭,咖啡"'));
+    expect(csv, contains('2026-08-10 09:00,收入,工资,5.00,银行卡,工作,'));
   });
 
   testWidgets('记一笔 -> 明细 -> 编辑 -> 删除 全流程', (tester) async {
@@ -140,7 +145,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('¥42.00'), findsWidgets);
 
-    await tester.tap(find.text('¥42.00').first);
+    await tester.tap(find.byType(TransactionTile).first);
     await tester.pumpAndSettle();
     expect(find.text('编辑账目'), findsOneWidget);
 

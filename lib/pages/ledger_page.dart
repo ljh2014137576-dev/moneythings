@@ -77,6 +77,14 @@ class _LedgerPageState extends State<LedgerPage> {
     final monthTx = state.ofMonth(_month);
     final visible = _visible(monthTx);
     final groups = _groupByDay(visible);
+    int sumExpense = 0, sumIncome = 0;
+    for (final t in visible) {
+      if (t.type == TxType.expense) {
+        sumExpense += t.amount;
+      } else {
+        sumIncome += t.amount;
+      }
+    }
 
     return SafeArea(
       bottom: false,
@@ -107,6 +115,16 @@ class _LedgerPageState extends State<LedgerPage> {
             ),
           ),
           const SizedBox(height: kSpace3),
+          if (visible.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  kPagePadding, 0, kPagePadding, kSpace2),
+              child: _LedgerSummary(
+                count: visible.length,
+                expense: sumExpense,
+                income: sumIncome,
+              ),
+            ),
           Expanded(
             child: (monthTx.isEmpty || (visible.isEmpty && _query.isNotEmpty))
                 ? EmptyState(
@@ -344,3 +362,53 @@ class _DayGroup extends StatelessWidget {
   }
 }
 
+ 
+class _LedgerSummary extends StatelessWidget {
+  const _LedgerSummary({
+    required this.count,
+    required this.expense,
+    required this.income,
+  });
+
+  final int count;
+  final int expense;
+  final int income;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: kSpace4, vertical: kSpace2),
+      decoration: BoxDecoration(
+        color: kPaperSurface,
+        border: Border.all(color: kDividerDefault, width: 1),
+        borderRadius: BorderRadius.circular(kRadiusTable),
+      ),
+      child: Row(
+        children: [
+          Text('共 $count 笔',
+              style: const TextStyle(
+                  fontSize: 12, color: kInkSecondary)),
+          const Spacer(),
+          if (expense > 0) ...[
+            const Text('支出 ',
+                style: TextStyle(fontSize: 12, color: kInkSecondary)),
+            AmountText(expense,
+                size: 13, weight: FontWeight.w600, color: kInkPrimary),
+          ],
+          if (expense > 0 && income > 0)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: kSpace2),
+              child: Text('·',
+                  style: TextStyle(fontSize: 12, color: kInkSecondary)),
+            ),
+          if (income > 0) ...[
+            const Text('收入 ',
+                style: TextStyle(fontSize: 12, color: kInkSecondary)),
+            AmountText(income,
+                size: 13, weight: FontWeight.w600, color: kSuccess),
+          ],
+        ],
+      ),
+    );
+  }
+}

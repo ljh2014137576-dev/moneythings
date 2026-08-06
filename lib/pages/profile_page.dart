@@ -86,15 +86,19 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _exportCsv() async {
     final state = context.read<AppState>();
-    if (state.transactions.isEmpty) {
+    final txs = state.currentBookTransactions;
+    if (txs.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('暂无数据可导出')),
+        const SnackBar(content: Text('当前账本暂无数据可导出')),
       );
       return;
     }
     final now = DateTime.now();
     final stamp = '${now.year}${_p2(now.month)}${_p2(now.day)}';
-    final csv = CsvExporter.exportCsv(state.transactions);
+    final csv = CsvExporter.exportCsv(
+      txs,
+      bookNames: {for (final b in state.books) b.id: b.name},
+    );
     try {
       final where = await exportCsvFile(
         csv,
@@ -102,7 +106,7 @@ class _ProfilePageState extends State<ProfilePage> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已导出 ${state.transactions.length} 条流水 → $where')),
+          SnackBar(content: Text('已导出 ${txs.length} 条流水 → $where')),
         );
       }
     } catch (e) {

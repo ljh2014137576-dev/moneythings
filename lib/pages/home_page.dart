@@ -351,6 +351,7 @@ class _BudgetBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final ratio = budget <= 0 ? 0.0 : (spent / budget).clamp(0.0, 1.0);
     final over = spent > budget;
+    final nearLimit = !over && ratio >= 0.8;
     final color = over ? kDanger : kInkPrimary;
     return InkWell(
       onTap: () async {
@@ -398,7 +399,9 @@ class _BudgetBar extends StatelessWidget {
           Text(
             over
                 ? '已超出预算 ¥${AmountText.format(spent - budget, showSymbol: false)}'
-                : '剩余 ¥${AmountText.format(remaining, showSymbol: false)} · 日均可用 ¥${AmountText.format(daily, showSymbol: false)}',
+                : nearLimit
+                    ? '已用 ${(ratio * 100).round()}%，注意控制'
+                    : '剩余 ¥${AmountText.format(remaining, showSymbol: false)} · 日均可用 ¥${AmountText.format(daily, showSymbol: false)}',
             style: TextStyle(
                 fontSize: 11, color: over ? kDanger : kInkDisabled),
           ),

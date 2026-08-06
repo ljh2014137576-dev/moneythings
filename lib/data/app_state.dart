@@ -46,8 +46,12 @@ class AppState extends ChangeNotifier {
     for (final b in _books) {
       if (b.id == _currentBookId) return b;
     }
+
     return kDefaultBook;
   }
+
+  /// 当前账本的流水（用于导出）
+  List<Transaction> get currentBookTransactions => _bookTx;
   int get monthlyBudget => _monthlyBudget;
   bool get loaded => _loaded;
 
