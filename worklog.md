@@ -357,3 +357,16 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 48/48（年度对比月份/金额、导入预览错误）；web 实测年度对比图渲染，零控制台错误。
 - 遇到的问题与解决方案：yearComparison 插入时嵌套进 recentBalanceSeries → 括号深度定位修复。
 - 下一步计划：上架执行（RELEASE.md）、真机通知冒烟（SMOKE_TEST.md）、深色模式评估。
+
+## 2026-08-07 20:00 — 迭代 v3.0：JSON 备份写文件分享 + 本月小结
+
+- 任务内容：
+  - A. JSON 备份改进：导出服务新增通用 `exportFile`（移动端写文件+系统分享，web 剪贴板）；备份从「复制到剪贴板」改为「写文件并分享」。
+  - B. 可复制的「本月小结」：`AppState.monthSummaryText` 生成月报（收入/支出/结余/笔数/日均/支出最多）；「我的→数据」新增入口，弹窗展示并可一键复制。
+- 修改文件：
+  - `lib/services/export_io.dart`、`export_web.dart`、`export_target.dart`、`lib/data/app_state.dart`、`lib/pages/profile_page.dart`
+  - `test/widget_test.dart`（49 测试）、`screenshots/34-month-summary.png`
+- commit hash：`952328c`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 49/49（月报文本内容）；web 实测月小结弹窗（收入/支出/结余/笔数/日均/支出最多 + 复制按钮），零控制台错误。
+- 遇到的问题与解决方案：JS 模板 `\${` 转义成字面量 → 修正；插入方法时双 `}}` 导致类提前闭合 → 括号深度定位修复。
+- 下一步计划：上架执行（RELEASE.md）、真机通知冒烟（SMOKE_TEST.md）、深色模式评估。
