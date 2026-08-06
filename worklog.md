@@ -370,3 +370,16 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 49/49（月报文本内容）；web 实测月小结弹窗（收入/支出/结余/笔数/日均/支出最多 + 复制按钮），零控制台错误。
 - 遇到的问题与解决方案：JS 模板 `\${` 转义成字面量 → 修正；插入方法时双 `}}` 导致类提前闭合 → 括号深度定位修复。
 - 下一步计划：上架执行（RELEASE.md）、真机通知冒烟（SMOKE_TEST.md）、深色模式评估。
+
+## 2026-08-07 21:00 — 迭代 v3.1：明细多选批量删除 + 版本号 3.0.0
+
+- 任务内容：
+  - B. 明细多选批量删除：长按流水 → 菜单「多选删除」→ 固定选择栏（已选 N 项/全选/删除/取消），选中行高亮，批量删除确认后退出多选。
+  - A. 版本号同步：pubspec `3.0.0+30`；「关于」版本 3.0.0；更新日志补 v3.0/v2.9/v2.6。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`、`lib/widgets/transaction_tile.dart`、`lib/pages/profile_page.dart`、`pubspec.yaml`
+  - `test/widget_test.dart`（50 测试）、`screenshots/35-multiselect.png`
+- commit hash：`9cc740f`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 50/50（多选删除全流程）；web 实测长按→多选→全选 18 项→删除→退出多选，零控制台错误。
+- 遇到的问题与解决方案：选择栏最初放滚动头部导致被滚出屏幕 → 改为固定栏；TransactionTile 括号错位/选择块插错 → 括号深度与行定位修复；测试行被底部导航遮挡 → 改用「全选」+ 修正断言。
+- 下一步计划：上架执行（RELEASE.md）、真机通知冒烟（SMOKE_TEST.md）、深色模式评估。
