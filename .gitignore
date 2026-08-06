@@ -50,3 +50,6 @@ app.*.map.json
 .web*.log
 .web*.err
 screenshots/.gitkeep
+
+# Java 堆转储 / 构建垃圾
+*.hprof

@@ -135,7 +135,7 @@ class _StatsPageState extends State<StatsPage> {
               color: kInkPrimary,
               subtitle: delta == 0
                   ? '与上月持平'
-                  : '较上月 ${delta > 0 ? '+' : ''}${AmountText.format(delta.abs(), showSymbol: false)}',
+                  : '较上月 ${delta > 0 ? '+' : '-'}${AmountText.format(delta.abs(), showSymbol: false)}',
               subtitleColor: delta > 0 ? kDanger : kSuccess,
             ),
             const _VSep(),
