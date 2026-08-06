@@ -185,3 +185,17 @@
   1. PowerShell 双引号 `${...}` 展开损坏 Dart 插值 → 统一用 node 单引号字符串/反引号转义写入，整体重写小文件。
   2. 多次行拼接误伤文件 → 每次改完立即 analyze 验证。
 - 下一步计划：本地预算预警通知（系统通知）、深色模式、商店素材排版、上架。
+
+## 2026-08-07 08:00 — 迭代 v1.8：预算按账本 / 日期范围筛选 / 商店横幅与上架清单
+
+- 任务内容：
+  - A. 预算按账本：`repository.loadBookBudgets/saveBookBudgets`（新 key `book_budgets_v1`，兼容旧单一预算归入默认账本）；`AppState._bookBudgets` 按账本存，`monthlyBudget` 读当前账本，`setBudget` 写当前账本，`removeBook` 清理对应预算；首页/我的预算条自动跟随当前账本。
+  - B. 明细日期范围筛选：明细页「日期：全部日期」入口，点开两次日期选择（开始/结束），应用后列表与合计条按范围过滤，可一键清除。
+  - C. 商店横幅 `screenshots/store/banner-1024x500.png`（暖灰底/黑字/蓝色强调/迷你柱状图）+ 上架清单 `CHECKLIST.md`（账号/素材/权限/隐私/自检/版本）。
+- 修改文件：
+  - `lib/data/transaction_repository.dart`、`lib/data/app_state.dart`、`lib/pages/ledger_page.dart`
+  - `screenshots/store/banner-1024x500.png`、`CHECKLIST.md`（新增）、`test/widget_test.dart`（29 测试）、`screenshots/14-date-range.png`
+- commit hash：`8bc8d1b`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 29/29（按账本预算独立/持久化/删除清理、日期范围入口与清除）；web 实测：明细「日期：全部日期」入口与日期选择器正常，零控制台错误。
+- 遇到的问题与解决方案：node splice 误传嵌套数组导致方法并成一行 → 改按元素传入；金额字体 FontStyle.SemiBold 不存在 → 用 Bold。
+- 下一步计划：本地预算预警系统通知、深色模式、商店上架（按 CHECKLIST 执行）。
