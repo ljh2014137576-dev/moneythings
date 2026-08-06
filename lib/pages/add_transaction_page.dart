@@ -1,4 +1,4 @@
-﻿/// 记一笔 / 编辑账目页
+/// 记一笔 / 编辑账目页
 library;
 
 import 'package:flutter/material.dart';
@@ -324,6 +324,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     const SizedBox(height: kSpace4),
                     _buildMetaRows(),
                     const SizedBox(height: kSpace4),
+                    _buildQuickNoteRow(),
+                    const SizedBox(height: kSpace2),
                     TextField(
                       controller: _noteController,
                       maxLength: 40,
@@ -660,6 +662,29 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               onTap: _pickAccount,
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickNoteRow() {
+    const presets = ['午餐', '晚餐', '早餐', '地铁', '打车', '超市', '房租', '水电', '话费', '咖啡'];
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final n in presets)
+            Padding(
+              padding: const EdgeInsets.only(right: kSpace2),
+              child: _QuickAmountChip(
+                label: n,
+                onTap: () {
+                  _noteController.text = n;
+                  _note = n;
+                  setState(() {});
+                },
+              ),
+            ),
         ],
       ),
     );

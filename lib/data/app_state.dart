@@ -1,4 +1,4 @@
-﻿/// 全局应用状态（ChangeNotifier + Provider）
+/// 全局应用状态（ChangeNotifier + Provider）
 library;
 
 import 'dart:convert';
@@ -500,6 +500,27 @@ Future<CsvImportResult> importCsv(String csv) async {
       }
     }
     return sum;
+  }
+
+  /// 某账户某月的支出/收入/笔数（仅当前账本）
+  ({int expense, int income, int count}) monthlySummaryOfAccount(
+      String accountId, DateTime month) {
+    int exp = 0, inc = 0, count = 0;
+    for (final t in _bookTx) {
+      if (t.accountId != accountId ||
+          t.date.year != month.year ||
+          t.date.month != month.month) {
+        continue;
+      }
+      if (t.type == TxType.expense) {
+        exp += t.amount;
+        count++;
+      } else if (t.type == TxType.income) {
+        inc += t.amount;
+        count++;
+      }
+    }
+    return (expense: exp, income: inc, count: count);
   }
 
   int get totalAssets {

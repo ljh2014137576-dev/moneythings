@@ -365,6 +365,8 @@ class _ProfilePageState extends State<ProfilePage> {
             _AccountRow(
               account: accounts[i],
               balance: state.balanceOf(accounts[i]),
+              month: state.monthlySummaryOfAccount(
+                  accounts[i].id, DateTime.now()),
               onTap: () => _accountMenu(accounts[i]),
             ),
           ],
@@ -809,7 +811,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.4.0',
+            Text('版本 4.5.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -818,7 +820,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.4 统计柱状图下钻当日流水\nv4.3 金额区间筛选 · 账户名搜索\nv4.2 明细分类筛选 · 统计下钻\nv4.1 账户转账 · 不计收支\nv4.0 明细金额排序 · 金额清除',
+            Text('v4.5 常用备注 · 账户月度收支\nv4.4 统计柱状图下钻当日流水\nv4.3 金额区间筛选 · 账户名搜索\nv4.2 明细分类筛选 · 统计下钻\nv4.1 账户转账 · 不计收支',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),
@@ -837,11 +839,13 @@ class _AccountRow extends StatelessWidget {
   const _AccountRow({
     required this.account,
     required this.balance,
+    required this.month,
     required this.onTap,
   });
 
   final Account account;
   final int balance;
+  final ({int expense, int income, int count}) month;
   final VoidCallback onTap;
 
   @override
@@ -864,9 +868,21 @@ class _AccountRow extends StatelessWidget {
             ),
             const SizedBox(width: kSpace3),
             Expanded(
-              child: Text(account.name,
-                  style: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w500)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(account.name,
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 2),
+                  Text(
+                    '本月支出 ${AmountText.format(month.expense, showSymbol: false)} · '
+                    '收入 ${AmountText.format(month.income, showSymbol: false)} · ${month.count} 笔',
+                    style: const TextStyle(
+                        fontSize: 11, color: kInkSecondary),
+                  ),
+                ],
+              ),
             ),
             AmountText(balance, size: 15, weight: FontWeight.w600),
           ],

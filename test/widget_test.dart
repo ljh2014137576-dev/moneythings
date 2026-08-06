@@ -1833,4 +1833,63 @@ void main() {
     expect(find.textContaining('当天晚餐'), findsOneWidget);
     expect(find.textContaining('其他日'), findsNothing);
   });
+  testWidgets('记一笔常用备注快捷填充', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('记一笔').first);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('午餐'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('午餐'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextField, '午餐'), findsOneWidget);
+  });
+
+  testWidgets('我的页账户显示本月支出/收入/笔数', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'p1',
+      type: TxType.expense,
+      amount: 1200,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 3),
+      note: '午饭',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'p2',
+      type: TxType.income,
+      amount: 5000,
+      categoryId: 'salary',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 5),
+      note: '工资',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'p3',
+      type: TxType.expense,
+      amount: 800,
+      categoryId: 'food',
+      accountId: 'wechat',
+      date: DateTime(now.year, now.month, 6),
+      note: '早餐',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    // 支付宝：本月支出 12.00 · 收入 50.00 · 2 笔
+    expect(find.textContaining('本月支出 12.00'), findsOneWidget);
+    expect(find.textContaining('收入 50.00'), findsOneWidget);
+    expect(find.textContaining('2 笔'), findsOneWidget);
+    // 微信：本月支出 8.00 · 1 笔
+    expect(find.textContaining('本月支出 8.00'), findsOneWidget);
+  });
 }
