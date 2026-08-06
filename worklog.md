@@ -317,3 +317,16 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 45/45（环图渲染、账户流水筛选隔离、日期预设/初始余额测试适配）；web 实测：环图、账户菜单与流水页、日期预设弹层，零控制台错误。
 - 遇到的问题与解决方案：JS 模板字面量中 `${}` 被插值 → 改用数组拼接写 Dart 插值；环图块插入位置挤进 PaperGroup → 括号/结构修正。
 - 下一步计划：上架执行（CHECKLIST）、真机通知冒烟、深色模式评估。
+
+## 2026-08-07 17:00 — 迭代 v2.7：记住上次账户 / 大字体无障碍
+
+- 任务内容：
+  - A. 记一笔记住上次账户：AppState 记录最近使用的账户（持久化 `last_account_v1`），记一笔页默认账户=上次账户（替代固定支付宝）。
+  - D. 大字体无障碍：明细页重构为单列表（头部随内容滚动）；合计条改 Wrap（大字体换行）；统计合计条去固定高度；新增「大字体 2.0x 无障碍冒烟」测试——四页面+记一笔在 2.0x 字号下逐页渲染无溢出。
+- 修改文件：
+  - `lib/data/transaction_repository.dart`、`lib/data/app_state.dart`、`lib/pages/add_transaction_page.dart`、`lib/pages/ledger_page.dart`、`lib/pages/stats_page.dart`
+  - `test/widget_test.dart`（47 测试）、`screenshots/32-last-account.png`
+- commit hash：`049b39c`（功能）→ `7bbab0f`（测试+截图）；均已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 47/47（含大字体 2.0x 无溢出、lastAccountId 持久化）；web 实测默认账户记忆，零控制台错误。
+- 遇到的问题与解决方案：2x 大字体下抓出两处真实溢出（明细合计条 Row、统计合计条固定高度）→ 分别改 Wrap 与自适应高度；独立页渲染需初始化 intl 中文数据。
+- 下一步计划：上架执行（CHECKLIST）、真机通知冒烟、深色模式评估。
