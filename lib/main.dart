@@ -9,6 +9,7 @@ import 'data/app_state.dart';
 import 'pages/add_transaction_page.dart';
 import 'pages/home_page.dart';
 import 'pages/ledger_page.dart';
+import 'pages/onboarding_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/stats_page.dart';
 import 'theme/app_theme.dart';
@@ -41,7 +42,7 @@ class MoneyApp extends StatelessWidget {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        home: const HomeShell(),
+        home: state.onboarded ? const HomeShell() : const OnboardingPage(),
       ),
     );
   }

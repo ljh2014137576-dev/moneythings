@@ -109,10 +109,10 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     final selected = await showModalBottomSheet<Account>(
       context: context,
       builder: (context) => _AccountSheet(
-        accounts: kDefaultAccounts,
+        accounts: state.accounts,
         selectedId: _accountId,
         balances: {
-          for (final a in kDefaultAccounts) a.id: state.balanceOf(a),
+          for (final a in state.accounts) a.id: state.balanceOf(a),
         },
       ),
     );

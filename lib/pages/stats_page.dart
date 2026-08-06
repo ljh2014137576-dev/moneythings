@@ -38,6 +38,7 @@ class _StatsPageState extends State<StatsPage> {
     final summary = state.summaryOf(_month);
     final ranking = state.categoryExpenseRanking(_month);
     final incomeRanking = state.categoryIncomeRanking(_month);
+    final balanceSeries = state.recentBalanceSeries(_month, 6);
     final series = state.dailyExpenseSeries(_month);
     final days = series.length;
 
@@ -106,6 +107,8 @@ class _StatsPageState extends State<StatsPage> {
                         state.expenseDeltaOf(_month),
                       ),
                       const SizedBox(height: kSpace3),
+                      _buildBalanceChart(balanceSeries),
+                      const SizedBox(height: kSpace3),
                       _buildBarChart(series),
                       const SizedBox(height: kSpace4),
                       PaperGroup(
@@ -128,6 +131,118 @@ class _StatsPageState extends State<StatsPage> {
                   ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBalanceChart(
+      List<({DateTime month, int balance})> series) {
+    final data = [
+      for (final e in series) (m: e.month, yuan: e.balance / 100.0),
+    ];
+    double maxV = 0, minV = 0;
+    for (final d in data) {
+      if (d.yuan > maxV) maxV = d.yuan;
+      if (d.yuan < minV) minV = d.yuan;
+    }
+    final pad = (maxV - minV) * 0.18 + 20;
+
+    return PaperGroup(
+      title: '结余走势（近 6 月）',
+      padding: const EdgeInsets.fromLTRB(kSpace3, kSpace2, kSpace3, kSpace4),
+      child: SizedBox(
+        height: 170,
+        child: BarChart(
+          BarChartData(
+            minY: minV - pad,
+            maxY: maxV + pad,
+            alignment: BarChartAlignment.spaceAround,
+            barGroups: [
+              for (int i = 0; i < data.length; i++)
+                BarChartGroupData(
+                  x: i,
+                  barRods: [
+                    BarChartRodData(
+                      fromY: 0,
+                      toY: data[i].yuan,
+                      width: 16,
+                      color: data[i].yuan >= 0 ? kInkPrimary : kDanger,
+                      borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(2)),
+                    ),
+                  ],
+                ),
+            ],
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: false,
+              horizontalInterval: ((maxV - minV) / 4).abs().clamp(1, double.infinity),
+              getDrawingHorizontalLine: (value) =>
+                  FlLine(color: kDividerSubtle, strokeWidth: 1),
+            ),
+            borderData: FlBorderData(show: false),
+            titlesData: FlTitlesData(
+              topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false)),
+              rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false)),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 42,
+                  getTitlesWidget: (value, meta) {
+                    if (value == 0) return const SizedBox.shrink();
+                    return Text(
+                      _compact(value),
+                      style:
+                          const TextStyle(fontSize: 10, color: kInkDisabled),
+                    );
+                  },
+                ),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 24,
+                  interval: 1,
+                  getTitlesWidget: (value, meta) {
+                    final i = value.toInt();
+                    if (i < 0 || i >= data.length) {
+                      return const SizedBox.shrink();
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        DateFormat('M月', 'zh_CN').format(data[i].m),
+                        style: const TextStyle(
+                            fontSize: 10, color: kInkDisabled),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            barTouchData: BarTouchData(
+              touchTooltipData: BarTouchTooltipData(
+                getTooltipColor: (_) => kInkPrimary,
+                getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                  final i = group.x;
+                  if (i < 0 || i >= data.length) return null;
+                  return BarTooltipItem(
+                    '${DateFormat('yyyy年M月', 'zh_CN').format(data[i].m)}\n'
+                    '${AmountText.format(rod.toY.round() * 100)}',
+                    const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      height: 1.4,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

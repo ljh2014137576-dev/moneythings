@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 
 import '../data/app_state.dart';
 import '../models/account.dart';
@@ -163,21 +164,35 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildAccounts(AppState state) {
+    final accounts = state.accounts;
     return PaperGroup(
       title: '账户',
       padding: EdgeInsets.zero,
       child: Column(
         children: [
-          for (int i = 0; i < kDefaultAccounts.length; i++) ...[
+          for (int i = 0; i < accounts.length; i++) ...[
             if (i > 0) const Divider(indent: 64),
             _AccountRow(
-              account: kDefaultAccounts[i],
-              balance: state.balanceOf(kDefaultAccounts[i]),
+              account: accounts[i],
+              balance: state.balanceOf(accounts[i]),
+              onTap: () => _editAccountBalance(accounts[i]),
             ),
           ],
         ],
       ),
     );
+  }
+
+  Future<void> _editAccountBalance(Account account) async {
+    final cents = await showDialog<int>(
+      context: context,
+      builder: (context) => _InitialBalanceDialog(account: account),
+    );
+    if (cents != null && mounted) {
+      await context
+          .read<AppState>()
+          .setAccountInitialBalance(account.id, cents);
+    }
   }
 
   Widget _buildBudget(AppState state) {
@@ -430,7 +445,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 1.0.0',
+            Text('版本 1.1.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -449,34 +464,43 @@ class _ProfilePageState extends State<ProfilePage> {
 }
 
 class _AccountRow extends StatelessWidget {
-  const _AccountRow({required this.account, required this.balance});
+  const _AccountRow({
+    required this.account,
+    required this.balance,
+    required this.onTap,
+  });
 
   final Account account;
   final int balance;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: kSpace4, vertical: kSpace3),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0F1EF),
-              borderRadius: BorderRadius.circular(kRadiusTable),
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding:
+            const EdgeInsets.symmetric(horizontal: kSpace4, vertical: kSpace3),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F1EF),
+                borderRadius: BorderRadius.circular(kRadiusTable),
+              ),
+              child: Icon(account.icon, size: 18, color: kInkPrimary),
             ),
-            child: Icon(account.icon, size: 18, color: kInkPrimary),
-          ),
-          const SizedBox(width: kSpace3),
-          Expanded(
-            child: Text(account.name,
-                style: const TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.w500)),
-          ),
-          AmountText(balance, size: 15, weight: FontWeight.w600),
-        ],
+            const SizedBox(width: kSpace3),
+            Expanded(
+              child: Text(account.name,
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w500)),
+            ),
+            AmountText(balance, size: 15, weight: FontWeight.w600),
+          ],
+        ),
       ),
     );
   }
@@ -696,6 +720,83 @@ class _CsvImportDialogState extends State<_CsvImportDialog> {
           style: FilledButton.styleFrom(minimumSize: const Size(96, 44)),
           onPressed: () => Navigator.of(context).pop(_controller.text),
           child: const Text('导入'),
+        ),
+      ],
+    );
+  }
+}
+
+ 
+/// 初始余额输入对话框（自持 controller，避免关闭动画期间 dispose）
+class _InitialBalanceDialog extends StatefulWidget {
+  const _InitialBalanceDialog({required this.account});
+
+  final Account account;
+
+  @override
+  State<_InitialBalanceDialog> createState() => _InitialBalanceDialogState();
+}
+
+class _InitialBalanceDialogState extends State<_InitialBalanceDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.account.initialBalance > 0
+          ? (widget.account.initialBalance / 100).toStringAsFixed(2)
+          : '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  int? _parse() {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return null;
+    final parts = text.split('.');
+    final yuan = int.tryParse(parts[0].replaceAll(',', '')) ?? 0;
+    final fenStr =
+        parts.length > 1 ? parts[1].padRight(2, '0').substring(0, 2) : '00';
+    final fen = int.tryParse(fenStr) ?? 0;
+    return yuan * 100 + fen;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('${widget.account.name} · 初始余额',
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+        style: const TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
+          fontFeatures: [FontFeature.tabularFigures()],
+        ),
+        decoration: const InputDecoration(prefixText: '¥ ', hintText: '0.00'),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(minimumSize: const Size(96, 44)),
+          onPressed: () {
+            final v = _parse();
+            if (v == null) return;
+            Navigator.of(context).pop(v);
+          },
+          child: const Text('保存'),
         ),
       ],
     );

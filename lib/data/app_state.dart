@@ -25,6 +25,8 @@ class AppState extends ChangeNotifier {
   List<Transaction> _transactions = [];
   int _monthlyBudget = 0;
   List<TxCategory> _customCategories = [];
+  List<Account> _accounts = kDefaultAccounts;
+  bool _onboarded = false;
   bool _loaded = false;
 
   List<Transaction> get transactions => List.unmodifiable(_transactions);
@@ -36,6 +38,8 @@ class AppState extends ChangeNotifier {
     _transactions = await _repository.loadTransactions();
     _monthlyBudget = await _repository.loadBudget();
     _customCategories = await _repository.loadCustomCategories();
+    _accounts = await _repository.loadAccounts();
+    _onboarded = await _repository.loadOnboarded();
     TxCategories.setCustom(_customCategories);
     _loaded = true;
     notifyListeners();
@@ -74,6 +78,13 @@ class AppState extends ChangeNotifier {
   }
 
  
+ 
+  bool get onboarded => _onboarded;
+
+  Future<void> completeOnboarding() async {
+    _onboarded = true;
+    await _repository.saveOnboarded(true);
+  }
   List<TxCategory> get customCategories => List.unmodifiable(_customCategories);
 
   Future<void> addCustomCategory({
@@ -206,6 +217,20 @@ class AppState extends ChangeNotifier {
       ..sort((a, b) => b.amount.compareTo(a.amount));
     return ranked;
   }
+ 
+  /// 以某月为终点，往前 count 个月的月度结余序列（时间升序）
+  List<({DateTime month, int balance})> recentBalanceSeries(
+    DateTime endMonth,
+    int count,
+  ) {
+    final out = <({DateTime month, int balance})>[];
+    for (int i = count - 1; i >= 0; i--) {
+      final m = DateTime(endMonth.year, endMonth.month - i);
+      final s = summaryOf(m);
+      out.add((month: m, balance: s.balance));
+    }
+    return out;
+  }
   /// 账户当前余额 = 初始余额 + 收支合计
   int balanceOf(Account account) {
     int sum = account.initialBalance;
@@ -219,12 +244,24 @@ class AppState extends ChangeNotifier {
 
   int get totalAssets {
     int sum = 0;
-    for (final a in kDefaultAccounts) {
+    for (final a in _accounts) {
       sum += balanceOf(a);
     }
     return sum;
   }
 
+ 
+  List<Account> get accounts => List.unmodifiable(_accounts);
+
+  /// 设置账户初始余额（分）
+  Future<void> setAccountInitialBalance(String id, int cents) async {
+    _accounts = [
+      for (final a in _accounts)
+        if (a.id == id) a.copyWith(initialBalance: cents) else a,
+    ];
+    await _repository.saveAccounts(_accounts);
+    notifyListeners();
+  }
   /// 当月已支出（用于预算进度）
   int get currentMonthExpense {
     final now = DateTime.now();

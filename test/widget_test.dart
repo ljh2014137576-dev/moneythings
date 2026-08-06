@@ -27,7 +27,7 @@ void main() {
 
   group('AppState', () {
     test('新增 / 修改 / 删除流水', () async {
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({'onboarded_v1': true});
       final state = AppState();
       await state.load();
       await state.clearAll(); // 示例数据只用于演示，测试从空开始
@@ -52,7 +52,7 @@ void main() {
     });
 
     test('首次启动自动载入示例数据', () async {
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({'onboarded_v1': true});
       final state = AppState();
       await state.load();
       expect(state.transactions.length, greaterThan(20));
@@ -60,7 +60,7 @@ void main() {
     });
 
     test('预算设置与读取', () async {
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({'onboarded_v1': true});
       final state = AppState();
       await state.load();
       await state.setBudget(300000);
@@ -68,7 +68,7 @@ void main() {
     });
 
     test('expenseDeltaOf 计算与上月差额', () async {
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({'onboarded_v1': true});
       final state = AppState();
       await state.load();
       await state.clearAll();
@@ -121,7 +121,7 @@ void main() {
   });
 
   testWidgets('记一笔 -> 明细 -> 编辑 -> 删除 全流程', (tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
     final state = AppState();
     await state.load();
     await state.clearAll();
@@ -152,7 +152,7 @@ void main() {
   });
 
   testWidgets('预算超额时保存弹出确认，可取消', (tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
     final state = AppState();
     await state.load();
     await state.clearAll();
@@ -180,7 +180,7 @@ void main() {
   });
 
   testWidgets('我的页包含导出入口', (tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
     final state = AppState();
     await state.load();
     await tester.pumpWidget(MoneyApp(state: state));
@@ -196,7 +196,7 @@ void main() {
   });
 
   testWidgets('应用启动并渲染首页概览', (tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
     final state = AppState();
     await state.load();
     await tester.pumpWidget(MoneyApp(state: state));
@@ -212,7 +212,7 @@ void main() {
   });
  
   test('自定义分类：注册表与持久化', () async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
     final state = AppState();
     await state.load();
     await state.clearAll();
@@ -230,7 +230,7 @@ void main() {
   });
 
   testWidgets('我的页新增自定义分类并出现在记一笔', (tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
     final state = AppState();
     await state.load();
     await tester.pumpWidget(MoneyApp(state: state));
@@ -273,7 +273,7 @@ void main() {
   });
 
   test('importCsv 合并去重', () async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
     final state = AppState();
     await state.load();
     await state.clearAll();
@@ -287,7 +287,7 @@ void main() {
   });
 
   testWidgets('明细搜索按备注过滤', (tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
     final state = AppState();
     await state.load();
     await state.clearAll();
@@ -327,7 +327,7 @@ void main() {
   });
 
   testWidgets('月份快速跳转', (tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
     final state = AppState();
     await state.load();
     await tester.pumpWidget(MoneyApp(state: state));
@@ -345,7 +345,7 @@ void main() {
   });
  
   testWidgets('导入 CSV 对话框可取消并导入', (tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
     final state = AppState();
     await state.load();
     await tester.pumpWidget(MoneyApp(state: state));
@@ -376,6 +376,93 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('导入 1 笔'), findsOneWidget);
     expect(state.transactions.any((t) => t.note == '导入测试'), isTrue);
+  });
+ 
+  testWidgets('首次启动显示引导，开始使用后进入首页', (tester) async {
+    SharedPreferences.setMockInitialValues({}); // 未完成引导
+    final state = AppState();
+    await state.load();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+
+    expect(find.text('记录每一笔'), findsOneWidget);
+    await tester.tap(find.text('下一步'));
+    await tester.pumpAndSettle();
+    expect(find.text('统计一目了然'), findsOneWidget);
+    await tester.tap(find.text('下一步'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始使用'));
+    await tester.pumpAndSettle();
+    expect(find.text('记账本'), findsOneWidget);
+  });
+ 
+  test('账户初始余额设置与持久化', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.setAccountInitialBalance('cash', 100000);
+    expect(state.accounts.firstWhere((a) => a.id == 'cash').initialBalance,
+        100000);
+    expect(state.totalAssets, 100000);
+
+    final state2 = AppState();
+    await state2.load();
+    expect(state2.accounts.firstWhere((a) => a.id == 'cash').initialBalance,
+        100000);
+  });
+
+  test('recentBalanceSeries 近 6 月序列', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addTransaction(Transaction(
+      id: 'inc',
+      type: TxType.income,
+      amount: 100000,
+      categoryId: 'salary',
+      accountId: 'card',
+      date: DateTime(2026, 3, 10),
+    ));
+    await state.addTransaction(Transaction(
+      id: 'exp',
+      type: TxType.expense,
+      amount: 40000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(2026, 8, 6),
+    ));
+    final series = state.recentBalanceSeries(DateTime(2026, 8), 6);
+    expect(series.length, 6);
+    expect(series.first.month.month, 3);
+    expect(series.last.month.month, 8);
+    expect(series[0].balance, 100000);
+    expect(series[5].balance, -40000);
+  });
+
+  testWidgets('账户初始余额编辑后余额更新', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('现金'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('现金'));
+    await tester.pumpAndSettle();
+    expect(find.text('现金 · 初始余额'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), '500');
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+    expect(find.text('¥500.00'), findsWidgets);
   });
 }
 

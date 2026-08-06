@@ -7,12 +7,15 @@ import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/transaction.dart';
+import '../models/account.dart';
 
 class TransactionRepository {
   static const String _kTxKey = 'transactions_v1';
   static const String _kBudgetKey = 'monthly_budget_cents';
   static const String _kSeededKey = 'seeded_v1';
   static const String _kCustomKey = 'custom_categories_v1';
+  static const String _kAccountsKey = 'accounts_v1';
+  static const String _kOnboardedKey = 'onboarded_v1';
 
   Future<List<Transaction>> loadTransactions() async {
     final prefs = await SharedPreferences.getInstance();
@@ -68,6 +71,43 @@ class TransactionRepository {
       _kCustomKey,
       jsonEncode([for (final c in categories) c.toJson()]),
     );
+  }
+ 
+  Future<List<Account>> loadAccounts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kAccountsKey);
+    if (raw == null || raw.isEmpty) {
+      return [for (final a in kDefaultAccounts) a];
+    }
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      final loaded = [
+        for (final e in list)
+          if (e is Map<String, dynamic>) Account.fromJson(e),
+      ];
+      if (loaded.isEmpty) return [for (final a in kDefaultAccounts) a];
+      return loaded;
+    } catch (_) {
+      return [for (final a in kDefaultAccounts) a];
+    }
+  }
+
+  Future<void> saveAccounts(List<Account> accounts) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _kAccountsKey,
+      jsonEncode([for (final a in accounts) a.toJson()]),
+    );
+  }
+ 
+  Future<bool> loadOnboarded() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_kOnboardedKey) ?? false;
+  }
+
+  Future<void> saveOnboarded(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kOnboardedKey, value);
   }
   /// 首次启动写入示例数据，让首页 / 统计立即可体验
   Future<void> seedIfFirstLaunch() async {
