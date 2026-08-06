@@ -15,6 +15,7 @@ import '../widgets/book_switcher.dart';
 import '../widgets/category_dialog.dart';
 import '../services/csv_exporter.dart';
 import '../services/export_target.dart';
+import '../services/notification_service.dart';
 import '../widgets/paper_group.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -348,13 +349,39 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: kSpace2),
             Text(
               over
-                  ? '已超出预算 ¥{AmountText.format(spent - budget, showSymbol: false)}'
+                  ? '已超出预算 ¥${AmountText.format(spent - budget, showSymbol: false)}'
                   : '剩余 ¥${AmountText.format(state.budgetRemaining, showSymbol: false)} · 日均可用 ¥${AmountText.format(state.budgetDailyRemaining, showSymbol: false)}',
               style: TextStyle(
                   fontSize: 11,
                   color: over ? kDanger : kInkDisabled),
             ),
           ],
+          const Divider(height: 1, indent: kSpace4, endIndent: kSpace4),
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: kSpace4, vertical: 6),
+            child: Row(
+              children: [
+                const Icon(Icons.notifications_outlined,
+                    size: 20, color: kInkSecondary),
+                const SizedBox(width: kSpace3),
+                const Expanded(
+                  child: Text('超支系统通知',
+                      style: TextStyle(fontSize: 14, color: kInkPrimary)),
+                ),
+                Switch(
+                  value: state.budgetNotify,
+                  activeTrackColor: kAccentBlue,
+                  onChanged: (v) async {
+                    await state.setBudgetNotify(v);
+                    if (v) {
+                      await NotificationService.instance.requestPermission();
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

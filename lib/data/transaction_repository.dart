@@ -20,6 +20,7 @@ class TransactionRepository {
   static const String _kBooksKey = 'books_v1';
   static const String _kCurrentBookKey = 'current_book_v1';
   static const String _kBookBudgetsKey = 'book_budgets_v1';
+  static const String _kBudgetNotifyKey = 'budget_notify_v1';
 
   Future<List<Transaction>> loadTransactions() async {
     final prefs = await SharedPreferences.getInstance();
@@ -74,6 +75,16 @@ class TransactionRepository {
       _kBookBudgetsKey,
       jsonEncode(budgets),
     );
+  }
+
+  Future<bool> loadBudgetNotify() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_kBudgetNotifyKey) ?? true;
+  }
+
+  Future<void> saveBudgetNotify(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kBudgetNotifyKey, value);
   }
 
   Future<void> saveBudget(int cents) async {

@@ -29,6 +29,7 @@ class _LedgerPageState extends State<LedgerPage> {
   _Filter _filter = _Filter.all;
   final _searchController = TextEditingController();
   String _query = '';
+  bool _showAll = false;
   DateTime? _rangeStart;
   DateTime? _rangeEnd;
 
@@ -84,7 +85,9 @@ class _LedgerPageState extends State<LedgerPage> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final monthTx = state.ofMonth(_month);
+    final monthTx = _showAll
+        ? state.currentBookTransactions
+        : state.ofMonth(_month);
     final visible = _visible(monthTx);
     final groups = _groupByDay(visible);
     int sumExpense = 0, sumIncome = 0;
@@ -120,6 +123,8 @@ class _LedgerPageState extends State<LedgerPage> {
                 const SizedBox(height: kSpace3),
                 const SizedBox(height: kSpace3),
                 _buildSearchField(),
+                const SizedBox(height: kSpace3),
+                _buildTimeRow(),
                 _buildFilterRow(),
                 const SizedBox(height: kSpace3),
                 _buildRangeRow(),
@@ -203,6 +208,20 @@ class _LedgerPageState extends State<LedgerPage> {
               const EdgeInsets.symmetric(horizontal: kSpace3, vertical: 10),
         ),
       ),
+    );
+  }
+
+  Widget _buildTimeRow() {
+    return Row(
+      children: [
+        const Text('时间：',
+            style: TextStyle(fontSize: 13, color: kInkSecondary)),
+        _FilterTag(
+          label: _showAll ? '全部时间' : '本月',
+          selected: _showAll,
+          onTap: () => setState(() => _showAll = !_showAll),
+        ),
+      ],
     );
   }
 

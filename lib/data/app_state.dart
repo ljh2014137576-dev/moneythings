@@ -29,6 +29,7 @@ class AppState extends ChangeNotifier {
   List<Account> _accounts = kDefaultAccounts;
   List<Book> _books = [kDefaultBook];
   String _currentBookId = kDefaultBook.id;
+  bool _budgetNotify = true;
   bool _onboarded = false;
   bool _loaded = false;
 
@@ -63,6 +64,7 @@ class AppState extends ChangeNotifier {
     _accounts = await _repository.loadAccounts();
     _books = await _repository.loadBooks();
     _currentBookId = await _repository.loadCurrentBookId();
+    _budgetNotify = await _repository.loadBudgetNotify();
     _onboarded = await _repository.loadOnboarded();
     if (!_books.any((b) => b.id == _currentBookId)) {
       _currentBookId = kDefaultBook.id;
@@ -106,6 +108,15 @@ class AppState extends ChangeNotifier {
 
  
  
+
+  bool get budgetNotify => _budgetNotify;
+
+  Future<void> setBudgetNotify(bool value) async {
+    _budgetNotify = value;
+    await _repository.saveBudgetNotify(value);
+    notifyListeners();
+  }
+
   bool get onboarded => _onboarded;
 
   Future<void> completeOnboarding() async {

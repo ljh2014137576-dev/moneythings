@@ -10,6 +10,7 @@ import '../data/app_state.dart';
 import '../models/account.dart';
 import '../models/transaction.dart';
 import '../theme/app_colors.dart';
+import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/amount_text.dart';
 import '../widgets/category_icon.dart';
@@ -174,6 +175,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           ),
         );
         if (ok != true || !mounted) return;
+        if (context.read<AppState>().budgetNotify) {
+          await NotificationService.instance.notifyBudgetOverrun(over);
+        }
       }
     }
     final tx = Transaction(

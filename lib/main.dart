@@ -1,6 +1,8 @@
 ﻿/// 记账本 · 本地记账 App
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +14,7 @@ import 'pages/ledger_page.dart';
 import 'pages/onboarding_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/stats_page.dart';
+import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/bottom_nav.dart';
 
@@ -19,6 +22,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final state = AppState();
   await state.load();
+  unawaited(NotificationService.instance.init());
   runApp(MoneyApp(state: state));
 }
 

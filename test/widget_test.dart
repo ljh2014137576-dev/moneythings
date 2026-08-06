@@ -340,7 +340,7 @@ void main() {
     await tester.tap(find.text('明细'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.textContaining('本月'));
+    await tester.tap(find.textContaining('2026年8月'));
     await tester.pumpAndSettle();
     expect(find.textContaining('年'), findsWidgets);
 
@@ -754,6 +754,54 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('最近'), findsOneWidget);
     expect(find.text('餐饮'), findsWidgets);
+  });
+
+  test('预算通知开关持久化', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    expect(state.budgetNotify, isTrue);
+    await state.setBudgetNotify(false);
+    expect(state.budgetNotify, isFalse);
+    final state2 = AppState();
+    await state2.load();
+    expect(state2.budgetNotify, isFalse);
+  });
+
+  testWidgets('明细全部时间视图', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'a1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 3),
+      note: '本月流水',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'a2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month - 1, 10),
+      note: '上月流水',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('本月流水'), findsWidgets);
+    expect(find.textContaining('上月流水'), findsNothing);
+    // 切到全部时间
+    await tester.tap(find.text('本月').last);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('上月流水'), findsWidgets);
   });
 }
 
