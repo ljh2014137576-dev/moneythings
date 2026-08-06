@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import '../models/account.dart';
 import '../models/book.dart';
 import '../models/transaction.dart';
+import '../models/recurring_rule.dart';
 import 'transaction_repository.dart';
 import '../services/csv_importer.dart';
 
@@ -26,6 +27,7 @@ class AppState extends ChangeNotifier {
   final TransactionRepository _repository;
 
   List<Transaction> _transactions = [];
+  List<RecurringRule> _rules = [];
   Map<String, int> _bookBudgets = {};
   List<TxCategory> _customCategories = [];
   List<Account> _accounts = kDefaultAccounts;
@@ -60,6 +62,12 @@ class AppState extends ChangeNotifier {
   int get monthlyBudget => _bookBudgets[_currentBookId] ?? 0;
   bool get loaded => _loaded;
 
+  String get currentBookId => _currentBookId;
+
+  /// 当前账本的周期规则
+  List<RecurringRule> get recurringRules =>
+      List.unmodifiable(_rules.where((r) => r.bookId == _currentBookId));
+
   Future<void> load() async {
     await _repository.seedIfFirstLaunch();
     _transactions = await _repository.loadTransactions();
@@ -73,12 +81,14 @@ class AppState extends ChangeNotifier {
     _dailyReminder = await _repository.loadDailyReminder();
     _budgetNotify = await _repository.loadBudgetNotify();
     _onboarded = await _repository.loadOnboarded();
+    _rules = await _repository.loadRecurringRules();
     if (!_books.any((b) => b.id == _currentBookId)) {
       _currentBookId = kDefaultBook.id;
     }
     TxCategories.setCustom(_customCategories);
     _loaded = true;
     notifyListeners();
+    await generateDueRecurring();
   }
 
   Future<void> _persist() => _repository.saveTransactions(_transactions);
@@ -108,6 +118,75 @@ class AppState extends ChangeNotifier {
         if (t.id != id) t,
     ];
     await _persist();
+    notifyListeners();
+  }
+
+  /// 生成到期周期流水：对每个启用规则，把 nextDate <= 今天的每次发生生成流水并推进 nextDate
+  Future<int> generateDueRecurring() async {
+    if (!_loaded) return 0;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    int generated = 0;
+    final rules = [..._rules];
+    var changed = false;
+    for (int i = 0; i < rules.length; i++) {
+      final r = rules[i];
+      if (!r.active || r.bookId != _currentBookId) continue;
+      var next = r.nextDate;
+      int guard = 0;
+      while (!next.isAfter(today) && guard < 400) {
+        _transactions = [
+          ..._transactions,
+          Transaction(
+            id: 'rc_${DateTime.now().microsecondsSinceEpoch}_$generated',
+            type: r.type,
+            amount: r.amount,
+            categoryId: r.categoryId,
+            accountId: r.accountId,
+            transferToAccountId: r.transferToAccountId,
+            note: r.note,
+            date: next,
+            bookId: r.bookId,
+          ),
+        ];
+        next = RecurringRule.nextAfter(next, r.frequency);
+        generated++;
+        guard++;
+      }
+      if (guard > 0) {
+        rules[i] = r.copyWith(nextDate: next);
+        changed = true;
+      }
+    }
+    if (changed) {
+      _rules = rules;
+      await _repository.saveRecurringRules(_rules);
+    }
+    if (generated > 0) {
+      _transactions.sort((a, b) => b.date.compareTo(a.date));
+      await _persist();
+      notifyListeners();
+    }
+    return generated;
+  }
+
+  Future<void> addRecurringRule(RecurringRule rule) async {
+    _rules = [..._rules, rule];
+    await _repository.saveRecurringRules(_rules);
+    notifyListeners();
+  }
+
+  Future<void> updateRecurringRule(RecurringRule rule) async {
+    _rules = [
+      for (final r in _rules) r.id == rule.id ? rule : r,
+    ];
+    await _repository.saveRecurringRules(_rules);
+    notifyListeners();
+  }
+
+  Future<void> deleteRecurringRule(String id) async {
+    _rules = [for (final r in _rules) if (r.id != id) r];
+    await _repository.saveRecurringRules(_rules);
     notifyListeners();
   }
 
@@ -207,6 +286,7 @@ class AppState extends ChangeNotifier {
   }
   Future<void> clearAll() async {
     _transactions = [];
+    _rules = [];
     await _repository.clearAll();
     notifyListeners();
   }
@@ -233,6 +313,7 @@ class AppState extends ChangeNotifier {
         'bookBudgets': _bookBudgets,
         'budgetNotify': _budgetNotify,
         'dailyReminder': _dailyReminder,
+        'recurringRules': [for (final r in _rules) r.toJson()],
       });
 
   /// 从 JSON 备份恢复；成功返回 null，失败返回错误信息
@@ -265,6 +346,10 @@ class AppState extends ChangeNotifier {
           (map['bookBudgets'] as Map<dynamic, dynamic>?) ?? {});
       _budgetNotify = (map['budgetNotify'] as bool?) ?? true;
       _dailyReminder = (map['dailyReminder'] as bool?) ?? false;
+      _rules = [
+        for (final e in (map['recurringRules'] as List<dynamic>? ?? []))
+          RecurringRule.fromJson(e as Map<String, dynamic>),
+      ];
       TxCategories.setCustom(_customCategories);
       await _persist();
       await _repository.saveAccounts(_accounts);
@@ -274,6 +359,7 @@ class AppState extends ChangeNotifier {
       await _repository.saveBookBudgets(_bookBudgets);
       await _repository.saveBudgetNotify(_budgetNotify);
       await _repository.saveDailyReminder(_dailyReminder);
+      await _repository.saveRecurringRules(_rules);
       notifyListeners();
       return null;
     } catch (_) {
@@ -549,6 +635,7 @@ Future<CsvImportResult> importCsv(String csv) async {
     _currentBookId = id;
     await _repository.saveCurrentBookId(id);
     notifyListeners();
+    await generateDueRecurring();
   }
 
   Future<void> addBook(String name, {String iconKey = 'menu_book'}) async {

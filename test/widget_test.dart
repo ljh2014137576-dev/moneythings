@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moneythings_goal/data/app_state.dart';
+import 'package:moneythings_goal/data/transaction_repository.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:moneythings_goal/main.dart';
@@ -12,6 +13,7 @@ import 'package:moneythings_goal/pages/stats_page.dart';
 import 'package:moneythings_goal/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:moneythings_goal/models/account.dart';
+import 'package:moneythings_goal/models/recurring_rule.dart';
 import 'package:moneythings_goal/models/transaction.dart';
 import 'package:moneythings_goal/services/csv_exporter.dart';
 import 'package:moneythings_goal/services/csv_importer.dart';
@@ -1891,5 +1893,132 @@ void main() {
     expect(find.textContaining('2 笔'), findsOneWidget);
     // 微信：本月支出 8.00 · 1 笔
     expect(find.textContaining('本月支出 8.00'), findsOneWidget);
+  });
+  test('周期日期推进（含月末钳制）', () {
+    expect(RecurringRule.nextAfter(DateTime(2026, 8, 15), RecurFrequency.weekly),
+        DateTime(2026, 8, 22));
+    expect(RecurringRule.nextAfter(DateTime(2026, 8, 31), RecurFrequency.monthly),
+        DateTime(2026, 9, 30));
+    expect(RecurringRule.nextAfter(DateTime(2026, 1, 31), RecurFrequency.monthly),
+        DateTime(2026, 2, 28));
+    expect(RecurringRule.nextAfter(DateTime(2024, 1, 31), RecurFrequency.monthly),
+        DateTime(2024, 2, 29));
+    expect(RecurringRule.nextAfter(DateTime(2026, 8, 15), RecurFrequency.yearly),
+        DateTime(2027, 8, 15));
+  });
+
+  test('周期规则生成到期流水且不重复', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addRecurringRule(RecurringRule(
+      id: 'rr1',
+      type: TxType.expense,
+      amount: 100000,
+      categoryId: 'home',
+      accountId: 'alipay',
+      note: '房租',
+      date: DateTime(now.year, now.month - 2, 1),
+      nextDate: DateTime(now.year, now.month - 1, 1),
+      frequency: RecurFrequency.monthly,
+    ));
+    await state.addRecurringRule(RecurringRule(
+      id: 'rr2',
+      type: TxType.expense,
+      amount: 5000,
+      categoryId: 'food',
+      accountId: 'wechat',
+      note: '停用规则',
+      date: DateTime(now.year, now.month - 2, 1),
+      nextDate: DateTime(now.year, now.month - 1, 1),
+      frequency: RecurFrequency.monthly,
+      active: false,
+    ));
+    final before = state.transactions.length;
+    // 上月 1 日 + 本月 1 日两期（今天必然 >= 1 日）
+    final generated = await state.generateDueRecurring();
+    expect(generated, 2);
+    expect(state.transactions.length, before + 2);
+    expect(state.transactions.where((t) => t.note == '房租').length, 2);
+    expect(state.transactions.where((t) => t.note == '停用规则'), isEmpty);
+    // 再次生成不重复
+    expect(await state.generateDueRecurring(), 0);
+    // nextDate 已推进到未来
+    expect(
+        state.recurringRules.first.nextDate.isAfter(DateTime(now.year, now.month, now.day)),
+        isTrue);
+  });
+
+  test('周期规则持久化往返', () async {
+    SharedPreferences.setMockInitialValues({});
+    final repo = TransactionRepository();
+    await repo.saveRecurringRules([
+      RecurringRule(
+        id: 'rt1',
+        type: TxType.expense,
+        amount: 100000,
+        categoryId: 'home',
+        accountId: 'alipay',
+        note: '房租',
+        date: DateTime(2026, 8, 1),
+        nextDate: DateTime(2026, 9, 1),
+        frequency: RecurFrequency.monthly,
+      ),
+    ]);
+    final loaded = await repo.loadRecurringRules();
+    expect(loaded.length, 1);
+    expect(loaded.first.frequency, RecurFrequency.monthly);
+    expect(loaded.first.amount, 100000);
+    expect(loaded.first.nextDate, DateTime(2026, 9, 1));
+  });
+
+  testWidgets('记一笔设置周期并保存创建规则', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('记一笔').first);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('周期'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('周期'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('每月'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, '100');
+    await tester.ensureVisible(find.text('保存'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+    expect(state.recurringRules.length, 1);
+    expect(state.recurringRules.first.frequency, RecurFrequency.monthly);
+  });
+
+  testWidgets('我的页显示周期记账区块', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addRecurringRule(RecurringRule(
+      id: 'pr1',
+      type: TxType.expense,
+      amount: 100000,
+      categoryId: 'home',
+      accountId: 'alipay',
+      note: '房租',
+      date: DateTime(2026, 8, 1),
+      nextDate: DateTime(2026, 9, 1),
+      frequency: RecurFrequency.monthly,
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    expect(find.text('周期记账'), findsOneWidget);
+    expect(find.textContaining('每月 · 居住'), findsOneWidget);
+    expect(find.textContaining('下次 9月1日'), findsOneWidget);
   });
 }

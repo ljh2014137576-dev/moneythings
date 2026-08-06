@@ -1,4 +1,4 @@
-﻿/// 本地持久化：SharedPreferences 存 JSON
+/// 本地持久化：SharedPreferences 存 JSON
 library;
 
 import 'dart:convert';
@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/transaction.dart';
 import '../models/account.dart';
 import '../models/book.dart';
+import '../models/recurring_rule.dart';
 
 class TransactionRepository {
   static const String _kTxKey = 'transactions_v1';
@@ -24,6 +25,7 @@ class TransactionRepository {
   static const String _kDailyReminderKey = 'daily_reminder_v1';
   static const String _kLastAccountKey = 'last_account_v1';
   static const String _kRecentSearchesKey = 'recent_searches_v1';
+  static const String _kRecurringRulesKey = 'recurring_rules_v1';
 
   Future<List<Transaction>> loadTransactions() async {
     final prefs = await SharedPreferences.getInstance();
@@ -226,8 +228,31 @@ class TransactionRepository {
     await prefs.setBool(_kSeededKey, true);
   }
 
+  Future<List<RecurringRule>> loadRecurringRules() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kRecurringRulesKey);
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list
+          .map((e) => RecurringRule.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> saveRecurringRules(List<RecurringRule> rules) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _kRecurringRulesKey,
+      jsonEncode(rules.map((r) => r.toJson()).toList()),
+    );
+  }
+
   Future<void> clearAll() async {
     await saveTransactions(const []);
+    await saveRecurringRules(const []);
   }
 
   /// 公开的示例数据生成入口

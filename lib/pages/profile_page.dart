@@ -8,6 +8,8 @@ import 'package:flutter/services.dart';
 import '../data/app_state.dart';
 import '../models/account.dart';
 import '../models/transaction.dart';
+import '../models/recurring_rule.dart';
+import 'package:intl/intl.dart';
 import '../theme/app_colors.dart';
 import '../widgets/amount_text.dart';
 import '../widgets/budget_dialog.dart';
@@ -323,6 +325,8 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: kSpace4),
           _buildAccounts(state),
           const SizedBox(height: kSpace4),
+          _buildRecurring(state),
+          const SizedBox(height: kSpace4),
           _buildBook(state),
           const SizedBox(height: kSpace4),
           _buildBudget(state),
@@ -348,6 +352,28 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: kSpace2),
           const Text('本地保存 · 不上传云端',
               style: TextStyle(fontSize: 12, color: kInkSecondary)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecurring(AppState state) {
+    final rules = state.recurringRules;
+    if (rules.isEmpty) return const SizedBox.shrink();
+    return PaperGroup(
+      title: '周期记账',
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          for (int i = 0; i < rules.length; i++) ...[
+            if (i > 0) const Divider(indent: 64),
+            _RecurringRow(
+              rule: rules[i],
+              onToggle: (v) => state.updateRecurringRule(
+                  rules[i].copyWith(active: v)),
+              onDelete: () => state.deleteRecurringRule(rules[i].id),
+            ),
+          ],
         ],
       ),
     );
@@ -811,7 +837,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.5.0',
+            Text('版本 4.6.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -820,7 +846,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.5 常用备注 · 账户月度收支\nv4.4 统计柱状图下钻当日流水\nv4.3 金额区间筛选 · 账户名搜索\nv4.2 明细分类筛选 · 统计下钻\nv4.1 账户转账 · 不计收支',
+            Text('v4.6 周期记账（每周/每月/每年自动生成）\nv4.5 常用备注 · 账户月度收支\nv4.4 统计柱状图下钻当日流水\nv4.3 金额区间筛选 · 账户名搜索\nv4.2 明细分类筛选 · 统计下钻',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),
@@ -1246,6 +1272,66 @@ class _JsonRestoreDialogState extends State<_JsonRestoreDialog> {
           child: const Text('恢复'),
         ),
       ],
+    );
+  }
+}
+
+class _RecurringRow extends StatelessWidget {
+  const _RecurringRow({
+    required this.rule,
+    required this.onToggle,
+    required this.onDelete,
+  });
+
+  final RecurringRule rule;
+  final ValueChanged<bool> onToggle;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final category = TxCategories.byId(rule.categoryId);
+    final fmt = DateFormat('M月d日', 'zh_CN');
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(kSpace4, kSpace2, kSpace2, kSpace2),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0F1EF),
+              borderRadius: BorderRadius.circular(kRadiusTable),
+            ),
+            child: const Icon(Icons.repeat_rounded,
+                size: 18, color: kInkPrimary),
+          ),
+          const SizedBox(width: kSpace3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${rule.frequency.label} · ${category.name}',
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 2),
+                Text(
+                  '${AmountText.format(rule.amount, showSymbol: false)}'
+                  ' · 下次 ${fmt.format(rule.nextDate)}',
+                  style:
+                      const TextStyle(fontSize: 12, color: kInkSecondary),
+                ),
+              ],
+            ),
+          ),
+          Switch(value: rule.active, onChanged: onToggle),
+          IconButton(
+            tooltip: '删除周期规则',
+            onPressed: onDelete,
+            icon: const Icon(Icons.delete_outline_rounded,
+                size: 20, color: kDanger),
+          ),
+        ],
+      ),
     );
   }
 }

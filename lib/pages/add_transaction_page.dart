@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../data/app_state.dart';
 import '../models/account.dart';
 import '../models/transaction.dart';
+import '../models/recurring_rule.dart';
 import '../theme/app_colors.dart';
 import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
@@ -46,6 +47,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   late String _accountId;
   late String _toAccountId;
   late DateTime _date;
+  RecurFrequency _recur = RecurFrequency.none;
   String _note = '';
   final _noteController = TextEditingController();
   final _amountController = TextEditingController();
@@ -106,6 +108,37 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       ('今天', now),
       ('昨天', now.subtract(const Duration(days: 1))),
     ];
+  }
+
+  Future<void> _pickRecur() async {
+    final selected = await showModalBottomSheet<RecurFrequency>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final f in RecurFrequency.values)
+              ListTile(
+                leading: Icon(
+                  f == RecurFrequency.none
+                      ? Icons.block_rounded
+                      : Icons.repeat_rounded,
+                  color: kInkSecondary,
+                ),
+                title: Text(f.label),
+                trailing: _recur == f
+                    ? const Icon(Icons.check_rounded,
+                        color: kAccentBlue, size: 20)
+                    : null,
+                onTap: () => Navigator.of(context).pop(f),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (selected != null && mounted) {
+      setState(() => _recur = selected);
+    }
   }
 
   Future<void> _pickDate() async {
@@ -236,6 +269,22 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       await state.updateTransaction(tx);
     } else {
       await state.addTransaction(tx);
+      if (_recur != RecurFrequency.none) {
+        await state.addRecurringRule(RecurringRule(
+          id: 'rc_${DateTime.now().microsecondsSinceEpoch}',
+          type: _type,
+          amount: amount,
+          categoryId: _categoryId,
+          accountId: _accountId,
+          transferToAccountId:
+              _type == TxType.transfer ? _toAccountId : null,
+          note: _noteController.text.trim(),
+          date: _date,
+          nextDate: RecurringRule.nextAfter(_date, _recur),
+          frequency: _recur,
+          bookId: state.currentBookId,
+        ));
+      }
     }
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
@@ -662,6 +711,13 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               onTap: _pickAccount,
             ),
           ],
+          const Divider(indent: 52),
+          _SelectRow(
+            icon: Icons.repeat_rounded,
+            label: '周期',
+            value: _recur.label,
+            onTap: _pickRecur,
+          ),
         ],
       ),
     );
