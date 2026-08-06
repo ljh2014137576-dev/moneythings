@@ -4,6 +4,7 @@ import 'package:moneythings_goal/data/app_state.dart';
 import 'package:moneythings_goal/main.dart';
 import 'package:moneythings_goal/models/transaction.dart';
 import 'package:moneythings_goal/services/csv_exporter.dart';
+import 'package:moneythings_goal/services/csv_importer.dart';
 import 'package:moneythings_goal/widgets/amount_text.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -256,5 +257,92 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('宠物'), findsWidgets);
   });
+ 
+  test('CsvImporter 解析/错误行', () {
+    const csv = '\uFEFF日期,类型,分类,金额(元),账户,备注\n'
+        '2026-08-06 12:30,支出,餐饮,42.50,支付宝,午饭\n'
+        '2026-08-05,收入,工资,5000,银行卡,工资\n'
+        'bad line\n';
+    final r = CsvImporter.parseCsv(csv);
+    expect(r.transactions.length, 2);
+    expect(r.errors.length, 1);
+    expect(r.transactions[0].amount, 4250);
+    expect(r.transactions[0].categoryId, 'food');
+    expect(r.transactions[1].type, TxType.income);
+    expect(r.transactions[1].categoryId, 'salary');
+  });
+
+  test('importCsv 合并去重', () async {
+    SharedPreferences.setMockInitialValues({});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    const csv = '日期,类型,分类,金额(元),账户,备注\n'
+        '2026-08-06,支出,餐饮,42.00,支付宝,午饭\n'
+        '2026-08-06,支出,餐饮,42.00,支付宝,午饭\n';
+    final r = await state.importCsv(csv);
+    expect(r.transactions.length, 1);
+    expect(r.skipped, 1);
+    expect(state.transactions.length, 1);
+  });
+
+  testWidgets('明细搜索按备注过滤', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'a',
+      type: TxType.expense,
+      amount: 1600,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 5),
+      note: '咖啡',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'b',
+      type: TxType.expense,
+      amount: 500,
+      categoryId: 'transport',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 6),
+      note: '地铁',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '咖啡');
+    await tester.pumpAndSettle();
+    expect(find.textContaining('咖啡 · 支付宝'), findsOneWidget);
+    expect(find.textContaining('地铁'), findsNothing);
+
+    // 清除搜索后恢复
+    await tester.tap(find.byTooltip('清除搜索'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('地铁 · 支付宝'), findsOneWidget);
+  });
+
+  testWidgets('月份快速跳转', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final state = AppState();
+    await state.load();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.textContaining('本月'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('年'), findsWidgets);
+
+    await tester.tap(find.text('7月'));
+    await tester.pumpAndSettle();
+    expect(find.text('2026年7月'), findsOneWidget);
+  });
 }
+
 

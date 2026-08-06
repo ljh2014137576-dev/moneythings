@@ -62,6 +62,67 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> _importCsv() async {
+    final controller = TextEditingController();
+    final pasted = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('导入 CSV',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+        content: SizedBox(
+          width: 360,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                '粘贴「导出数据 (CSV)」生成的内容（首行表头可选），重复流水会自动跳过。',
+                style: TextStyle(fontSize: 12, color: kInkSecondary, height: 1.5),
+              ),
+              const SizedBox(height: kSpace3),
+              TextField(
+                controller: controller,
+                maxLines: 8,
+                maxLength: 200000,
+                style: const TextStyle(fontSize: 12, height: 1.4),
+                decoration: const InputDecoration(
+                  hintText: '日期,类型,分类,金额(元),账户,备注\n'
+                      '2026-08-06 12:30,支出,餐饮,42.00,支付宝,午饭',
+                  hintStyle: TextStyle(fontSize: 12, color: kInkDisabled),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(minimumSize: const Size(96, 44)),
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: const Text('导入'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (pasted == null || pasted.trim().isEmpty || !mounted) return;
+
+    final state = context.read<AppState>();
+    final result = await state.importCsv(pasted);
+    if (!mounted) return;
+    final parts = [
+      '导入 ${result.transactions.length} 笔',
+      if (result.skipped > 0) '跳过 ${result.skipped} 行',
+      if (result.errors.isNotEmpty) '错误 ${result.errors.length} 行',
+    ];
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(parts.join('，'))),
+    );
+  }
+
   Future<void> _exportCsv() async {
     final state = context.read<AppState>();
     if (state.transactions.isEmpty) {
@@ -370,6 +431,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 }
               },
             ),
+          _DataRow(
+            icon: Icons.upload_file_outlined,
+            label: '导入数据 (CSV)',
+            color: kInkPrimary,
+            onTap: _importCsv,
+          ),
           _DataRow(
             icon: Icons.ios_share_outlined,
             label: '导出数据 (CSV)',

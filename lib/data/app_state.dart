@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import '../models/account.dart';
 import '../models/transaction.dart';
 import 'transaction_repository.dart';
+import '../services/csv_importer.dart';
 
 /// 某自然月的收支统计
 class MonthSummary {
@@ -124,6 +125,18 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+ 
+  /// 导入 CSV，返回解析结果（已合并去重）
+  Future<CsvImportResult> importCsv(String csv) async {
+    final result = CsvImporter.parseCsv(csv, existing: _transactions);
+    if (result.transactions.isNotEmpty) {
+      _transactions = [..._transactions, ...result.transactions]
+        ..sort((a, b) => b.date.compareTo(a.date));
+      await _persist();
+      notifyListeners();
+    }
+    return result;
+  }
   /// 某月（年份+月份）的流水
   List<Transaction> ofMonth(DateTime month) {
     final y = month.year, m = month.month;

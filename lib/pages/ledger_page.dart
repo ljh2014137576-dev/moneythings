@@ -27,6 +27,8 @@ class LedgerPage extends StatefulWidget {
 class _LedgerPageState extends State<LedgerPage> {
   late DateTime _month;
   _Filter _filter = _Filter.all;
+  final _searchController = TextEditingController();
+  String _query = '';
 
   @override
   void initState() {
@@ -35,13 +37,27 @@ class _LedgerPageState extends State<LedgerPage> {
     _month = DateTime(now.year, now.month);
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   List<Transaction> _visible(List<Transaction> all) {
-    return switch (_filter) {
+    final byType = switch (_filter) {
       _Filter.all => all,
       _Filter.expense =>
         all.where((t) => t.type == TxType.expense).toList(),
       _Filter.income => all.where((t) => t.type == TxType.income).toList(),
     };
+    if (_query.isEmpty) return byType;
+    final q = _query.toLowerCase();
+    return [
+      for (final t in byType)
+        if (t.note.toLowerCase().contains(q) ||
+            TxCategories.byId(t.categoryId).name.contains(q))
+          t,
+    ];
   }
 
   Map<DateTime, List<Transaction>> _groupByDay(List<Transaction> list) {
@@ -84,16 +100,20 @@ class _LedgerPageState extends State<LedgerPage> {
                   onChanged: (m) => setState(() => _month = m),
                 ),
                 const SizedBox(height: kSpace3),
+                const SizedBox(height: kSpace3),
+                _buildSearchField(),
                 _buildFilterRow(),
               ],
             ),
           ),
           const SizedBox(height: kSpace3),
           Expanded(
-            child: monthTx.isEmpty
+            child: (monthTx.isEmpty || (visible.isEmpty && _query.isNotEmpty))
                 ? EmptyState(
-                    title: '本月还没有流水',
-                    message: '回到首页点击「记一笔」开始记录',
+                    title: _query.isNotEmpty ? "没有找到相关流水" : "本月还没有流水",
+                    message: _query.isNotEmpty
+                        ? "换个关键词或清除搜索试试"
+                        : "回到首页点击「记一笔」开始记录",
                     onAction: null,
                   )
                 : ListView(
@@ -113,6 +133,44 @@ class _LedgerPageState extends State<LedgerPage> {
                   ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return Container(
+      decoration: BoxDecoration(
+        color: kPaperSurface,
+        border: Border.all(color: kDividerDefault, width: 1),
+        borderRadius: BorderRadius.circular(kRadiusTable),
+      ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (v) => setState(() => _query = v.trim()),
+        decoration: InputDecoration(
+          hintText: '搜索备注或分类',
+          hintStyle: const TextStyle(fontSize: 14, color: kInkDisabled),
+          prefixIcon: const Icon(Icons.search_rounded,
+              size: 20, color: kInkSecondary),
+          suffixIcon: _query.isNotEmpty
+              ? IconButton(
+                  tooltip: '清除搜索',
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _query = '');
+                  },
+                  icon: const Icon(Icons.close_rounded,
+                      size: 18, color: kInkSecondary),
+                )
+              : null,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          filled: false,
+          isDense: true,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: kSpace3, vertical: 10),
+        ),
       ),
     );
   }
