@@ -83,11 +83,31 @@ class _ProfilePageState extends State<ProfilePage> {
       builder: (context) => AlertDialog(
         title: const Text('确认导入',
             style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
-        content: Text(
-          '将导入 ${preview.transactions.length} 笔，跳过 ${preview.skipped} 行'
-          '${preview.errors.isNotEmpty ? '，错误 ${preview.errors.length} 行' : ''}。',
-          style: const TextStyle(
-              fontSize: 14, color: kInkSecondary, height: 1.5),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '将导入 ${preview.transactions.length} 笔，跳过 ${preview.skipped} 行'
+              '${preview.errors.isNotEmpty ? '，错误 ${preview.errors.length} 行' : ''}。',
+              style: const TextStyle(
+                  fontSize: 14, color: kInkSecondary, height: 1.5),
+            ),
+            if (preview.errors.isNotEmpty) ...[
+              const SizedBox(height: kSpace3),
+              const Text('错误示例：',
+                  style: TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 2),
+              for (final e in preview.errors.take(3))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Text(e,
+                      style: const TextStyle(
+                          fontSize: 11, color: kDanger, height: 1.4)),
+                ),
+            ],
+          ],
         ),
         actions: [
           TextButton(

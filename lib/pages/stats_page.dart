@@ -44,6 +44,7 @@ class _StatsPageState extends State<StatsPage> {
     final ranking = state.categoryExpenseRanking(_month);
     final incomeRanking = state.categoryIncomeRanking(_month);
     final balanceSeries = state.recentBalanceSeries(_month, _balanceMonths);
+    final yearData = state.yearComparison(_month.year);
     final weekSeries = state.weeklyExpenseSeries(_month);
     final series = state.dailyExpenseSeries(_month);
     final incomeSeries = state.dailyIncomeSeries(_month);
@@ -115,6 +116,8 @@ class _StatsPageState extends State<StatsPage> {
                       ),
                       const SizedBox(height: kSpace3),
                       _buildBalanceChart(balanceSeries),
+                      const SizedBox(height: kSpace3),
+                      _buildYearChart(yearData),
                       const SizedBox(height: kSpace3),
                       _buildDailyWeeklyToggle(),
                       const SizedBox(height: kSpace3),
@@ -281,6 +284,132 @@ class _StatsPageState extends State<StatsPage> {
           onTap: () => setState(() => _weekly = true),
         ),
       ],
+    );
+  }
+
+  Widget _buildYearChart(
+      List<({int month, int thisYear, int lastYear})> data) {
+    int maxV = 0;
+    for (final e in data) {
+      if (e.thisYear > maxV) maxV = e.thisYear;
+      if (e.lastYear > maxV) maxV = e.lastYear;
+    }
+    final niceMax = _niceMax(maxV / 100.0);
+    final curYear = _month.year;
+    return PaperGroup(
+      title: '年度对比（$curYear vs ${curYear - 1}）',
+      padding: const EdgeInsets.fromLTRB(kSpace3, kSpace2, kSpace3, kSpace4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            height: 170,
+            child: BarChart(
+              BarChartData(
+                maxY: niceMax,
+                minY: 0,
+                alignment: BarChartAlignment.spaceAround,
+                barGroups: [
+                  for (int i = 0; i < data.length; i++)
+                    BarChartGroupData(
+                      x: i,
+                      barRods: [
+                        BarChartRodData(
+                          toY: data[i].thisYear / 100.0,
+                          width: 5,
+                          color: kInkPrimary,
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(2)),
+                        ),
+                        BarChartRodData(
+                          toY: data[i].lastYear / 100.0,
+                          width: 5,
+                          color: const Color(0xFFC9CCC9),
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(2)),
+                        ),
+                      ],
+                    ),
+                ],
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: niceMax / 4,
+                  getDrawingHorizontalLine: (value) =>
+                      FlLine(color: kDividerSubtle, strokeWidth: 1),
+                ),
+                borderData: FlBorderData(show: false),
+                titlesData: FlTitlesData(
+                  topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 42,
+                      interval: niceMax / 4,
+                      getTitlesWidget: (value, meta) {
+                        if (value <= 0) return const SizedBox.shrink();
+                        return Text(_compact(value),
+                            style: const TextStyle(
+                                fontSize: 10, color: kInkDisabled));
+                      },
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 22,
+                      interval: 1,
+                      getTitlesWidget: (value, meta) {
+                        final m = value.toInt() + 1;
+                        if (m % 2 == 0) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text('$m月',
+                              style: const TextStyle(
+                                  fontSize: 10, color: kInkDisabled)),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (_) => kInkPrimary,
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final i = group.x;
+                      if (i < 0 || i >= data.length) return null;
+                      final label = rodIndex == 0 ? '$curYear 年' : '${curYear - 1} 年';
+                      return BarTooltipItem(
+                        '$label\n'
+                        '${AmountText.format((rod.toY * 100).round())}',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          height: 1.4,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: kSpace2),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _LegendDot(color: kInkPrimary, label: '$curYear 年'),
+              const SizedBox(width: kSpace4),
+              _LegendDot(color: const Color(0xFFC9CCC9),
+                  label: '${curYear - 1} 年'),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -778,6 +907,35 @@ class _ChartModeTag extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+
+class _LegendDot extends StatelessWidget {
+  const _LegendDot({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(label,
+            style:
+                const TextStyle(fontSize: 12, color: kInkSecondary)),
+      ],
     );
   }
 }

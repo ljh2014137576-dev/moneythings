@@ -1180,6 +1180,36 @@ void main() {
     await state2.load();
     expect(state2.lastAccountId, 'card');
   });
+
+  test('年度对比 yearComparison', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    // 2026 年 3 月支出 5000，2025 年 3 月支出 3000
+    await state.addTransaction(Transaction(
+      id: 'y1',
+      type: TxType.expense,
+      amount: 5000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(2026, 3, 10),
+    ));
+    await state.addTransaction(Transaction(
+      id: 'y2',
+      type: TxType.expense,
+      amount: 3000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(2025, 3, 15),
+    ));
+    final cmp = state.yearComparison(2026);
+    expect(cmp.length, 12);
+    expect(cmp[2].month, 3);
+    expect(cmp[2].thisYear, 5000);
+    expect(cmp[2].lastYear, 3000);
+    expect(cmp[0].thisYear, 0);
+  });
 }
 
 

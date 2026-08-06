@@ -395,6 +395,7 @@ Future<CsvImportResult> importCsv(String csv) async {
   /// 以某月为终点，往前 count 个月的月度结余序列（时间升序）
   List<({DateTime month, int balance})> recentBalanceSeries(
     DateTime endMonth,
+
     int count,
   ) {
     final out = <({DateTime month, int balance})>[];
@@ -402,6 +403,19 @@ Future<CsvImportResult> importCsv(String csv) async {
       final m = DateTime(endMonth.year, endMonth.month - i);
       final s = summaryOf(m);
       out.add((month: m, balance: s.balance));
+    }
+    return out;
+  }
+
+  /// 指定年逐月支出，与上一年对比（1..12 月）
+  List<({int month, int thisYear, int lastYear})> yearComparison(
+    int year,
+  ) {
+    final out = <({int month, int thisYear, int lastYear})>[];
+    for (int m = 1; m <= 12; m++) {
+      final cur = summaryOf(DateTime(year, m)).expense;
+      final prev = summaryOf(DateTime(year - 1, m)).expense;
+      out.add((month: m, thisYear: cur, lastYear: prev));
     }
     return out;
   }
