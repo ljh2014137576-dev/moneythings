@@ -699,3 +699,22 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 79/79；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：无阻塞问题（沿用 UTF-8 安全编辑与语义节点坐标点击验证）。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-09 01:00 — 迭代 v4.9：明细多选批量修改（分类/账户）+ 版本号 4.9.0 + 最终 release
+
+- 任务内容：
+  - A. 明细多选批量修改：多选栏新增「修改」按钮；弹层选「修改分类 / 修改账户」→ 分类/账户选择弹层（Wrap chips）→ `AppState.bulkUpdateTransactions(ids, categoryId/accountId)` 批量应用并退出多选。
+  - B. 测试：新增 2 项（批量改账户、批量改分类），81/81 通过。
+  - C. web 冒烟：明细长按 → 多选删除 → 全选 18 项 → 修改选中 → 修改账户 → 支付宝 → localStorage 本月 18 笔全部变 alipay（其他月份不受影响，符合「全选=可见流水」语义）；零控制台错误。截图 53-batch-edit.png。
+  - D. 版本号 4.9.0+49（aapt 校验 versionName=4.9.0/versionCode=49）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `462F06F3...81E2`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（bulkUpdateTransactions）
+  - `lib/pages/ledger_page.dart`（多选栏「修改」+ _editSelected/_pickBulkCategory/_pickBulkAccount）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/53-batch-edit.png`（新增）
+- commit hash：`a2dbdb3`；已 push（0ede1c8..a2dbdb3 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 81/81；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：
+  1. `const Text('批量修改 ${_selectedIds.length} 笔')` 字符串插值不能 const → 去掉 const。
+  2. 选择弹层「支付宝/餐饮」与筛选行同名 → 测试用 `.last`（弹层在树尾部）。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
