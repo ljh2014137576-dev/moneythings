@@ -53,3 +53,10 @@ screenshots/.gitkeep
 
 # Java 堆转储 / 构建垃圾
 *.hprof
+
+# 签名密钥（本地保留，不入库）
+android/upload-keystore.jks
+android/keystore.properties
+
+# Gradle 各模块构建产物
+android/**/build/
