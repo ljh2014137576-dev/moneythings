@@ -258,12 +258,13 @@ class _ProfilePageState extends State<ProfilePage> {
     }
     final now = DateTime.now();
     final stamp = '${now.year}${_p2(now.month)}${_p2(now.day)}';
+    final namePart = scope == 'all' ? '全部' : state.currentBook.name;
     final csv = CsvExporter.exportCsv(
       txs,
       bookNames: {for (final b in state.books) b.id: b.name},
+      metaLines: ['导出时间：$stamp', '范围：$namePart'],
     );
     try {
-      final namePart = scope == 'all' ? '全部' : state.currentBook.name;
       final where = await exportCsvFile(
         csv,
         '记账本流水_${namePart}_$stamp.csv',

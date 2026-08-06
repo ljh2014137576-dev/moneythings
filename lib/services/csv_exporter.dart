@@ -11,8 +11,12 @@ class CsvExporter {
   static String exportCsv(
     List<Transaction> transactions, {
     Map<String, String>? bookNames,
+    List<String> metaLines = const [],
   }) {
-    final buf = StringBuffer('\uFEFF');
+    final buf = StringBuffer('﻿');
+    for (final m in metaLines) {
+      buf.writeln('# $m');
+    }
     buf.writeln('日期,类型,分类,金额(元),账户,账本,备注');
     for (final t in transactions) {
       final d = t.date;

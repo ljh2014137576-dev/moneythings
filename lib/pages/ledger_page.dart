@@ -81,6 +81,17 @@ class _LedgerPageState extends State<LedgerPage> {
     }
     if (_query.isEmpty) return byType;
     final q = _query.toLowerCase();
+    // 金额搜索：纯数字（支持小数）时按金额匹配
+    if (RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(q)) {
+      final parts = q.split('.');
+      final yuan = int.tryParse(parts[0]) ?? 0;
+      final fen = parts.length > 1
+          ? int.tryParse(parts[1].padRight(2, '0').substring(0, 2)) ?? 0
+          : 0;
+      final cents = yuan * 100 + fen;
+      return [for (final t in byType) if (t.amount == cents) t];
+    }
+
     return [
       for (final t in byType)
         if (t.note.toLowerCase().contains(q) ||
@@ -653,6 +664,7 @@ class _LedgerPageState extends State<LedgerPage> {
     final csv = CsvExporter.exportCsv(
       txs,
       bookNames: {for (final b in state.books) b.id: b.name},
+      metaLines: ['导出时间：$stamp', '范围：当前筛选'],
     );
     try {
       final where = await exportCsvFile(

@@ -1289,6 +1289,62 @@ void main() {
     // 删除后退出多选，标题恢复
     expect(find.text('明细'), findsWidgets);
   });
+ 
+  testWidgets('明细搜索按金额匹配', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'amt1',
+      type: TxType.expense,
+      amount: 4200,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '午餐',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'amt2',
+      type: TxType.expense,
+      amount: 1500,
+      categoryId: 'transport',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '地铁',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    // 搜索金额 42 → 只显示 42.00 的流水
+    await tester.enterText(find.byType(TextField).first, '42');
+    await tester.pumpAndSettle();
+    expect(find.textContaining('午餐'), findsWidgets);
+    expect(find.textContaining('地铁'), findsNothing);
+  });
+
+  test('CsvExporter 头部信息行可被导入跳过', () {
+    final txs = [
+      Transaction(
+        id: 'meta1',
+        type: TxType.expense,
+        amount: 100,
+        categoryId: 'food',
+        accountId: 'alipay',
+        date: DateTime(2026, 8, 6),
+      ),
+    ];
+    final csv = CsvExporter.exportCsv(
+      txs,
+      metaLines: ['导出时间：20260807', '范围：全部'],
+    );
+    expect(csv, contains('# 导出时间：20260807'));
+    final r = CsvImporter.parseCsv(csv);
+    expect(r.transactions.length, 1);
+    expect(r.errors, isEmpty);
+  });
 }
 
 

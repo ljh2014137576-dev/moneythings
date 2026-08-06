@@ -28,7 +28,7 @@ class CsvImporter {
     final lines = content
         .replaceFirst('\uFEFF', '')
         .split(RegExp(r'\r?\n'))
-        .where((l) => l.trim().isNotEmpty)
+        .where((l) => l.trim().isNotEmpty && !l.trim().startsWith('#'))
         .toList();
 
     if (lines.isEmpty) {

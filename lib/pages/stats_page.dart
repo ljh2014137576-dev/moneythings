@@ -27,7 +27,7 @@ class _StatsPageState extends State<StatsPage> {
   int _selectedWeek = -1;
   bool _weekly = false;
   bool _incomeChart = false;
-  int _balanceMonths = 6;
+  int _balanceMonths = 12;
 
   @override
   void initState() {
