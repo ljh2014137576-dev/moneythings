@@ -615,3 +615,25 @@
   1. web 上 getByText 匹配不到 Flutter 语义文本、坐标点击易误中 → 弹层交互以单元测试权威验证（与以往金额/搜索类一致的策略）。
   2. 残留 Chrome 实例 + dev 编译卡顿导致页面无法引导 → 杀 chrome/flutter/dart 进程重启 web server。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-08 17:00 — 迭代 v4.5：记一笔常用备注 + 账户页月度收支 + 版本号 4.5.0 + 最终 release
+
+- 任务内容：
+  - A. 记一笔常用备注：备注输入框上方横向快捷备注 chips（午餐/晚餐/早餐/地铁/打车/超市/房租/水电/话费/咖啡），点击一键填充备注（复用 _QuickAmountChip）。
+  - B. 我的页每账户月度收支：`AppState.monthlySummaryOfAccount(accountId, month)` 返回当月支出/收入/笔数（转账不计）；账户行显示「本月支出 X · 收入 Y · N 笔」。
+  - C. 测试：新增 2 项（常用备注快捷填充、我的页账户月度收支），70/70 通过。
+  - D. web 冒烟：记一笔页渲染常用备注 chips；我的页各账户显示本月支出/收入/笔数（银行卡 6 笔 支出196/收入14000、支付宝 5 笔 支出286、微信 7 笔 支出518）；零控制台错误。截图 49-quick-notes.png。
+  - E. 版本号 4.5.0+45（aapt 校验 versionName=4.5.0/versionCode=45）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.7MB，SHA-256 `B2B80309...5AD`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/add_transaction_page.dart`（_buildQuickNoteRow）
+  - `lib/data/app_state.dart`（monthlySummaryOfAccount）
+  - `lib/pages/profile_page.dart`（_AccountRow 加 month 参数与月度收支副标题）
+  - `pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/49-quick-notes.png`（新增）
+- commit hash：`3a03839`；已 push（fc4403b..3a03839 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 70/70；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：
+  1. 相邻字符串拼接漏写首段闭合引号（Unterminated string literal）→ 补 `'`。
+  2. 600px 视口下备注 chips 在折叠区外，tap 警告 off-screen → 测试先 ensureVisible 再点。
+  3. Gradle `IncrementalSplitterRunnable`（已知）→ 杀进程重试 38.1s 成功。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）；候选大功能：周期记账（重复记账）。
