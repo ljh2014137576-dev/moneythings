@@ -133,3 +133,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 22/22；web 实测：首启引导三页→首页、结余走势图渲染、账户初始余额对话框设置 ¥500 后余额更新，零控制台错误。
 - 遇到的问题与解决方案：无阻塞性问题（沿用自持 controller 的对话框模式避免 dispose 崩溃）。
 - 下一步计划：本地预算预警通知、多账本切换、深色模式、商店上架素材。
+
+## 2026-08-07 05:00 — 迭代 v1.5：滑动删除 / 首页走势 / 预算剩余日均 / 商店文案
+
+- 任务内容：
+  - A. 明细左滑删除 + 撤销：Dismissible 红底删除背景，删除后 SnackBar「已删除 ¥xx」带「撤销」一键恢复。
+  - B. 首页结余走势迷你图：复用 `recentBalanceSeries`，首页新增 6 个月迷你柱状图（正=黑、负=红，中线基准）。
+  - C. 预算剩余/日均可用：AppState 新增 `budgetRemaining` / `budgetDaysLeft` / `budgetDailyRemaining`；首页预算条与「我的→预算管理」显示「剩余 ¥xx · 日均可用 ¥yy」（超支显示红字）。
+  - D. 商店上架文案：`STORE_TEXT.md`（名称/简介/详细描述/类别/关键词/宣传语/隐私）。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`（滑动删除）、`lib/pages/home_page.dart`（结余迷你图 + 预算剩余日均）、`lib/pages/profile_page.dart`（预算剩余日均）、`lib/data/app_state.dart`（预算 getters）
+  - `STORE_TEXT.md`（新增）、`test/widget_test.dart`（25 测试）、`screenshots/1-home-v1.5.png`、`10-ledger-swipe.png`
+- commit hash：`854b8db`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 25/25（新增预算计算、首页走势/剩余日均显示、左滑删除撤销）；web 实测：首页结余走势、预算剩余日均显示、明细左滑删除 + 撤销恢复，零控制台错误。
+- 遇到的问题与解决方案：
+  1. node 脚本多次写坏 home_page.dart（字段插错位/文件头污染）→ 干脆整体重写该文件（内容完全可控），后续统一用 PowerShell 按行编辑。
+  2. PowerShell 双引号中 `${...}` 展开问题 → 用反引号 `` `$ `` 转义。
+- 下一步计划：本地预算预警通知、多账本切换、深色模式、商店上架素材。
