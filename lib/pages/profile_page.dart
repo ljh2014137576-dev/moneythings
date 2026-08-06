@@ -166,9 +166,10 @@ class _ProfilePageState extends State<ProfilePage> {
       bookNames: {for (final b in state.books) b.id: b.name},
     );
     try {
+      final namePart = scope == 'all' ? '全部' : state.currentBook.name;
       final where = await exportCsvFile(
         csv,
-        '记账本流水_$stamp.csv',
+        '记账本流水_${namePart}_$stamp.csv',
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -618,6 +619,12 @@ class _ProfilePageState extends State<ProfilePage> {
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
                 style: TextStyle(fontSize: 13, color: kInkSecondary, height: 1.5)),
+            SizedBox(height: kSpace3),
+            Text('更新日志',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            SizedBox(height: kSpace2),
+            Text('v2.2 本周概览 · 导入预览 · 预算剩余天数\nv2.1 复制上一条 · 每周统计 · 每日记账提醒\nv2.0 全部时间 · 系统通知 · 多账本完善\nv1.x 明细搜索/左滑删除/统计/自定义分类等',
+                style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),
         actions: [

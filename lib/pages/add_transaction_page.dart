@@ -28,10 +28,13 @@ class _AmountInputFormatter extends TextInputFormatter {
 }
 
 class AddTransactionPage extends StatefulWidget {
-  const AddTransactionPage({super.key, this.editing});
+  const AddTransactionPage({super.key, this.editing, this.copyFrom});
 
   /// 传入则进入编辑模式
   final Transaction? editing;
+
+  /// 传入则预填内容但作为新账目保存（日期保持今天）
+  final Transaction? copyFrom;
 
   @override
   State<AddTransactionPage> createState() => _AddTransactionPageState();
@@ -53,14 +56,15 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   void initState() {
     super.initState();
     final e = widget.editing;
-    _type = e?.type ?? TxType.expense;
-    _categoryId = e?.categoryId ?? TxCategories.expense.first.id;
-    _accountId = e?.accountId ?? 'alipay';
+    final src = e ?? widget.copyFrom;
+    _type = src?.type ?? TxType.expense;
+    _categoryId = src?.categoryId ?? TxCategories.expense.first.id;
+    _accountId = src?.accountId ?? 'alipay';
     _date = e?.date ?? DateTime.now();
-    _note = e?.note ?? '';
+    _note = src?.note ?? '';
     _noteController.text = _note;
-    if (e != null && e.amount > 0) {
-      _amountController.text = (e.amount / 100).toStringAsFixed(2);
+    if (src != null && src.amount > 0) {
+      _amountController.text = (src.amount / 100).toStringAsFixed(2);
     }
     // 编辑模式进入时聚焦金额输入
     if (e != null) {

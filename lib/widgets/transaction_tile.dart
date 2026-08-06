@@ -14,11 +14,13 @@ class TransactionTile extends StatelessWidget {
     super.key,
     required this.transaction,
     this.onTap,
+    this.onLongPress,
     this.showAccount = true,
   });
 
   final Transaction transaction;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final bool showAccount;
 
   @override
@@ -29,6 +31,7 @@ class TransactionTile extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: kSpace3, horizontal: kSpace4),
         child: Row(

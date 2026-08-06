@@ -25,6 +25,7 @@ class _StatsPageState extends State<StatsPage> {
   int _selectedDay = -1;
   int _selectedWeek = -1;
   bool _weekly = false;
+  int _balanceMonths = 6;
 
   @override
   void initState() {
@@ -40,7 +41,7 @@ class _StatsPageState extends State<StatsPage> {
     final summary = state.summaryOf(_month);
     final ranking = state.categoryExpenseRanking(_month);
     final incomeRanking = state.categoryIncomeRanking(_month);
-    final balanceSeries = state.recentBalanceSeries(_month, 6);
+    final balanceSeries = state.recentBalanceSeries(_month, _balanceMonths);
     final weekSeries = state.weeklyExpenseSeries(_month);
     final series = state.dailyExpenseSeries(_month);
     final days = series.length;
@@ -171,7 +172,23 @@ class _StatsPageState extends State<StatsPage> {
     final pad = (maxV - minV) * 0.18 + 20;
 
     return PaperGroup(
-      title: '结余走势（近 6 月）',
+      title: '结余走势（近 $_balanceMonths 月）',
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ChartModeTag(
+            label: '6月',
+            selected: _balanceMonths == 6,
+            onTap: () => setState(() => _balanceMonths = 6),
+          ),
+          const SizedBox(width: 6),
+          _ChartModeTag(
+            label: '12月',
+            selected: _balanceMonths == 12,
+            onTap: () => setState(() => _balanceMonths = 12),
+          ),
+        ],
+      ),
       padding: const EdgeInsets.fromLTRB(kSpace3, kSpace2, kSpace3, kSpace4),
       child: SizedBox(
         height: 170,

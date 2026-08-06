@@ -163,6 +163,7 @@ class _LedgerPageState extends State<LedgerPage> {
                           items: group.value,
                           onTapItem: (tx) => _edit(tx),
                           onDismiss: _deleteWithUndo,
+                          onLongPressItem: _longPress,
                         ),
                       ],
                     ],
@@ -345,6 +346,62 @@ class _LedgerPageState extends State<LedgerPage> {
       );
   }
 
+  Future<void> _longPress(Transaction tx) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding:
+                  const EdgeInsets.fromLTRB(kSpace4, kSpace3, kSpace4, kSpace2),
+              child: Text(
+                '${AmountText.format(tx.amount)} · ${TxCategories.byId(tx.categoryId).name}',
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined,
+                  size: 20, color: kInkPrimary),
+              title: const Text('编辑'),
+              onTap: () => Navigator.of(context).pop('edit'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.content_copy_rounded,
+                  size: 20, color: kInkPrimary),
+              title: const Text('复制为新的账目'),
+              onTap: () => Navigator.of(context).pop('copy'),
+            ),
+            ListTile(
+              leading:
+                  const Icon(Icons.delete_outline, size: 20, color: kDanger),
+              title: const Text('删除',
+                  style: TextStyle(color: kDanger)),
+              onTap: () => Navigator.of(context).pop('delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+    if (action == 'edit') {
+      await _edit(tx);
+    } else if (action == 'copy') {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => AddTransactionPage(copyFrom: tx),
+        ),
+      );
+    } else if (action == 'delete') {
+      await _deleteWithUndo(tx);
+    }
+  }
+
+
 }
 
 class _FilterTag extends StatelessWidget {
@@ -392,12 +449,14 @@ class _DayGroup extends StatelessWidget {
     required this.date,
     required this.items,
     required this.onTapItem,
+    required this.onLongPressItem,
     required this.onDismiss,
   });
 
   final DateTime date;
   final List<Transaction> items;
   final ValueChanged<Transaction> onTapItem;
+  final ValueChanged<Transaction> onLongPressItem;
   final ValueChanged<Transaction> onDismiss;
 
   @override
@@ -460,6 +519,7 @@ class _DayGroup extends StatelessWidget {
               child: TransactionTile(
                 transaction: items[i],
                 onTap: () => onTapItem(items[i]),
+                onLongPress: () => onLongPressItem(items[i]),
               ),
             ),
           ],

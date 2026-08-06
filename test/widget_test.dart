@@ -924,6 +924,38 @@ void main() {
     expect(find.text('本周支出'), findsOneWidget);
     expect(find.text('¥88.00'), findsWidgets);
   });
+
+  testWidgets('明细长按复制为新的账目', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'lp1',
+      type: TxType.expense,
+      amount: 1500,
+      categoryId: 'transport',
+      accountId: 'card',
+      date: DateTime(now.year, now.month, now.day),
+      note: '地铁',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.textContaining('地铁'));
+    await tester.pumpAndSettle();
+    expect(find.text('复制为新的账目'), findsOneWidget);
+    await tester.tap(find.text('复制为新的账目'));
+    await tester.pumpAndSettle();
+    // 进入记一笔，金额已预填 15.00
+    expect(find.text('15.00'), findsOneWidget);
+    // 保存新增
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+    expect(state.transactions.length, 2);
+  });
 }
 
 
