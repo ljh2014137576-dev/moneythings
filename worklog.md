@@ -246,3 +246,17 @@
 - 说明：定时提醒与超支通知的实际弹出需 Android 真机验证。
 - 遇到的问题与解决方案：flutter_local_notifications v22 具名参数（initialize/show/cancel/zonedSchedule）→ 查包源码适配；flutter_timezone v5 返回 TimezoneInfo → 用 .identifier；多次 splice 造成方法嵌套 → 括号深度定位修复。
 - 下一步计划：上架执行（CHECKLIST）、真机通知冒烟、深色模式评估。
+
+## 2026-08-07 12:00 — 迭代 v2.2：本周概览 / 导入预览 / 预算剩余天数
+
+- 任务内容：
+  - A. 首页「本月/本周」概览切换：`AppState.weekSummary`（周一起收支）；首页顶部切换，周模式显示「本周支出/收入/结余」且隐藏月份选择器，最近流水切到本周。
+  - B. CSV 导入解析预览确认：粘贴后先解析预览（将导入 N 笔/跳过 M/错误 K），确认后才真正导入，防误导。
+  - C. 预算条剩余天数：首页预算条文案增加「· 剩 N 天」（`budgetDaysLeft`）。
+- 修改文件：
+  - `lib/data/app_state.dart`、`lib/pages/home_page.dart`、`lib/pages/profile_page.dart`
+  - `test/widget_test.dart`（38 测试）、`screenshots/22-home-week.png`、`23-budget-days.png`
+- commit hash：`1ea8c0e`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 38/38（本周概览排除上周、首页切换本周支出 ¥88、导入预览确认、预算剩余/日均）；web 实测：本周/本月切换、本周支出 ¥632、预算剩余天数渲染，零控制台错误。
+- 遇到的问题与解决方案：首页三元表达式括号与标题残留导致语法错误 → 逐处修复；导入预览 `${}` 被 `\$` 转义成字面量 → 去掉反斜杠；测试适配预览确认弹窗（确认导入按钮 .last）。
+- 下一步计划：上架执行（CHECKLIST）、真机通知冒烟、深色模式评估。
