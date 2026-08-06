@@ -383,3 +383,15 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 50/50（多选删除全流程）；web 实测长按→多选→全选 18 项→删除→退出多选，零控制台错误。
 - 遇到的问题与解决方案：选择栏最初放滚动头部导致被滚出屏幕 → 改为固定栏；TransactionTile 括号错位/选择块插错 → 括号深度与行定位修复；测试行被底部导航遮挡 → 改用「全选」+ 修正断言。
 - 下一步计划：上架执行（RELEASE.md）、真机通知冒烟（SMOKE_TEST.md）、深色模式评估。
+
+## 2026-08-07 22:00 — 迭代 v3.2：最终 release 3.0.0 + 交付文档同步
+
+- 任务内容：
+  - A. 最终 release 重建：版本号与产物一致（3.0.0+30），APK 53.7MB，SHA-256 `87F08DD8...226B`，MoneyThings 签名。
+  - B. 文档同步：RELEASE.md（版本/体积/SHA/50 测试）；README 版本历史补 v3.1/v3.0；新增「设计原则」段落（说明暖灰浅色为品牌规范、深色模式暂不做及原因）。
+- 修改文件：
+  - `RELEASE.md`、`README.md`
+- commit hash：`8c834a6`；已 push。
+- 验证：release 构建成功 + apksigner 签名校验；analyze/50 测试此前全绿。
+- 遇到的问题与解决方案：PackageAndroidArtifact 打包失败（守护进程状态）→ 杀进程后 22s 构建成功。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
