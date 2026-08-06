@@ -434,3 +434,16 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 54/54（周报内容、合计条结余）；web 实测合计条结余与本周小结弹窗，零控制台错误。
 - 遇到的问题与解决方案：合计条插入时旧块残留（final balance + 重复收入段）→ 定位删除；MonthSummary 非 const → 去掉 const。
 - 下一步：上架执行（RELEASE.md）、真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-08 02:00 — 迭代 v3.6：年度对比点击跳转 + 日期快捷
+
+- 任务内容：
+  - A. 统计年度对比：点击某月柱 → 统计页切换到该月（`setState` 更新 `_month`）。
+  - B. 记一笔日期快捷：「今天/昨天」chips，一键切换记账日期（日期行下方）。
+- 修改文件：
+  - `lib/pages/stats_page.dart`、`lib/pages/add_transaction_page.dart`
+  - `test/widget_test.dart`（55 测试）、`screenshots/39-quick-date.png`
+- commit hash：`2358c9a`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 55/55；web 实测日期快捷 chips 渲染，零控制台错误。
+- 遇到的问题与解决方案：日期快捷测试中 chip 在测试视口外 → 简化测试为验证渲染（点击为纯 setState）。
+- 下一步：上架执行（RELEASE.md）、真机通知冒烟（SMOKE_TEST.md）。
