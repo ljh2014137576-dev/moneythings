@@ -471,3 +471,15 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 57/57（账本图标持久化、最近搜索去重置顶）；web 实测账本弹层与新建图标选择器，零控制台错误。
 - 遇到的问题与解决方案：仓库追加方法落在类外 → 移到类内；浏览器输入焦点受 harness 干扰（最近搜索由单元测试权威验证）。
 - 下一步：上架执行（RELEASE.md）、真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-08 05:00 — 迭代 v3.9：金额长按全选 + 版本号 3.8.0 + 最终 release
+
+- 任务内容：
+  - B. 记一笔金额输入框长按全选文本（便于快速替换/复制）。
+  - A. 版本号同步 3.8.0+38；最终 release 重建（53.7MB，SHA-256 `0379FD39...8935`，MoneyThings 签名）；RELEASE.md 更新版本/SHA/57 测试。
+- 修改文件：
+  - `lib/pages/add_transaction_page.dart`、`pubspec.yaml`、`RELEASE.md`
+- commit hash：`6cb1d13`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 57/57；release 构建+签名校验。
+- 遇到的问题与解决方案：IncrementalSplitter 打包失败（守护进程）→ 杀进程后 22s 构建成功。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
