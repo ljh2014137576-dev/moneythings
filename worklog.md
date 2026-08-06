@@ -575,3 +575,24 @@
   3. 最后一处编辑误用 `Get-Content/Set-Content -Encoding utf8`（PS 默认 ANSI）把 ledger_page 中文整体弄乱 → `git checkout` 还原后用 ReadAllText/WriteAllText（UTF-8 无 BOM）重做全部 v4.2 改动。
   4. `scrollUntilVisible`/`dragUntilVisible` 在统计页取滚动容器不稳（fl_chart 内部 Scrollable）→ 改用直接 pump LedgerPage(initialCategoryId:) 验证下钻核心逻辑；裸 pump 缺 Scaffold/Material 报错 → 包 Scaffold。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-08 13:00 — 迭代 v4.3：明细金额区间筛选 + 搜索支持账户名 + 版本号 4.3.0 + 最终 release
+
+- 任务内容：
+  - A. 明细金额区间筛选：日期与金额筛选合并为一行横向滚动条（日期：全部日期 | 金额：全部金额，各自带清除按钮），不增高表头；点「金额」打开底部弹层（最低/最高输入 + 确定/清除，校验最低≤最高）；`_visible` 按分过滤。
+  - B. 搜索支持账户名：搜索除备注/分类外，命中账户名（如搜「微信」显示微信账户流水）。
+  - C. 弹层重构为 `_AmountSheet` StatefulWidget（controller 随组件生命周期释放），修复「弹层关闭动画期间 controller 被 dispose」崩溃。
+  - D. 测试：新增 2 项（金额区间筛选、账户名搜索），67/67 通过。
+  - E. web 冒烟：金额 10~100 → 11 笔 ¥476；搜「微信」→ 7 笔 ¥518 全为微信账户；清除恢复；零控制台错误。截图 47-amount-range.png。
+  - F. 版本号 4.3.0+43（aapt 校验 versionName=4.3.0/versionCode=43）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.7MB，SHA-256 `CFA1ECAA...76EA`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`（_amountMin/_amountMax、_visible 金额过滤、搜索加账户名、日期/金额合并筛选行、_AmountSheet 弹层）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/47-amount-range.png`（新增）
+- commit hash：`8741a89`；已 push（03d2596..8741a89 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 67/67；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：
+  1. 弹层内联 controller 在 `await showModalBottomSheet` 后立即 dispose，关闭动画期间仍被引用 → 改为 `_AmountSheet` StatefulWidget 自持 controller。
+  2. Gradle `IncrementalSplitterRunnable` 失败（已知）→ 杀 java/gradle/dart 进程重试，22.6s 构建成功。
+  3. `_rangeChip` 命名/位置参数不一致 → 统一为命名参数。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
