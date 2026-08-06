@@ -230,3 +230,19 @@
 - 说明：系统通知实际弹出需 Android 真机验证（本环境无设备）；代码/权限/渠道/触发均已就绪。
 - 遇到的问题与解决方案：flutter_local_notifications 22.x API 具名参数化（initialize/show）→ 查包源码适配；需 core library desugaring → build.gradle.kts 开启；Metaspace OOM → 杀守护进程重试。
 - 下一步计划：深色模式、上架执行（CHECKLIST）、真机通知冒烟。
+
+## 2026-08-07 11:00 — 迭代 v2.1：复制上一条 / 每周统计 / 每日记账提醒
+
+- 任务内容：
+  - B. 记一笔「复制上一条」：`AppState.lastTransactionOf` 取当前账本同类型最近一笔；记一笔页顶部「复制上一条」按钮一键填充金额/分类/账户/备注。
+  - A. 统计「每日/每周」切换：`AppState.weeklyExpenseSeries` 按周聚合；统计页「每日/每周」切换，每周视图 5~6 根柱、周选中高亮、周标签与金额提示。
+  - D. 每日记账提醒：`NotificationService` 增加 `zonedSchedule` 每日 20:00 提醒（timezone 初始化 + inexact 模式无需精确闹钟权限）；「我的→数据」新增「每日记账提醒（20:00）」开关（持久化，开启请求权限并调度，关闭取消）。
+  - 深色模式说明：与「精密编辑财务 UI」暖灰浅色设计规范冲突，本轮不做（如需可单独评估）。
+- 修改文件：
+  - `lib/data/app_state.dart`、`lib/pages/add_transaction_page.dart`、`lib/pages/stats_page.dart`、`lib/services/notification_service.dart`、`lib/pages/profile_page.dart`、`lib/data/transaction_repository.dart`
+  - `pubspec.yaml`（flutter_timezone、timezone）、`test/widget_test.dart`（36 测试）、`screenshots/19-copy-last.png`、`20-weekly-chart.png`、`21-reminder-switch.png`
+- commit hash：`0459a27`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 36/36（周聚合、提醒开关持久化、复制上一条）；web 实测：复制上一条按钮、每周支出图（第1~5周/周选中/Y轴）、提醒开关渲染，零控制台错误。
+- 说明：定时提醒与超支通知的实际弹出需 Android 真机验证。
+- 遇到的问题与解决方案：flutter_local_notifications v22 具名参数（initialize/show/cancel/zonedSchedule）→ 查包源码适配；flutter_timezone v5 返回 TimezoneInfo → 用 .identifier；多次 splice 造成方法嵌套 → 括号深度定位修复。
+- 下一步计划：上架执行（CHECKLIST）、真机通知冒烟、深色模式评估。
