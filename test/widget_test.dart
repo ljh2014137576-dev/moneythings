@@ -1688,4 +1688,98 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('共 2 笔'), findsOneWidget);
   });
+  testWidgets('明细金额区间筛选', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'am1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '小额',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'am2',
+      type: TxType.expense,
+      amount: 2000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '中额',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'am3',
+      type: TxType.expense,
+      amount: 5000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '大额',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    expect(find.text('共 3 笔'), findsOneWidget);
+    // 打开金额区间弹层
+    await tester.tap(find.textContaining('金额：全部金额'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField).evaluate().length, 3); // 搜索 + 最低 + 最高
+    await tester.enterText(find.byType(TextField).at(1), '10');
+    await tester.enterText(find.byType(TextField).at(2), '30');
+    await tester.tap(find.text('确定'));
+    await tester.pumpAndSettle();
+    // 只保留 ¥20
+    expect(find.text('共 1 笔'), findsOneWidget);
+    expect(find.textContaining('中额'), findsOneWidget);
+    expect(find.textContaining('小额'), findsNothing);
+    expect(find.textContaining('大额'), findsNothing);
+    // 清除金额筛选
+    await tester.tap(find.text('清除'));
+    await tester.pumpAndSettle();
+    expect(find.text('共 3 笔'), findsOneWidget);
+  });
+
+  testWidgets('明细搜索支持账户名', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'ac1',
+      type: TxType.expense,
+      amount: 1000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '流水A',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'ac2',
+      type: TxType.expense,
+      amount: 2000,
+      categoryId: 'transport',
+      accountId: 'wechat',
+      date: DateTime(now.year, now.month, now.day),
+      note: '流水B',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    expect(find.text('共 2 笔'), findsOneWidget);
+    // 搜索账户名「支付宝」：只命中支付宝账户的流水
+    await tester.enterText(find.byType(TextField).first, '支付宝');
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pumpAndSettle();
+    expect(find.text('共 1 笔'), findsOneWidget);
+    expect(find.textContaining('流水A'), findsOneWidget);
+    expect(find.textContaining('流水B'), findsNothing);
+  });
 }

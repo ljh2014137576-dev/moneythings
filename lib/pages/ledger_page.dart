@@ -47,6 +47,8 @@ class _LedgerPageState extends State<LedgerPage> {
   bool _showAll = false;
   String _accountFilter = 'all';
   String _categoryFilter = 'all';
+  int? _amountMin;
+  int? _amountMax;
   bool _selectionMode = false;
   final Set<String> _selectedIds = {};
   bool _sortByAmount = false;
@@ -100,6 +102,14 @@ class _LedgerPageState extends State<LedgerPage> {
           if (t.categoryId == _categoryFilter) t,
       ];
     }
+    if (_amountMin != null || _amountMax != null) {
+      byType = [
+        for (final t in byType)
+          if ((_amountMin == null || t.amount >= _amountMin!) &&
+              (_amountMax == null || t.amount <= _amountMax!))
+            t,
+      ];
+    }
     if (_query.isEmpty) return byType;
     final q = _query.toLowerCase();
     // 金额搜索：纯数字（支持小数）时按金额匹配
@@ -116,7 +126,8 @@ class _LedgerPageState extends State<LedgerPage> {
     final matched = [
       for (final t in byType)
         if (t.note.toLowerCase().contains(q) ||
-            TxCategories.byId(t.categoryId).name.contains(q))
+            TxCategories.byId(t.categoryId).name.contains(q) ||
+            accountById(t.accountId).name.contains(q))
           t,
     ];
     if (_sortByAmount) {
@@ -497,46 +508,86 @@ class _LedgerPageState extends State<LedgerPage> {
 
   Widget _buildRangeRow() {
     final hasRange = _rangeStart != null || _rangeEnd != null;
+    final hasAmount = _amountMin != null || _amountMax != null;
     final fmt = DateFormat('M月d日', 'zh_CN');
-    final label = hasRange
+    final dateLabel = hasRange
         ? '${fmt.format(_rangeStart!)} ~ ${fmt.format(_rangeEnd!)}'
         : '全部日期';
-    return Row(
-      children: [
-        InkWell(
-          onTap: _showRangeSheet,
-          borderRadius: BorderRadius.circular(kRadiusTable),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              children: [
-                const Icon(Icons.date_range_outlined,
-                    size: 18, color: kInkSecondary),
-                const SizedBox(width: 6),
-                Text('日期：$label',
-                    style: const TextStyle(
-                        fontSize: 13, color: kInkPrimary)),
-                const Icon(Icons.expand_more_rounded,
-                    size: 16, color: kInkSecondary),
-              ],
-            ),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _rangeChip(
+            icon: Icons.date_range_outlined,
+            label: '日期：$dateLabel',
+            onTap: _showRangeSheet,
           ),
-        ),
-        if (hasRange)
-          TextButton(
-            onPressed: () => setState(() {
+          if (hasRange)
+            _clearFilterButton(() => setState(() {
               _rangeStart = null;
               _rangeEnd = null;
-            }),
-            style: TextButton.styleFrom(
-              minimumSize: const Size(48, 32),
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-            ),
-            child: const Text('清除',
-                style: TextStyle(fontSize: 13, color: kAccentBlue)),
+            })),
+          const SizedBox(width: kSpace3),
+          _rangeChip(
+            icon: Icons.payments_outlined,
+            label: '金额：${hasAmount ? _amountRangeLabel() : '全部金额'}',
+            onTap: _showAmountSheet,
           ),
-      ],
+          if (hasAmount)
+            _clearFilterButton(() => setState(() {
+              _amountMin = null;
+              _amountMax = null;
+            })),
+        ],
+      ),
     );
+  }
+
+  Widget _rangeChip({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(kRadiusTable),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: kInkSecondary),
+            const SizedBox(width: 6),
+            Text(label,
+                style:
+                    const TextStyle(fontSize: 13, color: kInkPrimary)),
+            const Icon(Icons.expand_more_rounded,
+                size: 16, color: kInkSecondary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _clearFilterButton(VoidCallback onTap) {
+    return TextButton(
+      onPressed: onTap,
+      style: TextButton.styleFrom(
+        minimumSize: const Size(48, 32),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+      ),
+      child: const Text('清除',
+          style: TextStyle(fontSize: 13, color: kAccentBlue)),
+    );
+  }
+
+  String _amountRangeLabel() {
+    String fmt(int v) => AmountText.format(v, showSymbol: false);
+    if (_amountMin != null && _amountMax != null) {
+      return '${fmt(_amountMin!)} ~ ${fmt(_amountMax!)}';
+    }
+    if (_amountMin != null) return '≥ ${fmt(_amountMin!)}';
+    return '≤ ${fmt(_amountMax!)}';
   }
 
   Future<void> _showRangeSheet() async {
@@ -808,6 +859,22 @@ class _LedgerPageState extends State<LedgerPage> {
     }
 
   }
+  Future<void> _showAmountSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (context) => _AmountSheet(
+        initialMin: _amountMin,
+        initialMax: _amountMax,
+        onApply: (min, max) {
+          setState(() {
+            _amountMin = min;
+            _amountMax = max;
+          });
+        },
+      ),
+    );
+  }
+
   Future<void> _exportVisible() async {
     final state = context.read<AppState>();
     final source = _showAll
@@ -1045,6 +1112,136 @@ class _LedgerSummary extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _AmountSheet extends StatefulWidget {
+  const _AmountSheet({
+    required this.initialMin,
+    required this.initialMax,
+    required this.onApply,
+  });
+
+  final int? initialMin;
+  final int? initialMax;
+  final void Function(int? min, int? max) onApply;
+
+  @override
+  State<_AmountSheet> createState() => _AmountSheetState();
+}
+
+class _AmountSheetState extends State<_AmountSheet> {
+  late final TextEditingController _minCtrl;
+  late final TextEditingController _maxCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _minCtrl = TextEditingController(
+      text: widget.initialMin == null
+          ? ''
+          : (widget.initialMin! / 100).toStringAsFixed(2),
+    );
+    _maxCtrl = TextEditingController(
+      text: widget.initialMax == null
+          ? ''
+          : (widget.initialMax! / 100).toStringAsFixed(2),
+    );
+  }
+
+  @override
+  void dispose() {
+    _minCtrl.dispose();
+    _maxCtrl.dispose();
+    super.dispose();
+  }
+
+  int? _parseYuan(String s) {
+    final v = double.tryParse(s.trim());
+    if (v == null || v < 0) return null;
+    return (v * 100).round();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(kSpace4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('金额区间（元）',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            const SizedBox(height: kSpace3),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _minCtrl,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: '最低',
+                      isDense: true,
+                      prefixText: '¥ ',
+                    ),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: kSpace2),
+                  child: Text('~'),
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: _maxCtrl,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: '最高',
+                      isDense: true,
+                      prefixText: '¥ ',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: kSpace3),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {
+                      widget.onApply(null, null);
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text('清除'),
+                  ),
+                ),
+                const SizedBox(width: kSpace2),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () {
+                      final min = _parseYuan(_minCtrl.text);
+                      final max = _parseYuan(_maxCtrl.text);
+                      if (min != null && max != null && min > max) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('最低金额不能大于最高金额')),
+                        );
+                        return;
+                      }
+                      widget.onApply(min, max);
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text('确定'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

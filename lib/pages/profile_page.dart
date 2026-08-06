@@ -809,7 +809,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.2.0',
+            Text('版本 4.3.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -818,7 +818,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.2 明细分类筛选 · 统计下钻\nv4.1 账户转账 · 不计收支\nv4.0 明细金额排序 · 金额清除\nv3.8 账本图标 · 最近搜索\nv3.6 走势点击跳转 · 日期快捷',
+            Text('v4.3 金额区间筛选 · 账户名搜索\nv4.2 明细分类筛选 · 统计下钻\nv4.1 账户转账 · 不计收支\nv4.0 明细金额排序 · 金额清除\nv3.8 账本图标 · 最近搜索',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),
