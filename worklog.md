@@ -288,3 +288,18 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 41/41（每日收入序列、JSON round-trip 含账本/预算/备注）；web 实测：首页总资产、收入切换、备份/恢复入口，零控制台错误。
 - 遇到的问题与解决方案：无阻塞。
 - 下一步计划：上架执行（CHECKLIST）、真机通知冒烟、深色模式评估。
+
+## 2026-08-07 15:00 — 迭代 v2.5：账户筛选 / 筛选导出 / 常用金额快捷
+
+- 任务内容：
+  - A. 明细按账户筛选：账户筛选行（全部账户/现金/银行卡/支付宝/微信，横向滚动），与类型/搜索/日期/账本叠加。
+  - B. 明细导出当前筛选结果：明细页标题右侧导出按钮，按当前筛选（类型/搜索/日期/账户/账本）导出 CSV。
+  - C. 记一笔常用金额快捷：金额输入框下「+10/+50/+100/+500」快捷累加。
+  - 修复：明细页 header 在测试视口溢出 11px → 压缩头部行距。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`、`lib/pages/add_transaction_page.dart`
+  - `test/widget_test.dart`（43 测试）、`screenshots/27-ledger-account-filter.png`、`28-quick-amount.png`
+- commit hash：`f55fc63`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 43/43（账户筛选隔离、+50/+100 累加 50→150）；web 实测：账户筛选行、导出按钮、常用金额 chips，零控制台错误。
+- 遇到的问题与解决方案：_exportVisible 插入时 _longPress 未闭合导致 static _p2 在方法内 → 括号深度定位修复。
+- 下一步计划：上架执行（CHECKLIST）、真机通知冒烟、深色模式评估。
