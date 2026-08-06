@@ -23,6 +23,8 @@ class StatsPage extends StatefulWidget {
 class _StatsPageState extends State<StatsPage> {
   late DateTime _month;
   int _selectedDay = -1;
+  int _selectedWeek = -1;
+  bool _weekly = false;
 
   @override
   void initState() {
@@ -39,6 +41,7 @@ class _StatsPageState extends State<StatsPage> {
     final ranking = state.categoryExpenseRanking(_month);
     final incomeRanking = state.categoryIncomeRanking(_month);
     final balanceSeries = state.recentBalanceSeries(_month, 6);
+    final weekSeries = state.weeklyExpenseSeries(_month);
     final series = state.dailyExpenseSeries(_month);
     final days = series.length;
 
@@ -109,7 +112,9 @@ class _StatsPageState extends State<StatsPage> {
                       const SizedBox(height: kSpace3),
                       _buildBalanceChart(balanceSeries),
                       const SizedBox(height: kSpace3),
-                      _buildBarChart(series),
+                      _buildDailyWeeklyToggle(),
+                      const SizedBox(height: kSpace3),
+                      _buildBarChart(series, weekly: weekSeries),
                       const SizedBox(height: kSpace4),
                       PaperGroup(
                         title: '支出分类排行',
@@ -132,6 +137,24 @@ class _StatsPageState extends State<StatsPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDailyWeeklyToggle() {
+    return Row(
+      children: [
+        _ChartModeTag(
+          label: '每日',
+          selected: !_weekly,
+          onTap: () => setState(() => _weekly = false),
+        ),
+        const SizedBox(width: kSpace2),
+        _ChartModeTag(
+          label: '每周',
+          selected: _weekly,
+          onTap: () => setState(() => _weekly = true),
+        ),
+      ],
     );
   }
 
@@ -279,20 +302,34 @@ class _StatsPageState extends State<StatsPage> {
     );
   }
 
-  Widget _buildBarChart(List<int> seriesCents) {
+  Widget _buildBarChart(
+    List<int> seriesCents, {
+    required List<({String label, int amount})> weekly,
+  }) {
+    final useWeekly = _weekly && weekly.isNotEmpty;
     final days = seriesCents.length;
-    final seriesYuan = [for (final c in seriesCents) c / 100.0];
-    final maxValue =
-        seriesYuan.fold<double>(0, (a, b) => a > b ? a : b);
+    final n = useWeekly ? weekly.length : days;
+    double valueAt(int i) =>
+        useWeekly ? weekly[i].amount / 100.0 : seriesCents[i] / 100.0;
+    final maxValue = [
+      for (int i = 0; i < n; i++) valueAt(i),
+    ].fold<double>(0, (a, b) => a > b ? a : b);
     final niceMax = _niceMax(maxValue);
+    if (_selectedWeek < 0 && useWeekly) {
+      int best = 0;
+      for (int i = 1; i < n; i++) {
+        if (valueAt(i) > valueAt(best)) best = i;
+      }
+      _selectedWeek = best;
+    }
 
     return PaperGroup(
-      title: '每日支出',
+      title: useWeekly ? '每周支出' : '每日支出',
       padding: const EdgeInsets.fromLTRB(kSpace3, kSpace2, kSpace3, kSpace4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildSelectionCaption(seriesCents),
+          _buildSelectionCaption(seriesCents, weekly: weekly),
           const SizedBox(height: kSpace3),
           SizedBox(
             height: 200,
@@ -302,14 +339,20 @@ class _StatsPageState extends State<StatsPage> {
                 minY: 0,
                 alignment: BarChartAlignment.spaceAround,
                 barGroups: [
-                  for (int i = 0; i < days; i++)
+                  for (int i = 0; i < n; i++)
                     BarChartGroupData(
                       x: i,
                       barRods: [
                         BarChartRodData(
-                          toY: seriesYuan[i],
-                          width: days > 28 ? 5 : 8,
-                          color: i == _selectedDay ? kAccentBlue : kInkPrimary,
+                          toY: valueAt(i),
+                          width: useWeekly ? 28 : (days > 28 ? 5 : 8),
+                          color: useWeekly
+                              ? (i == _selectedWeek
+                                  ? kAccentBlue
+                                  : kInkPrimary)
+                              : (i == _selectedDay
+                                  ? kAccentBlue
+                                  : kInkPrimary),
                           borderRadius: const BorderRadius.vertical(
                               top: Radius.circular(2)),
                         ),
@@ -327,10 +370,10 @@ class _StatsPageState extends State<StatsPage> {
                 ),
                 borderData: FlBorderData(show: false),
                 titlesData: FlTitlesData(
-                  topTitles:
-                      const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles:
-                      const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
@@ -352,7 +395,19 @@ class _StatsPageState extends State<StatsPage> {
                       reservedSize: 24,
                       interval: 1,
                       getTitlesWidget: (value, meta) {
-                        final day = value.toInt() + 1;
+                        final i = value.toInt();
+                        if (i < 0 || i >= n) {
+                          return const SizedBox.shrink();
+                        }
+                        if (useWeekly) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(weekly[i].label,
+                                style: const TextStyle(
+                                    fontSize: 10, color: kInkDisabled)),
+                          );
+                        }
+                        final day = i + 1;
                         final show = days > 28
                             ? day % 5 == 1 || day == days
                             : day % 2 == 1 || day == days;
@@ -371,9 +426,14 @@ class _StatsPageState extends State<StatsPage> {
                   touchTooltipData: BarTouchTooltipData(
                     getTooltipColor: (_) => kInkPrimary,
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                      final day = group.x + 1;
+                      final i = group.x;
+                      if (i < 0 || i >= n) return null;
+                      final title = useWeekly
+                          ? weekly[i].label
+                          : DateFormat('M月d日', 'zh_CN')
+                              .format(DateTime(_month.year, _month.month, i + 1));
                       return BarTooltipItem(
-                        '${DateFormat('M月d日', 'zh_CN').format(DateTime(_month.year, _month.month, day))}\n'
+                        '$title\n'
                         '${AmountText.format((rod.toY * 100).round())}',
                         const TextStyle(
                           color: Colors.white,
@@ -389,8 +449,14 @@ class _StatsPageState extends State<StatsPage> {
                         response != null &&
                         response.spot != null) {
                       final x = response.spot!.touchedBarGroup.x;
-                      if (x >= 0 && x < days && x != _selectedDay) {
-                        setState(() => _selectedDay = x);
+                      if (x >= 0 && x < n) {
+                        if (useWeekly) {
+                          if (x != _selectedWeek) {
+                            setState(() => _selectedWeek = x);
+                          }
+                        } else if (x != _selectedDay) {
+                          setState(() => _selectedDay = x);
+                        }
                       }
                     }
                   },
@@ -403,7 +469,25 @@ class _StatsPageState extends State<StatsPage> {
     );
   }
 
-  Widget _buildSelectionCaption(List<int> series) {
+  Widget _buildSelectionCaption(
+    List<int> series, {
+    required List<({String label, int amount})> weekly,
+  }) {
+    if (_weekly && weekly.isNotEmpty) {
+      if (_selectedWeek < 0 || _selectedWeek >= weekly.length) {
+        return const SizedBox.shrink();
+      }
+      return Row(
+        children: [
+          Text(weekly[_selectedWeek].label,
+              style:
+                  const TextStyle(fontSize: 13, color: kInkSecondary)),
+          const Spacer(),
+          AmountText(weekly[_selectedWeek].amount,
+              size: 18, weight: FontWeight.w700, color: kAccentBlue),
+        ],
+      );
+    }
     if (_selectedDay < 0 || _selectedDay >= series.length) {
       return const SizedBox.shrink();
     }
@@ -507,5 +591,46 @@ class _VSep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(width: 1, height: 36, color: kDividerSubtle);
+  }
+}
+
+
+class _ChartModeTag extends StatelessWidget {
+  const _ChartModeTag({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(kRadiusTable),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? kAccentSoft : kPaperSurface,
+          borderRadius: BorderRadius.circular(kRadiusTable),
+          border: Border.all(
+            color: selected ? kAccentBlue : kDividerDefault,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            color: selected ? kAccentBlue : kInkSecondary,
+          ),
+        ),
+      ),
+    );
   }
 }

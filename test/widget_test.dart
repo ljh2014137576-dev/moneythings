@@ -803,6 +803,73 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('上月流水'), findsWidgets);
   });
+
+  test('周支出聚合', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    // 8 月第 1 天 100 分，第 8 天 200 分
+    await state.addTransaction(Transaction(
+      id: 'w1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(2026, 8, 1),
+    ));
+    await state.addTransaction(Transaction(
+      id: 'w2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(2026, 8, 8),
+    ));
+    final weekly = state.weeklyExpenseSeries(DateTime(2026, 8));
+    expect(weekly.length, greaterThanOrEqualTo(2));
+    expect(weekly[0].amount, 100);
+    expect(weekly[1].amount, 200);
+    expect(weekly[0].label, '第1周');
+  });
+
+  test('每日记账提醒开关持久化', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    expect(state.dailyReminder, isFalse);
+    await state.setDailyReminder(true);
+    expect(state.dailyReminder, isTrue);
+    final state2 = AppState();
+    await state2.load();
+    expect(state2.dailyReminder, isTrue);
+  });
+
+  testWidgets('记一笔复制上一条', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'c1',
+      type: TxType.expense,
+      amount: 1250,
+      categoryId: 'transport',
+      accountId: 'card',
+      date: DateTime(now.year, now.month, now.day),
+      note: '地铁',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('记一笔').first);
+    await tester.pumpAndSettle();
+    expect(find.text('复制上一条'), findsOneWidget);
+    await tester.tap(find.text('复制上一条'));
+    await tester.pumpAndSettle();
+    // 金额输入框应显示 12.50
+    expect(find.text('12.50'), findsOneWidget);
+  });
 }
 
 

@@ -30,6 +30,7 @@ class AppState extends ChangeNotifier {
   List<Book> _books = [kDefaultBook];
   String _currentBookId = kDefaultBook.id;
   bool _budgetNotify = true;
+  bool _dailyReminder = false;
   bool _onboarded = false;
   bool _loaded = false;
 
@@ -64,6 +65,7 @@ class AppState extends ChangeNotifier {
     _accounts = await _repository.loadAccounts();
     _books = await _repository.loadBooks();
     _currentBookId = await _repository.loadCurrentBookId();
+    _dailyReminder = await _repository.loadDailyReminder();
     _budgetNotify = await _repository.loadBudgetNotify();
     _onboarded = await _repository.loadOnboarded();
     if (!_books.any((b) => b.id == _currentBookId)) {
@@ -108,6 +110,15 @@ class AppState extends ChangeNotifier {
 
  
  
+
+
+  bool get dailyReminder => _dailyReminder;
+
+  Future<void> setDailyReminder(bool value) async {
+    _dailyReminder = value;
+    await _repository.saveDailyReminder(value);
+    notifyListeners();
+  }
 
   bool get budgetNotify => _budgetNotify;
 
@@ -225,8 +236,23 @@ class AppState extends ChangeNotifier {
       if (t.type == TxType.expense) {
         list[t.date.day - 1] += t.amount;
       }
+
     }
     return list;
+  }
+
+  /// 某月按周聚合的支出（第 1 周 ~ 第 N 周）
+  List<({String label, int amount})> weeklyExpenseSeries(DateTime month) {
+    final daily = dailyExpenseSeries(month);
+    final weekCount = (daily.length + 6) ~/ 7;
+    final weeks = List<int>.filled(weekCount, 0);
+    for (int day = 0; day < daily.length; day++) {
+      weeks[day ~/ 7] += daily[day];
+    }
+    return [
+      for (int i = 0; i < weeks.length; i++)
+        (label: '第${i + 1}周', amount: weeks[i]),
+    ];
   }
 
   /// 某月分类支出排行（降序）
@@ -270,8 +296,18 @@ class AppState extends ChangeNotifier {
         seen.add(t.categoryId);
         if (seen.length >= limit) break;
       }
+
     }
     return seen;
+  }
+
+  /// 当前账本按类型最近一笔（用于「复制上一条」）
+  Transaction? lastTransactionOf(TxType type) {
+    final sorted = [..._bookTx]..sort((a, b) => b.date.compareTo(a.date));
+    for (final t in sorted) {
+      if (t.type == type) return t;
+    }
+    return null;
   }
  
   /// 以某月为终点，往前 count 个月的月度结余序列（时间升序）

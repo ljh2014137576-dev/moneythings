@@ -246,6 +246,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   children: [
                     _buildTypeToggle(),
                     const SizedBox(height: kSpace3),
+                    _buildLastRow(),
                     _buildAmountField(),
                     const SizedBox(height: kSpace4),
                     _buildRecentRow(categories),
@@ -349,6 +350,35 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildLastRow() {
+    final last = context.read<AppState>().lastTransactionOf(_type);
+    if (last == null) return const SizedBox.shrink();
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: () => _fillFromLast(last),
+        icon: const Icon(Icons.content_copy_rounded, size: 16),
+        label: const Text('复制上一条'),
+        style: TextButton.styleFrom(
+          minimumSize: const Size(48, 36),
+          padding: const EdgeInsets.symmetric(horizontal: kSpace2),
+          foregroundColor: kAccentBlue,
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+        ),
+      ),
+    );
+  }
+
+  void _fillFromLast(Transaction last) {
+    setState(() {
+      _categoryId = last.categoryId;
+      _accountId = last.accountId;
+      _noteController.text = last.note;
+      _note = last.note;
+      _amountController.text = (last.amount / 100).toStringAsFixed(2);
+    });
   }
 
   Widget _buildAmountField() {

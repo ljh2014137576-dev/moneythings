@@ -21,6 +21,7 @@ class TransactionRepository {
   static const String _kCurrentBookKey = 'current_book_v1';
   static const String _kBookBudgetsKey = 'book_budgets_v1';
   static const String _kBudgetNotifyKey = 'budget_notify_v1';
+  static const String _kDailyReminderKey = 'daily_reminder_v1';
 
   Future<List<Transaction>> loadTransactions() async {
     final prefs = await SharedPreferences.getInstance();
@@ -85,6 +86,16 @@ class TransactionRepository {
   Future<void> saveBudgetNotify(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kBudgetNotifyKey, value);
+  }
+
+  Future<bool> loadDailyReminder() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_kDailyReminderKey) ?? false;
+  }
+
+  Future<void> saveDailyReminder(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kDailyReminderKey, value);
   }
 
   Future<void> saveBudget(int cents) async {

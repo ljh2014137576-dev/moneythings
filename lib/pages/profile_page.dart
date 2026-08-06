@@ -501,6 +501,35 @@ class _ProfilePageState extends State<ProfilePage> {
       padding: EdgeInsets.zero,
       child: Column(
         children: [
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: kSpace4, vertical: 6),
+            child: Row(
+              children: [
+                const Icon(Icons.alarm_outlined,
+                    size: 20, color: kInkSecondary),
+                const SizedBox(width: kSpace3),
+                const Expanded(
+                  child: Text('每日记账提醒（20:00）',
+                      style: TextStyle(fontSize: 14, color: kInkPrimary)),
+                ),
+                Switch(
+                  value: state.dailyReminder,
+                  activeTrackColor: kAccentBlue,
+                  onChanged: (v) async {
+                    await state.setDailyReminder(v);
+                    if (v) {
+                      await NotificationService.instance.requestPermission();
+                      await NotificationService.instance.scheduleDailyReminder();
+                    } else {
+                      await NotificationService.instance.cancelDailyReminder();
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          const Divider(indent: kSpace4, endIndent: kSpace4),
           if (state.transactions.isEmpty)
             _DataRow(
               icon: Icons.auto_awesome_outlined,
