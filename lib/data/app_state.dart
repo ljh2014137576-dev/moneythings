@@ -441,6 +441,27 @@ Future<CsvImportResult> importCsv(String csv) async {
     }
     return buf.toString();
   }
+
+  /// 生成本周记账小结文本（可复制分享）
+  String weekSummaryText() {
+    final s = weekSummary ?? MonthSummary(expense: 0, income: 0);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final monday = today.subtract(Duration(days: now.weekday - 1));
+    int count = 0;
+    for (final t in _bookTx) {
+      if (!t.date.isBefore(monday)) count++;
+    }
+    String fmt(int cents) => (cents / 100).toStringAsFixed(2);
+    final buf = StringBuffer();
+    buf.writeln(
+        '本周记账小结（${monday.month}月${monday.day}日 - ${today.month}月${today.day}日）');
+    buf.writeln('收入：${fmt(s.income)}');
+    buf.writeln('支出：${fmt(s.expense)}');
+    buf.writeln('结余：${fmt(s.balance)}');
+    buf.writeln('笔数：$count 笔');
+    return buf.toString();
+  }
   /// 账户当前余额 = 初始余额 + 收支合计
   int balanceOf(Account account) {
     int sum = account.initialBalance;

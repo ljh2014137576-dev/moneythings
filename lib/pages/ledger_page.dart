@@ -864,6 +864,21 @@ class _LedgerSummary extends StatelessWidget {
             AmountText(income,
                 size: 13, weight: FontWeight.w600, color: kSuccess),
           ],
+          if (income != expense) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: kSpace2),
+              child: Text('·',
+                  style: TextStyle(fontSize: 12, color: kInkSecondary)),
+            ),
+            const Text('结余 ',
+                style: TextStyle(fontSize: 12, color: kInkSecondary)),
+            AmountText(
+              income - expense,
+              size: 13,
+              weight: FontWeight.w600,
+              color: income - expense > 0 ? kSuccess : kDanger,
+            ),
+          ],
         ],
       ),
     );

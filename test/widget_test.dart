@@ -1345,6 +1345,56 @@ void main() {
     expect(r.transactions.length, 1);
     expect(r.errors, isEmpty);
   });
+ 
+  test('本周小结文本 weekSummaryText', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addTransaction(Transaction(
+      id: 'wks1',
+      type: TxType.expense,
+      amount: 3000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime.now(),
+    ));
+    final text = state.weekSummaryText();
+    expect(text, contains('本周记账小结'));
+    expect(text, contains('支出：30.00'));
+    expect(text, contains('笔数：1 笔'));
+  });
+
+  testWidgets('明细合计条显示结余', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'bl1',
+      type: TxType.expense,
+      amount: 500,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+    ));
+    await state.addTransaction(Transaction(
+      id: 'bl2',
+      type: TxType.income,
+      amount: 2000,
+      categoryId: 'salary',
+      accountId: 'card',
+      date: DateTime(now.year, now.month, now.day),
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    // 合计条：支出 5.00 收入 20.00 结余 15.00
+    expect(find.textContaining('结余'), findsWidgets);
+    expect(find.textContaining('¥15.00'), findsWidgets);
+  });
 }
 
 

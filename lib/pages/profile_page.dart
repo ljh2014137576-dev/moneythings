@@ -143,15 +143,26 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Future<void> _showMonthlySummary() async {
+  Future<void> _showMonthlySummary() {
     final state = context.read<AppState>();
     final now = DateTime.now();
     final text = state.monthSummaryText(DateTime(now.year, now.month));
+    return _showSummaryDialog('本月小结', text);
+  }
+
+  Future<void> _showWeekSummary() {
+    final state = context.read<AppState>();
+    final text = state.weekSummaryText();
+    return _showSummaryDialog('本周小结', text);
+  }
+
+  Future<void> _showSummaryDialog(String title, String text) async {
     final copied = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('本月小结',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+        title: Text(title,
+            style:
+                const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
         content: SingleChildScrollView(
           child: Text(text,
               style: const TextStyle(
@@ -179,7 +190,6 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     }
   }
-
   Future<void> _backupJson() async {
     final state = context.read<AppState>();
     final json = state.exportJson();
@@ -735,6 +745,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 }
               },
             ),
+          _DataRow(
+            icon: Icons.article_outlined,
+            label: '本周小结（复制）',
+            color: kInkPrimary,
+            onTap: _showWeekSummary,
+          ),
           _DataRow(
             icon: Icons.article_outlined,
             label: '本月小结（复制）',
