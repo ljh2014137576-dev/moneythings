@@ -150,3 +150,21 @@
   1. node 脚本多次写坏 home_page.dart（字段插错位/文件头污染）→ 干脆整体重写该文件（内容完全可控），后续统一用 PowerShell 按行编辑。
   2. PowerShell 双引号中 `${...}` 展开问题 → 用反引号 `` `$ `` 转义。
 - 下一步计划：本地预算预警通知、多账本切换、深色模式、商店上架素材。
+
+## 2026-08-07 06:00 — 迭代 v1.6：多账本 + 商店截图
+
+- 任务内容：
+  - A. 多账本：`Book` 模型 + `Transaction.bookId`（默认 default，JSON 兼容）；仓库持久化账本列表与当前账本；`AppState` 支持 `addBook/setCurrentBook/removeBook`，所有查询按当前账本过滤（ofMonth/summary/排行/结余/余额），新增与导入流水归属当前账本，删除账本时其流水并入默认账本并自动切回。
+  - B. UI：首页右上角账本切换按钮（显示当前账本名）；`lib/widgets/book_switcher.dart` 底部弹层（列表/当前勾选/删除/新建）；「我的」新增「账本」入口。
+  - C. 商店发布截图：`screenshots/store/*-1080.png` 5 张（1080×1920，首页/明细/统计/我的/记一笔）。
+- 修改文件：
+  - `lib/models/book.dart`（新增）、`lib/models/transaction.dart`（bookId）、`lib/data/transaction_repository.dart`、`lib/data/app_state.dart`
+  - `lib/widgets/book_switcher.dart`（新增）、`lib/pages/home_page.dart`（账本按钮）、`lib/pages/profile_page.dart`（账本入口）
+  - `test/widget_test.dart`（27 测试）、`screenshots/store/`、`screenshots/11-book-switcher.png`
+- commit hash：`93fdf87`（功能）；截图与日志随本次提交。
+- 验证：`flutter analyze` 0 问题；`flutter test` 27/27（多账本创建/切换/隔离/删除、首页切换支出变化）；web 实测：首页账本按钮→弹层→新建「工作」账本→列表更新，商店截图 5 张零错误。
+- 遇到的问题与解决方案：
+  1. node_repl 内核重置导致浏览器句柄丢失 → 重新 launch。
+  2. 多次顶层变量重名冲突 → 统一用 var + 顶层 await。
+  3. home_page 表头替换时跳行数算错多删 3 行 → 用括号深度检查定位并修复。
+- 下一步计划：本地预算预警通知、深色模式、商店素材排版、release 上架。
