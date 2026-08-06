@@ -8,13 +8,17 @@ import 'category_icons.dart';
 /// 收支类型
 enum TxType {
   expense('支出'),
-  income('收入');
+  income('收入'),
+  transfer('转账');
 
   const TxType(this.label);
   final String label;
 
-  static TxType fromName(String? name) =>
-      name == 'income' ? TxType.income : TxType.expense;
+  static TxType fromName(String? name) => switch (name) {
+        'income' => TxType.income,
+        'transfer' => TxType.transfer,
+        _ => TxType.expense,
+      };
 }
 
 /// 分类
@@ -89,6 +93,7 @@ class Transaction {
     required this.accountId,
     required this.date,
     this.bookId = 'default',
+    this.transferToAccountId,
     this.note = '',
   });
 
@@ -101,6 +106,9 @@ class Transaction {
   final DateTime date;
   final String bookId;
 
+  /// 转账目标账户 id（仅 type == transfer 时有值）
+  final String? transferToAccountId;
+
   Transaction copyWith({
     TxType? type,
     int? amount,
@@ -109,6 +117,7 @@ class Transaction {
     String? note,
     DateTime? date,
     String? bookId,
+    String? transferToAccountId,
   }) {
     return Transaction(
       id: id,
@@ -119,6 +128,7 @@ class Transaction {
       note: note ?? this.note,
       date: date ?? this.date,
       bookId: bookId ?? this.bookId,
+      transferToAccountId: transferToAccountId ?? this.transferToAccountId,
     );
   }
 
@@ -131,6 +141,7 @@ class Transaction {
         'note': note,
         'date': date.toIso8601String(),
         'bookId': bookId,
+        'transferToAccountId': transferToAccountId,
       };
 
   factory Transaction.fromJson(Map<String, dynamic> json) => Transaction(
@@ -142,6 +153,7 @@ class Transaction {
         note: (json['note'] as String?) ?? '',
         date: DateTime.parse(json['date'] as String),
         bookId: (json['bookId'] as String?) ?? 'default',
+        transferToAccountId: json['transferToAccountId'] as String?,
       );
 }
 
@@ -182,6 +194,7 @@ class TxCategories {
 
   /// 某类型的全部分类（预设 + 自定义）
   static List<TxCategory> of(TxType type) {
+    if (type == TxType.transfer) return const [];
     final presets = type == TxType.expense ? expense : income;
     return [
       ...presets,
@@ -197,6 +210,14 @@ class TxCategories {
     }
     for (final c in [...expense, ...income]) {
       if (c.id == id) return c;
+    }
+    if (id == 'transfer') {
+      return const TxCategory(
+        id: 'transfer',
+        name: '转账',
+        icon: Icons.swap_horiz_rounded,
+        isExpense: false,
+      );
     }
     return id.startsWith('other_i') ? income.last : expense.last;
   }

@@ -89,7 +89,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                   ),
                   child: Row(
                     children: [
-                      for (final t in TxType.values)
+                      for (final t in const [TxType.expense, TxType.income])
                         Expanded(
                           child: InkWell(
                             onTap: () => setState(() => _type = t),

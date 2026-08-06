@@ -149,13 +149,15 @@ class _LedgerPageState extends State<LedgerPage> {
     final groups = _groupByDay(visible, byAmount: _sortByAmount);
     int sumExpense = 0, sumIncome = 0;
     for (final t in visible) {
-      if (t.type == TxType.expense) {
-        sumExpense += t.amount;
-      } else {
-        sumIncome += t.amount;
+      switch (t.type) {
+        case TxType.expense:
+          sumExpense += t.amount;
+        case TxType.income:
+          sumIncome += t.amount;
+        case TxType.transfer:
+          break;
       }
     }
-
     return SafeArea(
       bottom: false,
       child: Column(
@@ -854,12 +856,16 @@ class _DayGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     int expense = 0, income = 0;
     for (final t in items) {
-      if (t.type == TxType.expense) {
-        expense += t.amount;
-      } else {
-        income += t.amount;
+      switch (t.type) {
+        case TxType.expense:
+          expense += t.amount;
+        case TxType.income:
+          income += t.amount;
+        case TxType.transfer:
+          break;
       }
     }
+
     final fmt = DateFormat('M月d日 EEEE', 'zh_CN');
 
     return Container(

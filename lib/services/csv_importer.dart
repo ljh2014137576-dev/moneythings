@@ -1,4 +1,4 @@
-﻿/// CSV 导入解析：与 CsvExporter 格式对应
+/// CSV 导入解析：与 CsvExporter 格式对应
 library;
 
 import '../models/account.dart';
@@ -61,9 +61,12 @@ class CsvImporter {
       }
       try {
         final date = _parseDate(cols[0].trim());
-        final type = cols[1].trim() == '收入'
-            ? TxType.income
-            : (cols[1].trim() == '支出' ? TxType.expense : null);
+        final type = switch (cols[1].trim()) {
+          '收入' => TxType.income,
+          '转账' => TxType.transfer,
+          '支出' => TxType.expense,
+          _ => null,
+        };
         if (type == null) {
           errors.add('第 ${i + 1} 行类型无效');
           skipped++;
@@ -79,12 +82,29 @@ class CsvImporter {
         final accountName = cols.length > 4 ? cols[4].trim() : '';
         final note = cols.length > 5 ? cols[5].trim() : '';
 
+        final accountId = _accountIdByName(accountName);
+        final toAccountName = cols.length > 7 ? cols[7].trim() : '';
+        final toAccountId = type == TxType.transfer && toAccountName.isNotEmpty
+            ? _accountIdByName(toAccountName)
+            : null;
+        if (type == TxType.transfer && toAccountId == null) {
+          errors.add('第 ${i + 1} 行转账缺少转入账户');
+          skipped++;
+          continue;
+        }
+        if (type == TxType.transfer && toAccountId == accountId) {
+          errors.add('第 ${i + 1} 行转出与转入账户相同');
+          skipped++;
+          continue;
+        }
+
         final tx = Transaction(
           id: 'imp_${DateTime.now().microsecondsSinceEpoch}_$i',
           type: type,
           amount: (amountYuan * 100).round(),
           categoryId: _categoryIdByName(categoryName, type),
-          accountId: _accountIdByName(accountName),
+          accountId: accountId,
+          transferToAccountId: toAccountId,
           note: note,
           date: date,
         );
@@ -159,6 +179,7 @@ class CsvImporter {
   }
 
   static String _categoryIdByName(String name, TxType type) {
+    if (type == TxType.transfer) return 'transfer';
     if (name.isEmpty) return type == TxType.expense ? 'other_e' : 'other_i';
     for (final c in TxCategories.of(type)) {
       if (c.name == name) return c.id;
@@ -176,6 +197,6 @@ class CsvImporter {
   static String _fingerprint(Transaction t) {
     final d = t.date;
     final day = '${d.year}-${d.month}-${d.day}';
-    return '$day|${t.type.name}|${t.categoryId}|${t.amount}|${t.note.trim()}';
+    return '$day|${t.type.name}|${t.categoryId}|${t.amount}|${t.note.trim()}|${t.transferToAccountId ?? ''}';
   }
 }

@@ -27,8 +27,14 @@ class TransactionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final category = TxCategories.byId(transaction.categoryId);
+    final isTransfer = transaction.type == TxType.transfer;
+    final category = isTransfer
+        ? TxCategories.byId('transfer')
+        : TxCategories.byId(transaction.categoryId);
     final account = accountById(transaction.accountId);
+    final toAccount = isTransfer && transaction.transferToAccountId != null
+        ? accountById(transaction.transferToAccountId!)
+        : null;
     final isExpense = transaction.type == TxType.expense;
 
     return InkWell(
@@ -48,7 +54,7 @@ class TransactionTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    category.name,
+                    isTransfer ? '转账' : category.name,
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
@@ -59,7 +65,10 @@ class TransactionTile extends StatelessWidget {
                   Text(
                     [
                       if (transaction.note.isNotEmpty) transaction.note,
-                      if (showAccount) account.name,
+                      if (isTransfer && toAccount != null)
+                        '${account.name} → ${toAccount.name}'
+                      else if (showAccount)
+                        account.name,
                     ].join(' · '),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -73,8 +82,8 @@ class TransactionTile extends StatelessWidget {
               transaction.amount,
               size: 16,
               weight: FontWeight.w600,
-              color: isExpense ? kInkPrimary : kSuccess,
-              plusSign: !isExpense,
+              color: isExpense || isTransfer ? kInkPrimary : kSuccess,
+              plusSign: !isExpense && !isTransfer,
             ),
           ],
         ),

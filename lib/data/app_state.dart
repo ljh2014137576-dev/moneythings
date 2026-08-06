@@ -305,10 +305,13 @@ Future<CsvImportResult> importCsv(String csv) async {
   MonthSummary summaryOf(DateTime month) {
     int exp = 0, inc = 0;
     for (final t in ofMonth(month)) {
-      if (t.type == TxType.expense) {
-        exp += t.amount;
-      } else {
-        inc += t.amount;
+      switch (t.type) {
+        case TxType.expense:
+          exp += t.amount;
+        case TxType.income:
+          inc += t.amount;
+        case TxType.transfer:
+          break;
       }
     }
     return MonthSummary(expense: exp, income: inc);
@@ -489,7 +492,10 @@ Future<CsvImportResult> importCsv(String csv) async {
   int balanceOf(Account account) {
     int sum = account.initialBalance;
     for (final t in _bookTx) {
-      if (t.accountId == account.id) {
+      if (t.type == TxType.transfer) {
+        if (t.accountId == account.id) sum -= t.amount;
+        if (t.transferToAccountId == account.id) sum += t.amount;
+      } else if (t.accountId == account.id) {
         sum += t.type == TxType.income ? t.amount : -t.amount;
       }
     }
@@ -579,10 +585,13 @@ Future<CsvImportResult> importCsv(String csv) async {
     int exp = 0, inc = 0;
     for (final t in _bookTx) {
       if (!t.date.isBefore(monday)) {
-        if (t.type == TxType.expense) {
-          exp += t.amount;
-        } else {
-          inc += t.amount;
+        switch (t.type) {
+          case TxType.expense:
+            exp += t.amount;
+          case TxType.income:
+            inc += t.amount;
+          case TxType.transfer:
+            break;
         }
       }
     }

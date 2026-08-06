@@ -44,6 +44,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   late TxType _type;
   late String _categoryId;
   late String _accountId;
+  late String _toAccountId;
   late DateTime _date;
   String _note = '';
   final _noteController = TextEditingController();
@@ -60,6 +61,11 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     _type = src?.type ?? TxType.expense;
     _categoryId = src?.categoryId ?? TxCategories.expense.first.id;
     _accountId = src?.accountId ??
+        context.read<AppState>().lastAccountId;
+    final accounts = context.read<AppState>().accounts;
+    _toAccountId = src?.transferToAccountId ??
+        (accounts.firstWhere((a) => a.id != _accountId,
+            orElse: () => accounts.last).id);
         context.read<AppState>().lastAccountId;
     _date = e?.date ?? DateTime.now();
     _note = src?.note ?? '';
@@ -117,6 +123,23 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     }
   }
 
+  Future<void> _pickToAccount() async {
+    final state = context.read<AppState>();
+    final selected = await showModalBottomSheet<Account>(
+      context: context,
+      builder: (context) => _AccountSheet(
+        accounts: state.accounts,
+        selectedId: _toAccountId,
+        balances: {
+          for (final a in state.accounts) a.id: state.balanceOf(a),
+        },
+      ),
+    );
+    if (selected != null && mounted) {
+      setState(() => _toAccountId = selected.id);
+    }
+  }
+
   Future<void> _pickAccount() async {
     final state = context.read<AppState>();
 
@@ -144,6 +167,12 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       return;
     }
     final state = context.read<AppState>();
+    if (_type == TxType.transfer && _toAccountId == _accountId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('转出与转入账户不能相同')),
+      );
+      return;
+    }
  
     // 预算超额提醒：仅当月支出且已设置预算
     final now = DateTime.now();
@@ -200,6 +229,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       categoryId: _categoryId,
       accountId: _accountId,
       note: _noteController.text.trim(),
+      transferToAccountId: _type == TxType.transfer ? _toAccountId : null,
       date: _date,
     );
     if (_isEdit) {
@@ -283,10 +313,14 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     _buildAmountField(),
                     _buildQuickAmountRow(),
                     const SizedBox(height: kSpace3),
-                    const SizedBox(height: kSpace4),
-                    _buildRecentRow(categories),
-                    const SizedBox(height: kSpace3),
-                    _buildCategoryGrid(categories),
+                    if (_type == TxType.transfer) ...[
+                      _buildTransferHint(),
+                    ] else ...[
+                      const SizedBox(height: kSpace4),
+                      _buildRecentRow(categories),
+                      const SizedBox(height: kSpace3),
+                      _buildCategoryGrid(categories),
+                    ],
                     const SizedBox(height: kSpace4),
                     _buildMetaRows(),
                     const SizedBox(height: kSpace4),
@@ -377,7 +411,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   if (_type == type) return;
                   setState(() {
                     _type = type;
-                    _categoryId = TxCategories.of(type).first.id;
+                    final cats = TxCategories.of(type);
+                    if (cats.isNotEmpty) _categoryId = cats.first.id;
                   });
                 },
               ),
@@ -407,6 +442,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   }
 
   void _fillFromLast(Transaction last) {
+    if (last.type == TxType.transfer) {
+      _toAccountId = last.transferToAccountId ?? _toAccountId;
+    }
     setState(() {
       _categoryId = last.categoryId;
       _accountId = last.accountId;
@@ -501,7 +539,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: _type == TxType.expense ? kInkSecondary : kSuccess,
+              color: _type == TxType.income ? kSuccess : kInkSecondary,
             ),
           ),
         ],
@@ -560,6 +598,13 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     );
   }
 
+  Widget _buildTransferHint() {
+    return const Text(
+      '转账仅调整账户余额，不计入收支统计',
+      style: TextStyle(fontSize: 12, color: kInkSecondary),
+    );
+  }
+
   Widget _buildMetaRows() {
     final dateFmt = DateFormat('M月d日 EEEE', 'zh_CN');
     final account = accountById(_accountId);
@@ -593,12 +638,28 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
             ),
           ),
           const Divider(indent: 52),
-          _SelectRow(
-            icon: Icons.account_balance_wallet_outlined,
-            label: '账户',
-            value: account.name,
-            onTap: _pickAccount,
-          ),
+          if (_type == TxType.transfer) ...[
+            _SelectRow(
+              icon: Icons.output_rounded,
+              label: '转出账户',
+              value: accountById(_accountId).name,
+              onTap: _pickAccount,
+            ),
+            const Divider(indent: 52),
+            _SelectRow(
+              icon: Icons.input_rounded,
+              label: '转入账户',
+              value: accountById(_toAccountId).name,
+              onTap: _pickToAccount,
+            ),
+          ] else ...[
+            _SelectRow(
+              icon: Icons.account_balance_wallet_outlined,
+              label: '账户',
+              value: account.name,
+              onTap: _pickAccount,
+            ),
+          ],
         ],
       ),
     );
@@ -645,7 +706,7 @@ class _TypeSegment extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? kAccentSoft : Colors.transparent,
           border: Border(
-            right: type == TxType.expense
+            right: type != TxType.values.last
                 ? const BorderSide(color: kDividerDefault, width: 1)
                 : BorderSide.none,
           ),

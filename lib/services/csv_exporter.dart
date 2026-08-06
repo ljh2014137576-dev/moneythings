@@ -1,4 +1,4 @@
-﻿/// CSV 导出：纯函数，便于单元测试
+/// CSV 导出：纯函数，便于单元测试
 library;
 
 import '../models/account.dart';
@@ -17,18 +17,28 @@ class CsvExporter {
     for (final m in metaLines) {
       buf.writeln('# $m');
     }
-    buf.writeln('日期,类型,分类,金额(元),账户,账本,备注');
+    buf.writeln('日期,类型,分类,金额(元),账户,账本,备注,转入账户');
     for (final t in transactions) {
       final d = t.date;
       final date =
           '${d.year}-${_p2(d.month)}-${_p2(d.day)} ${_p2(d.hour)}:${_p2(d.minute)}';
-      final type = t.type == TxType.expense ? '支出' : '收入';
-      final category = TxCategories.byId(t.categoryId).name;
+      final type = switch (t.type) {
+        TxType.expense => '支出',
+        TxType.income => '收入',
+        TxType.transfer => '转账',
+      };
+      final category = t.type == TxType.transfer
+          ? '转账'
+          : TxCategories.byId(t.categoryId).name;
       final amount = (t.amount / 100).toStringAsFixed(2);
       final account = accountById(t.accountId).name;
       final book = bookNames?[t.bookId] ?? t.bookId;
+      final toAccount = t.transferToAccountId == null
+          ? ''
+          : accountById(t.transferToAccountId!).name;
       buf.writeln(
-          '$date,$type,$category,$amount,$account,${_escape(book)},${_escape(t.note)}');
+          '$date,$type,$category,$amount,$account,${_escape(book)},'
+          '${_escape(t.note)},${_escape(toAccount)}');
     }
     return buf.toString();
   }

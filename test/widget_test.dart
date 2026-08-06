@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moneythings_goal/data/app_state.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -11,6 +11,7 @@ import 'package:moneythings_goal/pages/profile_page.dart';
 import 'package:moneythings_goal/pages/stats_page.dart';
 import 'package:moneythings_goal/theme/app_theme.dart';
 import 'package:provider/provider.dart';
+import 'package:moneythings_goal/models/account.dart';
 import 'package:moneythings_goal/models/transaction.dart';
 import 'package:moneythings_goal/services/csv_exporter.dart';
 import 'package:moneythings_goal/services/csv_importer.dart';
@@ -1496,6 +1497,111 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('88'), findsNothing);
   });
+  test('转账：余额双向变动、不计收支、总资产不变', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.setAccountInitialBalance('alipay', 10000);
+    await state.setAccountInitialBalance('wechat', 20000);
+    final tx = Transaction(
+      id: 'tr1',
+      type: TxType.transfer,
+      amount: 5000,
+      categoryId: 'transfer',
+      accountId: 'alipay',
+      transferToAccountId: 'wechat',
+      date: DateTime(2026, 8, 6),
+    );
+    await state.addTransaction(tx);
+    Account accountOf(String id) =>
+        state.accounts.firstWhere((a) => a.id == id);
+    expect(state.balanceOf(accountOf('alipay')), 5000);
+    expect(state.balanceOf(accountOf('wechat')), 25000);
+    expect(state.totalAssets, 30000);
+    final s = state.summaryOf(DateTime(2026, 8));
+    expect(s.expense, 0);
+    expect(s.income, 0);
+    // 编辑转账：改方向后余额随之变化
+    await state.updateTransaction(tx.copyWith(
+      accountId: 'wechat',
+      transferToAccountId: 'alipay',
+    ));
+    expect(state.balanceOf(accountOf('alipay')), 15000);
+    expect(state.balanceOf(accountOf('wechat')), 15000);
+  });
+
+  test('CSV 导出/导入支持转账往返', () {
+    final tx = Transaction(
+      id: 'tr2',
+      type: TxType.transfer,
+      amount: 3000,
+      categoryId: 'transfer',
+      accountId: 'alipay',
+      transferToAccountId: 'wechat',
+      date: DateTime(2026, 8, 7, 10, 30),
+      note: '还钱',
+    );
+    final csv = CsvExporter.exportCsv([tx]);
+    expect(csv.contains('转账'), isTrue);
+    expect(csv.contains('微信'), isTrue); // 转入账户列
+    final result = CsvImporter.parseCsv(csv);
+    expect(result.errors, isEmpty);
+    expect(result.transactions.length, 1);
+    final back = result.transactions.first;
+    expect(back.type, TxType.transfer);
+    expect(back.accountId, 'alipay');
+    expect(back.transferToAccountId, 'wechat');
+    expect(back.amount, 3000);
+  });
+
+  testWidgets('明细页转账显示且不计入合计', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'w1',
+      type: TxType.expense,
+      amount: 1000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '午饭',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'w2',
+      type: TxType.transfer,
+      amount: 5000,
+      categoryId: 'transfer',
+      accountId: 'alipay',
+      transferToAccountId: 'wechat',
+      date: DateTime(now.year, now.month, now.day),
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    expect(find.text('转账'), findsOneWidget);
+    // 合计只算支出 ¥10，转账不计收支（收入为 0 不显示）
+    expect(find.text('共 2 笔'), findsOneWidget);
+    expect(find.text('支出 '), findsOneWidget);
+    expect(find.text('收入 '), findsNothing); // 转账不计收入
+  });
+
+  testWidgets('记一笔转账模式显示转出/转入账户', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('记一笔').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('转账'));
+    await tester.pumpAndSettle();
+    expect(find.text('转出账户'), findsOneWidget);
+    expect(find.text('转入账户'), findsOneWidget);
+    expect(find.text('转账仅调整账户余额，不计入收支统计'), findsOneWidget);
+  });
 }
-
-
