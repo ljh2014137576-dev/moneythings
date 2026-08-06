@@ -199,3 +199,17 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 29/29（按账本预算独立/持久化/删除清理、日期范围入口与清除）；web 实测：明细「日期：全部日期」入口与日期选择器正常，零控制台错误。
 - 遇到的问题与解决方案：node splice 误传嵌套数组导致方法并成一行 → 改按元素传入；金额字体 FontStyle.SemiBold 不存在 → 用 Bold。
 - 下一步计划：本地预算预警系统通知、深色模式、商店上架（按 CHECKLIST 执行）。
+
+## 2026-08-07 09:00 — 迭代 v1.9：最近分类 / 导出范围 / 账本重命名
+
+- 任务内容：
+  - A. 记一笔「最近使用分类」置顶：`AppState.recentCategoryIds` 按当前账本+类型取最近使用分类（时间倒序去重）；记一笔页分类网格上方显示「最近」一行快捷分类，点击即选中。
+  - B. 导出范围选择：`_exportCsv` 先弹底部弹层选「当前账本（xxx）」或「全部账本」，再导出；全部导出时 CSV 带账本列区分。
+  - C. 账本重命名：`Book.copyWith` + `AppState.renameBook`；账本弹层非默认账本行新增「重命名账本」按钮（复用对话框，预填名称）。
+- 修改文件：
+  - `lib/data/app_state.dart`、`lib/pages/add_transaction_page.dart`、`lib/pages/profile_page.dart`、`lib/widgets/book_switcher.dart`、`lib/models/book.dart`
+  - `test/widget_test.dart`（31 测试）、`screenshots/15-recent-category.png`、`16-book-rename.png`
+- commit hash：`b0e2409`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 31/31（最近分类顺序/收入为空、重命名生效、记一笔显示最近分类）；web 实测：记一笔「最近」分类行渲染，零控制台错误。
+- 遇到的问题与解决方案：node 多次 splice 导致 book_switcher 括号错位/方法嵌套（_rename 插进 _remove）→ 用括号深度扫描定位并修正。
+- 下一步计划：本地预算预警系统通知、深色模式、上架执行。
