@@ -252,6 +252,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     const SizedBox(height: kSpace3),
                     _buildLastRow(),
                     _buildAmountField(),
+                    _buildQuickAmountRow(),
+                    const SizedBox(height: kSpace3),
                     const SizedBox(height: kSpace4),
                     _buildRecentRow(categories),
                     const SizedBox(height: kSpace3),
@@ -383,6 +385,28 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       _note = last.note;
       _amountController.text = (last.amount / 100).toStringAsFixed(2);
     });
+  }
+
+  Widget _buildQuickAmountRow() {
+    return Row(
+      children: [
+        for (final v in const [10, 50, 100, 500])
+          Padding(
+            padding: const EdgeInsets.only(right: kSpace2),
+            child: _QuickAmountChip(
+              label: '+$v',
+              onTap: () => _addAmount(v),
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _addAmount(int yuan) {
+    final current = _parseAmount();
+    final next = (current + yuan * 100).clamp(0, 99999999);
+    _amountController.text = (next / 100).toStringAsFixed(2);
+    setState(() {});
   }
 
   Widget _buildAmountField() {
@@ -769,6 +793,35 @@ class _RecentChip extends StatelessWidget {
                 )),
           ],
         ),
+      ),
+    );
+  }
+}
+
+
+class _QuickAmountChip extends StatelessWidget {
+  const _QuickAmountChip({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(kRadiusTable),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: kSpace3, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0F1EF),
+          borderRadius: BorderRadius.circular(kRadiusTable),
+        ),
+        child: Text(label,
+            style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: kInkPrimary,
+                fontFeatures: [FontFeature.tabularFigures()])),
       ),
     );
   }

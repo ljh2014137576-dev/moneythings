@@ -1007,6 +1007,58 @@ void main() {
     expect(state2.books.any((b) => b.name == '备份账本'), isTrue);
     expect(state2.monthlyBudget, 50000);
   });
+
+  testWidgets('明细按账户筛选', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'acc1',
+      type: TxType.expense,
+      amount: 1100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 3),
+      note: '支付宝流水',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'acc2',
+      type: TxType.expense,
+      amount: 2200,
+      categoryId: 'food',
+      accountId: 'card',
+      date: DateTime(now.year, now.month, 4),
+      note: '银行卡流水',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('支付宝流水'), findsWidgets);
+    expect(find.textContaining('银行卡流水'), findsWidgets);
+    await tester.tap(find.text('银行卡'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('银行卡流水'), findsWidgets);
+    expect(find.textContaining('支付宝流水'), findsNothing);
+  });
+
+  testWidgets('记一笔常用金额快捷', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('记一笔').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('+50'));
+    await tester.pumpAndSettle();
+    expect(find.text('50.00'), findsOneWidget);
+    await tester.tap(find.text('+100'));
+    await tester.pumpAndSettle();
+    expect(find.text('150.00'), findsOneWidget);
+  });
 }
 
 

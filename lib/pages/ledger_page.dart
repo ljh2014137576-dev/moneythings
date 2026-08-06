@@ -7,8 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../data/app_state.dart';
+import '../models/account.dart';
 import '../models/transaction.dart';
 import '../theme/app_colors.dart';
+import '../services/csv_exporter.dart';
+import '../services/export_target.dart';
 import '../widgets/amount_text.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/month_selector.dart';
@@ -30,6 +33,7 @@ class _LedgerPageState extends State<LedgerPage> {
   final _searchController = TextEditingController();
   String _query = '';
   bool _showAll = false;
+  String _accountFilter = 'all';
   DateTime? _rangeStart;
   DateTime? _rangeEnd;
 
@@ -59,6 +63,12 @@ class _LedgerPageState extends State<LedgerPage> {
       byType = [
         for (final t in byType)
           if (!t.date.isBefore(s) && !t.date.isAfter(e)) t,
+      ];
+    }
+    if (_accountFilter != 'all') {
+      byType = [
+        for (final t in byType)
+          if (t.accountId == _accountFilter) t,
       ];
     }
     if (_query.isEmpty) return byType;
@@ -110,23 +120,37 @@ class _LedgerPageState extends State<LedgerPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('明细',
-                    style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
-                        color: kInkPrimary)),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text('明细',
+                          style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w700,
+                              color: kInkPrimary)),
+                    ),
+                    IconButton(
+                      tooltip: '导出当前筛选结果',
+                      onPressed: _exportVisible,
+                      icon: const Icon(Icons.ios_share_outlined,
+                          size: 20, color: kInkPrimary),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: kSpace2),
                 MonthSelector(
                   month: _month,
                   onChanged: (m) => setState(() => _month = m),
                 ),
-                const SizedBox(height: kSpace3),
-                const SizedBox(height: kSpace3),
+                const SizedBox(height: kSpace2),
+                const SizedBox(height: kSpace2),
                 _buildSearchField(),
-                const SizedBox(height: kSpace3),
+                const SizedBox(height: kSpace2),
                 _buildTimeRow(),
                 _buildFilterRow(),
-                const SizedBox(height: kSpace3),
+                const SizedBox(height: kSpace2),
+                _buildAccountFilterRow(),
+                const SizedBox(height: kSpace2),
                 _buildRangeRow(),
               ],
             ),
@@ -208,6 +232,31 @@ class _LedgerPageState extends State<LedgerPage> {
           contentPadding:
               const EdgeInsets.symmetric(horizontal: kSpace3, vertical: 10),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAccountFilterRow() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _FilterTag(
+            label: '全部账户',
+            selected: _accountFilter == 'all',
+            onTap: () => setState(() => _accountFilter = 'all'),
+          ),
+          const SizedBox(width: kSpace2),
+          for (final a in kDefaultAccounts)
+            Padding(
+              padding: const EdgeInsets.only(right: kSpace2),
+              child: _FilterTag(
+                label: a.name,
+                selected: _accountFilter == a.id,
+                onTap: () => setState(() => _accountFilter = a.id),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -399,7 +448,47 @@ class _LedgerPageState extends State<LedgerPage> {
     } else if (action == 'delete') {
       await _deleteWithUndo(tx);
     }
+
   }
+  Future<void> _exportVisible() async {
+    final state = context.read<AppState>();
+    final source = _showAll
+        ? state.currentBookTransactions
+        : state.ofMonth(_month);
+    final txs = _visible(source);
+    if (txs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('当前筛选暂无数据可导出')),
+      );
+      return;
+    }
+    final now = DateTime.now();
+    final stamp = '${now.year}${_p2(now.month)}${_p2(now.day)}';
+    final csv = CsvExporter.exportCsv(
+      txs,
+      bookNames: {for (final b in state.books) b.id: b.name},
+    );
+    try {
+      final where = await exportCsvFile(
+        csv,
+        '记账本流水_筛选_$stamp.csv',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('已导出 ${txs.length} 条 → $where')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('导出失败：$e')),
+        );
+      }
+    }
+  }
+
+  static String _p2(int v) => v.toString().padLeft(2, '0');
+
 
 
 }
