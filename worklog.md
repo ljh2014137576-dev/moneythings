@@ -596,3 +596,22 @@
   2. Gradle `IncrementalSplitterRunnable` 失败（已知）→ 杀 java/gradle/dart 进程重试，22.6s 构建成功。
   3. `_rangeChip` 命名/位置参数不一致 → 统一为命名参数。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-08 15:00 — 迭代 v4.4：统计柱状图下钻当日/当周流水 + 版本号 4.4.0 + 最终 release
+
+- 任务内容：
+  - A. 统计柱状图「查看流水」下钻：每日/每周柱状图选中后，caption 右侧出现「查看流水 ›」入口；点击弹出当日/当周流水底部弹层（日期标题 + 笔数 + 支出/收入合计，流水行可点击进入编辑）。
+  - B. `_buildSelectionCaption` 增 onView 回调（周/日分支各加 `_viewHint`）；新增 `_showSelectionDay` / `_showSelectionWeekly` / `_showTransactionsSheet`（弹层复用 TransactionTile，转账不计收支合计）。
+  - C. 测试：新增「统计柱状图查看当日流水」（默认选中支出最高日，弹层显示当日两笔、不含其他日），68/68 通过。
+  - D. web 冒烟：统计页 caption 渲染「查看流水」入口，滚动/点击零控制台错误（弹层交互以单元测试为权威验证）。截图 48-day-transactions.png。
+  - E. 版本号 4.4.0+44（aapt 校验 versionName=4.4.0/versionCode=44）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.7MB，SHA-256 `32CFA603...51DC`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/stats_page.dart`（caption onView + _viewHint + 三个弹层方法；imports）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/48-day-transactions.png`（新增）
+- commit hash：`e9f760a`；已 push（e119a67..e9f760a master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 68/68；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：
+  1. web 上 getByText 匹配不到 Flutter 语义文本、坐标点击易误中 → 弹层交互以单元测试权威验证（与以往金额/搜索类一致的策略）。
+  2. 残留 Chrome 实例 + dev 编译卡顿导致页面无法引导 → 杀 chrome/flutter/dart 进程重启 web server。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
