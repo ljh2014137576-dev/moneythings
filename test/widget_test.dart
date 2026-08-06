@@ -343,6 +343,40 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('2026年7月'), findsOneWidget);
   });
+ 
+  testWidgets('导入 CSV 对话框可取消并导入', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final state = AppState();
+    await state.load();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('导入数据 (CSV)'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+
+    // 打开 -> 取消（不应崩溃）
+    await tester.tap(find.text('导入数据 (CSV)'));
+    await tester.pumpAndSettle();
+    expect(find.text('导入 CSV'), findsOneWidget);
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+
+    // 重新打开 -> 粘贴 -> 导入
+    await tester.tap(find.text('导入数据 (CSV)'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byType(TextField).last,
+      '日期,类型,分类,金额(元),账户,备注\n2026-08-07,支出,餐饮,35.50,支付宝,导入测试',
+    );
+    await tester.tap(find.text('导入').last);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('导入 1 笔'), findsOneWidget);
+    expect(state.transactions.any((t) => t.note == '导入测试'), isTrue);
+  });
 }
 
 

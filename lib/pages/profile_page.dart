@@ -63,51 +63,10 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _importCsv() async {
-    final controller = TextEditingController();
     final pasted = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('导入 CSV',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
-        content: SizedBox(
-          width: 360,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                '粘贴「导出数据 (CSV)」生成的内容（首行表头可选），重复流水会自动跳过。',
-                style: TextStyle(fontSize: 12, color: kInkSecondary, height: 1.5),
-              ),
-              const SizedBox(height: kSpace3),
-              TextField(
-                controller: controller,
-                maxLines: 8,
-                maxLength: 200000,
-                style: const TextStyle(fontSize: 12, height: 1.4),
-                decoration: const InputDecoration(
-                  hintText: '日期,类型,分类,金额(元),账户,备注\n'
-                      '2026-08-06 12:30,支出,餐饮,42.00,支付宝,午饭',
-                  hintStyle: TextStyle(fontSize: 12, color: kInkDisabled),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(minimumSize: const Size(96, 44)),
-            onPressed: () => Navigator.of(context).pop(controller.text),
-            child: const Text('导入'),
-          ),
-        ],
-      ),
+      builder: (context) => const _CsvImportDialog(),
     );
-    controller.dispose();
     if (pasted == null || pasted.trim().isEmpty || !mounted) return;
 
     final state = context.read<AppState>();
@@ -675,6 +634,70 @@ class _CategoryItem extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+ 
+class _CsvImportDialog extends StatefulWidget {
+  const _CsvImportDialog();
+
+  @override
+  State<_CsvImportDialog> createState() => _CsvImportDialogState();
+}
+
+class _CsvImportDialogState extends State<_CsvImportDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('导入 CSV',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+      content: SizedBox(
+        width: 360,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                '粘贴「导出数据 (CSV)」生成的内容（首行表头可选），重复流水会自动跳过。',
+                style:
+                    TextStyle(fontSize: 12, color: kInkSecondary, height: 1.5),
+              ),
+              const SizedBox(height: kSpace3),
+              TextField(
+                controller: _controller,
+                maxLines: 6,
+                maxLength: 200000,
+                style: const TextStyle(fontSize: 12, height: 1.4),
+                decoration: const InputDecoration(
+                  hintText: '日期,类型,分类,金额(元),账户,备注\n'
+                      '2026-08-06 12:30,支出,餐饮,42.00,支付宝,午饭',
+                  hintStyle: TextStyle(fontSize: 12, color: kInkDisabled),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(minimumSize: const Size(96, 44)),
+          onPressed: () => Navigator.of(context).pop(_controller.text),
+          child: const Text('导入'),
+        ),
+      ],
     );
   }
 }
