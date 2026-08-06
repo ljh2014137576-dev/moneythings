@@ -9,6 +9,7 @@ import '../data/app_state.dart';
 import '../models/transaction.dart';
 import '../theme/app_colors.dart';
 import '../widgets/amount_text.dart';
+import '../widgets/book_switcher.dart';
 import '../widgets/budget_dialog.dart';
 import '../widgets/category_ranking.dart';
 import '../widgets/empty_state.dart';
@@ -116,18 +117,31 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: kPaperSurface,
-            border: Border.all(color: kDividerDefault, width: 1),
-            borderRadius: BorderRadius.circular(kRadiusTable),
+        InkWell(
+          onTap: () => showBookSwitcher(context),
+          borderRadius: BorderRadius.circular(kRadiusTable),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: kSpace3, vertical: 8),
+            decoration: BoxDecoration(
+              color: kPaperSurface,
+              border: Border.all(color: kDividerDefault, width: 1),
+              borderRadius: BorderRadius.circular(kRadiusTable),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(context.read<AppState>().currentBook.name,
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w600)),
+                const SizedBox(width: 2),
+                const Icon(Icons.expand_more_rounded,
+                    size: 18, color: kInkSecondary),
+              ],
+            ),
           ),
-          child: const Icon(Icons.pie_chart_outline_rounded,
-              size: 18, color: kInkPrimary),
         ),
-      ],
+        ],
     );
   }
 

@@ -357,6 +357,12 @@ void main() {
       200,
       scrollable: find.byType(Scrollable).last,
     );
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.byType(Scrollable).last,
+      const Offset(0, -160),
+    );
+    await tester.pumpAndSettle();
 
     // 打开 -> 取消（不应崩溃）
     await tester.tap(find.text('导入数据 (CSV)'));
@@ -536,6 +542,79 @@ void main() {
     await tester.pumpAndSettle();
     expect(state.transactions.length, 1);
     expect(find.textContaining('咖啡'), findsOneWidget);
+  });
+ 
+  test('多账本：创建/切换/隔离/删除', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+
+    // 默认账本记一笔
+    await state.addTransaction(Transaction(
+      id: 'd1',
+      type: TxType.expense,
+      amount: 1000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(2026, 8, 5),
+    ));
+    expect(state.currentBook.id, 'default');
+    expect(state.ofMonth(DateTime(2026, 8)).length, 1);
+
+    // 新建账本并切换
+    await state.addBook('工作');
+    final work = state.books.firstWhere((b) => b.name == '工作');
+    await state.setCurrentBook(work.id);
+    expect(state.currentBook.name, '工作');
+
+    // 新账本下看不到默认账本的流水
+    expect(state.ofMonth(DateTime(2026, 8)), isEmpty);
+    expect(state.summaryOf(DateTime(2026, 8)).expense, 0);
+
+    // 新账本记一笔
+    await state.addTransaction(Transaction(
+      id: 'w1',
+      type: TxType.expense,
+      amount: 3000,
+      categoryId: 'comm',
+      accountId: 'card',
+      date: DateTime(2026, 8, 6),
+    ));
+    expect(state.ofMonth(DateTime(2026, 8)).length, 1);
+    expect(state.summaryOf(DateTime(2026, 8)).expense, 3000);
+
+    // 删除账本：流水并入默认账本，当前账本切回默认
+    await state.removeBook(work.id);
+    expect(state.currentBook.id, 'default');
+    expect(state.books.any((b) => b.id == work.id), isFalse);
+    expect(state.ofMonth(DateTime(2026, 8)).length, 2);
+  });
+
+  testWidgets('首页切换账本后支出变化', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addTransaction(Transaction(
+      id: 'd1',
+      type: TxType.expense,
+      amount: 100000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime.now(),
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    expect(find.text('¥1,000.00'), findsWidgets);
+
+    // 新建并切到空账本
+    await state.addBook('空账本');
+    final b = state.books.firstWhere((x) => x.name == '空账本');
+    await state.setCurrentBook(b.id);
+    await tester.pumpAndSettle();
+    expect(find.text('¥1,000.00'), findsNothing);
+    expect(find.text('¥0.00'), findsWidgets);
   });
 }
 

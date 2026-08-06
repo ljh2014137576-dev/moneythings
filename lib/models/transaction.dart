@@ -88,6 +88,7 @@ class Transaction {
     required this.categoryId,
     required this.accountId,
     required this.date,
+    this.bookId = 'default',
     this.note = '',
   });
 
@@ -98,6 +99,7 @@ class Transaction {
   final String accountId;
   final String note;
   final DateTime date;
+  final String bookId;
 
   Transaction copyWith({
     TxType? type,
@@ -106,6 +108,7 @@ class Transaction {
     String? accountId,
     String? note,
     DateTime? date,
+    String? bookId,
   }) {
     return Transaction(
       id: id,
@@ -115,6 +118,7 @@ class Transaction {
       accountId: accountId ?? this.accountId,
       note: note ?? this.note,
       date: date ?? this.date,
+      bookId: bookId ?? this.bookId,
     );
   }
 
@@ -126,6 +130,7 @@ class Transaction {
         'accountId': accountId,
         'note': note,
         'date': date.toIso8601String(),
+        'bookId': bookId,
       };
 
   factory Transaction.fromJson(Map<String, dynamic> json) => Transaction(
@@ -136,6 +141,7 @@ class Transaction {
         accountId: json['accountId'] as String,
         note: (json['note'] as String?) ?? '',
         date: DateTime.parse(json['date'] as String),
+        bookId: (json['bookId'] as String?) ?? 'default',
       );
 }
 

@@ -11,6 +11,7 @@ import '../models/transaction.dart';
 import '../theme/app_colors.dart';
 import '../widgets/amount_text.dart';
 import '../widgets/budget_dialog.dart';
+import '../widgets/book_switcher.dart';
 import '../widgets/category_dialog.dart';
 import '../services/csv_exporter.dart';
 import '../services/export_target.dart';
@@ -135,6 +136,8 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: kSpace4),
           _buildAccounts(state),
           const SizedBox(height: kSpace4),
+          _buildBook(state),
+          const SizedBox(height: kSpace4),
           _buildBudget(state),
           const SizedBox(height: kSpace4),
           _buildCategories(state),
@@ -193,6 +196,37 @@ class _ProfilePageState extends State<ProfilePage> {
           .read<AppState>()
           .setAccountInitialBalance(account.id, cents);
     }
+  }
+
+  Widget _buildBook(AppState state) {
+    return PaperGroup(
+      title: '账本',
+      padding: EdgeInsets.zero,
+      child: InkWell(
+        onTap: () => showBookSwitcher(context),
+        child: Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: kSpace4, vertical: 14),
+          child: Row(
+            children: [
+              const Icon(Icons.menu_book_outlined,
+                  size: 20, color: kInkPrimary),
+              const SizedBox(width: kSpace3),
+              const Expanded(
+                child: Text('当前账本',
+                    style: TextStyle(fontSize: 14, color: kInkPrimary)),
+              ),
+              Text(state.currentBook.name,
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w600)),
+              const SizedBox(width: 2),
+              const Icon(Icons.chevron_right_rounded,
+                  size: 18, color: kInkDisabled),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildBudget(AppState state) {

@@ -4,6 +4,7 @@ library;
 import 'package:flutter/foundation.dart';
 
 import '../models/account.dart';
+import '../models/book.dart';
 import '../models/transaction.dart';
 import 'transaction_repository.dart';
 import '../services/csv_importer.dart';
@@ -26,10 +27,27 @@ class AppState extends ChangeNotifier {
   int _monthlyBudget = 0;
   List<TxCategory> _customCategories = [];
   List<Account> _accounts = kDefaultAccounts;
+  List<Book> _books = [kDefaultBook];
+  String _currentBookId = kDefaultBook.id;
   bool _onboarded = false;
   bool _loaded = false;
 
   List<Transaction> get transactions => List.unmodifiable(_transactions);
+
+  /// 当前账本的流水
+  List<Transaction> get _bookTx => [
+    for (final t in _transactions)
+      if (t.bookId == _currentBookId) t,
+  ];
+
+  List<Book> get books => List.unmodifiable(_books);
+
+  Book get currentBook {
+    for (final b in _books) {
+      if (b.id == _currentBookId) return b;
+    }
+    return kDefaultBook;
+  }
   int get monthlyBudget => _monthlyBudget;
   bool get loaded => _loaded;
 
@@ -39,7 +57,12 @@ class AppState extends ChangeNotifier {
     _monthlyBudget = await _repository.loadBudget();
     _customCategories = await _repository.loadCustomCategories();
     _accounts = await _repository.loadAccounts();
+    _books = await _repository.loadBooks();
+    _currentBookId = await _repository.loadCurrentBookId();
     _onboarded = await _repository.loadOnboarded();
+    if (!_books.any((b) => b.id == _currentBookId)) {
+      _currentBookId = kDefaultBook.id;
+    }
     TxCategories.setCustom(_customCategories);
     _loaded = true;
     notifyListeners();
@@ -48,7 +71,7 @@ class AppState extends ChangeNotifier {
   Future<void> _persist() => _repository.saveTransactions(_transactions);
 
   Future<void> addTransaction(Transaction tx) async {
-    _transactions = [..._transactions, tx]
+    _transactions = [..._transactions, tx.copyWith(bookId: _currentBookId)]
       ..sort((a, b) => b.date.compareTo(a.date));
     await _persist();
     notifyListeners();
@@ -141,7 +164,11 @@ class AppState extends ChangeNotifier {
   Future<CsvImportResult> importCsv(String csv) async {
     final result = CsvImporter.parseCsv(csv, existing: _transactions);
     if (result.transactions.isNotEmpty) {
-      _transactions = [..._transactions, ...result.transactions]
+    final imported = [
+      for (final t in result.transactions)
+        t.copyWith(bookId: _currentBookId),
+    ];
+    _transactions = [..._transactions, ...imported]
         ..sort((a, b) => b.date.compareTo(a.date));
       await _persist();
       notifyListeners();
@@ -151,7 +178,7 @@ class AppState extends ChangeNotifier {
   /// 某月（年份+月份）的流水
   List<Transaction> ofMonth(DateTime month) {
     final y = month.year, m = month.month;
-    return _transactions
+    return _bookTx
         .where((t) => t.date.year == y && t.date.month == m)
         .toList();
   }
@@ -234,7 +261,7 @@ class AppState extends ChangeNotifier {
   /// 账户当前余额 = 初始余额 + 收支合计
   int balanceOf(Account account) {
     int sum = account.initialBalance;
-    for (final t in _transactions) {
+    for (final t in _bookTx) {
       if (t.accountId == account.id) {
         sum += t.type == TxType.income ? t.amount : -t.amount;
       }
@@ -260,6 +287,40 @@ class AppState extends ChangeNotifier {
         if (a.id == id) a.copyWith(initialBalance: cents) else a,
     ];
     await _repository.saveAccounts(_accounts);
+    notifyListeners();
+  }
+
+  Future<void> setCurrentBook(String id) async {
+    if (!_books.any((b) => b.id == id)) return;
+    _currentBookId = id;
+    await _repository.saveCurrentBookId(id);
+    notifyListeners();
+  }
+
+  Future<void> addBook(String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+    final book = Book(
+      id: 'b_${DateTime.now().microsecondsSinceEpoch}',
+      name: trimmed,
+    );
+    _books = [..._books, book];
+    await _repository.saveBooks(_books);
+    notifyListeners();
+  }
+
+  /// 删除账本：其流水并入默认账本；若删除的是当前账本则切回默认
+  Future<void> removeBook(String id) async {
+    if (id == kDefaultBook.id) return;
+    _books = [for (final b in _books) if (b.id != id) b];
+    _transactions = [
+      for (final t in _transactions)
+        t.bookId == id ? t.copyWith(bookId: kDefaultBook.id) : t,
+    ];
+    if (_currentBookId == id) _currentBookId = kDefaultBook.id;
+    await _repository.saveBooks(_books);
+    await _repository.saveCurrentBookId(_currentBookId);
+    await _persist();
     notifyListeners();
   }
   /// 当月已支出（用于预算进度）

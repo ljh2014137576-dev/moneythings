@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/transaction.dart';
 import '../models/account.dart';
+import '../models/book.dart';
 
 class TransactionRepository {
   static const String _kTxKey = 'transactions_v1';
@@ -16,6 +17,8 @@ class TransactionRepository {
   static const String _kCustomKey = 'custom_categories_v1';
   static const String _kAccountsKey = 'accounts_v1';
   static const String _kOnboardedKey = 'onboarded_v1';
+  static const String _kBooksKey = 'books_v1';
+  static const String _kCurrentBookKey = 'current_book_v1';
 
   Future<List<Transaction>> loadTransactions() async {
     final prefs = await SharedPreferences.getInstance();
@@ -108,6 +111,43 @@ class TransactionRepository {
   Future<void> saveOnboarded(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kOnboardedKey, value);
+  }
+ 
+  Future<List<Book>> loadBooks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kBooksKey);
+    if (raw == null || raw.isEmpty) return [kDefaultBook];
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      final books = [
+        for (final e in list)
+          if (e is Map<String, dynamic>) Book.fromJson(e),
+      ];
+      if (books.isEmpty || !books.any((b) => b.id == kDefaultBook.id)) {
+        return [kDefaultBook, ...books];
+      }
+      return books;
+    } catch (_) {
+      return [kDefaultBook];
+    }
+  }
+
+  Future<void> saveBooks(List<Book> books) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _kBooksKey,
+      jsonEncode([for (final b in books) b.toJson()]),
+    );
+  }
+
+  Future<String> loadCurrentBookId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_kCurrentBookKey) ?? kDefaultBook.id;
+  }
+
+  Future<void> saveCurrentBookId(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kCurrentBookKey, id);
   }
   /// 首次启动写入示例数据，让首页 / 统计立即可体验
   Future<void> seedIfFirstLaunch() async {
