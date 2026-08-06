@@ -1,4 +1,4 @@
-﻿/// 统计页：月度概览 + 每日支出柱状图 + 分类排行
+/// 统计页：月度概览 + 每日支出柱状图 + 分类排行
 library;
 
 import 'package:fl_chart/fl_chart.dart';
@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../data/app_state.dart';
 import '../models/transaction.dart';
+import 'ledger_page.dart';
 import '../theme/app_colors.dart';
 import '../widgets/amount_text.dart';
 import '../widgets/category_ranking.dart';
@@ -28,6 +29,14 @@ class _StatsPageState extends State<StatsPage> {
   bool _weekly = false;
   bool _incomeChart = false;
   int _balanceMonths = 12;
+
+  void _openCategory(TxCategory category) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => LedgerPage(initialCategoryId: category.id),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -135,7 +144,11 @@ class _StatsPageState extends State<StatsPage> {
                       PaperGroup(
                         title: '支出分类排行',
                         padding: const EdgeInsets.all(kSpace4),
-                        child: CategoryRanking(items: ranking, maxItems: 8),
+                        child: CategoryRanking(
+                          items: ranking,
+                          maxItems: 8,
+                          onTapCategory: _openCategory,
+                        ),
                       ),
                       if (incomeRanking.isNotEmpty) ...[
                         const SizedBox(height: kSpace4),
@@ -145,6 +158,7 @@ class _StatsPageState extends State<StatsPage> {
                           child: CategoryRanking(
                             items: incomeRanking,
                             maxItems: 8,
+                            onTapCategory: _openCategory,
                           ),
                         ),
                       ],

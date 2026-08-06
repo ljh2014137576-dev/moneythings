@@ -1,4 +1,4 @@
-﻿/// 分类排行：标签左、金额右、黑色进度条 + 浅灰轨道
+/// 分类排行：标签左、金额右、黑色进度条 + 浅灰轨道
 library;
 
 import 'package:flutter/material.dart';
@@ -13,10 +13,14 @@ class CategoryRanking extends StatelessWidget {
     super.key,
     required this.items,
     this.maxItems = 5,
+    this.onTapCategory,
   });
 
   final List<({TxCategory category, int amount})> items;
   final int maxItems;
+
+  /// 点击某分类时回调（用于跳转查看该分类流水）
+  final ValueChanged<TxCategory>? onTapCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +39,14 @@ class CategoryRanking extends StatelessWidget {
       children: [
         for (int i = 0; i < list.length; i++) ...[
           if (i > 0) const SizedBox(height: kSpace3),
-          _RankRow(item: list[i], max: max, rank: i + 1),
+          _RankRow(
+            item: list[i],
+            max: max,
+            rank: i + 1,
+            onTap: onTapCategory == null
+                ? null
+                : () => onTapCategory!(list[i].category),
+          ),
         ],
       ],
     );
@@ -43,16 +54,24 @@ class CategoryRanking extends StatelessWidget {
 }
 
 class _RankRow extends StatelessWidget {
-  const _RankRow({required this.item, required this.max, required this.rank});
+  const _RankRow({
+    required this.item,
+    required this.max,
+    required this.rank,
+    this.onTap,
+  });
 
   final ({TxCategory category, int amount}) item;
   final int max;
   final int rank;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final ratio = max == 0 ? 0.0 : item.amount / max;
-    return Row(
+    return InkWell(
+      onTap: onTap,
+      child: Row(
       children: [
         SizedBox(
           width: 16,
@@ -103,6 +122,7 @@ class _RankRow extends StatelessWidget {
           ),
         ),
       ],
+      ),
     );
   }
 }

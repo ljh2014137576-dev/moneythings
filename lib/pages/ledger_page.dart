@@ -1,4 +1,4 @@
-﻿/// 明细页：按月分组流水列表，可按收支筛选
+/// 明细页：按月分组流水列表，可按收支筛选
 library;
 
 import 'dart:async';
@@ -22,10 +22,17 @@ import 'add_transaction_page.dart';
 enum _Filter { all, expense, income }
 
 class LedgerPage extends StatefulWidget {
-  const LedgerPage({super.key, this.initialAccountId});
+  const LedgerPage({
+    super.key,
+    this.initialAccountId,
+    this.initialCategoryId,
+  });
 
   /// 打开时预置的账户筛选
   final String? initialAccountId;
+
+  /// 打开时预置的分类筛选
+  final String? initialCategoryId;
 
   @override
   State<LedgerPage> createState() => _LedgerPageState();
@@ -39,6 +46,7 @@ class _LedgerPageState extends State<LedgerPage> {
   Timer? _searchDebounce;
   bool _showAll = false;
   String _accountFilter = 'all';
+  String _categoryFilter = 'all';
   bool _selectionMode = false;
   final Set<String> _selectedIds = {};
   bool _sortByAmount = false;
@@ -52,6 +60,9 @@ class _LedgerPageState extends State<LedgerPage> {
     _month = DateTime(now.year, now.month);
     if (widget.initialAccountId != null) {
       _accountFilter = widget.initialAccountId!;
+    }
+    if (widget.initialCategoryId != null) {
+      _categoryFilter = widget.initialCategoryId!;
     }
   }
 
@@ -81,6 +92,12 @@ class _LedgerPageState extends State<LedgerPage> {
       byType = [
         for (final t in byType)
           if (t.accountId == _accountFilter) t,
+      ];
+    }
+    if (_categoryFilter != 'all') {
+      byType = [
+        for (final t in byType)
+          if (t.categoryId == _categoryFilter) t,
       ];
     }
     if (_query.isEmpty) return byType;
@@ -158,32 +175,38 @@ class _LedgerPageState extends State<LedgerPage> {
           break;
       }
     }
-    return SafeArea(
-      bottom: false,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (_selectionMode) _buildSelectionBar(),
+    return Scaffold(
+      backgroundColor: kPageBackground,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_selectionMode) _buildSelectionBar(),
           Expanded(
             child: (monthTx.isEmpty ||
                     (visible.isEmpty && _query.isNotEmpty))
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildHeaderColumn(),
-                      const SizedBox(height: kSpace3),
-                      Expanded(
-                        child: EmptyState(
-                          title: _query.isNotEmpty
-                              ? '没有找到相关流水'
-                              : '本月还没有流水',
-                          message: _query.isNotEmpty
-                              ? '换个关键词或清除搜索试试'
-                              : '回到首页点击「记一笔」开始记录',
-                          onAction: null,
+                ? SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildHeaderColumn(),
+                        const SizedBox(height: kSpace3),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: kSpace6),
+                          child: EmptyState(
+                            title: _query.isNotEmpty
+                                ? '没有找到相关流水'
+                                : '本月还没有流水',
+                            message: _query.isNotEmpty
+                                ? '换个关键词或清除搜索试试'
+                                : '回到首页点击「记一笔」开始记录',
+                            onAction: null,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   )
                 : ListView(
                     padding: const EdgeInsets.only(
@@ -215,6 +238,7 @@ class _LedgerPageState extends State<LedgerPage> {
                   ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -403,6 +427,14 @@ class _LedgerPageState extends State<LedgerPage> {
   }
 
   Widget _buildAccountFilterRow() {
+    final cats = switch (_filter) {
+      _Filter.all => [
+        ...TxCategories.of(TxType.expense),
+        ...TxCategories.of(TxType.income),
+      ],
+      _Filter.expense => TxCategories.of(TxType.expense),
+      _Filter.income => TxCategories.of(TxType.income),
+    };
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -420,6 +452,28 @@ class _LedgerPageState extends State<LedgerPage> {
                 label: a.name,
                 selected: _accountFilter == a.id,
                 onTap: () => setState(() => _accountFilter = a.id),
+              ),
+            ),
+          const SizedBox(width: kSpace2),
+          Container(
+            width: 1,
+            height: 18,
+            color: kDividerDefault,
+          ),
+          const SizedBox(width: kSpace2),
+          _FilterTag(
+            label: '全部分类',
+            selected: _categoryFilter == 'all',
+            onTap: () => setState(() => _categoryFilter = 'all'),
+          ),
+          const SizedBox(width: kSpace2),
+          for (final c in cats)
+            Padding(
+              padding: const EdgeInsets.only(right: kSpace2),
+              child: _FilterTag(
+                label: c.name,
+                selected: _categoryFilter == c.id,
+                onTap: () => setState(() => _categoryFilter = c.id),
               ),
             ),
         ],
@@ -586,7 +640,10 @@ class _LedgerPageState extends State<LedgerPage> {
                 _Filter.income => '收入',
               },
               selected: _filter == f,
-              onTap: () => setState(() => _filter = f),
+              onTap: () => setState(() {
+                _filter = f;
+                _categoryFilter = 'all';
+              }),
             ),
           ),
         const Spacer(),

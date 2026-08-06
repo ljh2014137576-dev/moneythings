@@ -1604,4 +1604,88 @@ void main() {
     expect(find.text('转入账户'), findsOneWidget);
     expect(find.text('转账仅调整账户余额，不计入收支统计'), findsOneWidget);
   });
+  testWidgets('明细页分类筛选', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'cf1',
+      type: TxType.expense,
+      amount: 1000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '午饭',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'cf2',
+      type: TxType.expense,
+      amount: 2000,
+      categoryId: 'transport',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '打车',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    // 默认全部：两条都在
+    expect(find.textContaining('午饭'), findsOneWidget);
+    expect(find.textContaining('打车'), findsOneWidget);
+    // 点「餐饮」分类 chip（头部筛选行在流水行之前）
+    await tester.tap(find.text('餐饮').first);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('午饭'), findsOneWidget);
+    expect(find.textContaining('打车'), findsNothing);
+    // 点「全部分类」恢复
+    await tester.tap(find.text('全部分类'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('打车'), findsOneWidget);
+  });
+
+  testWidgets('明细页支持 initialCategoryId 预选分类（统计下钻入口）', (tester) async {
+    Intl.defaultLocale = 'zh_CN';
+    await initializeDateFormatting('zh_CN');
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'dr1',
+      type: TxType.expense,
+      amount: 1000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '午饭',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'dr2',
+      type: TxType.expense,
+      amount: 2000,
+      categoryId: 'transport',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '打车',
+    ));
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: ChangeNotifierProvider.value(
+          value: state,
+          child: LedgerPage(initialCategoryId: 'food'),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    // 预选「餐饮」分类：合计只剩 1 笔（午饭）
+    expect(find.text('共 1 笔'), findsOneWidget);
+    // 点「全部分类」恢复：合计回到 2 笔
+    await tester.tap(find.text('全部分类'));
+    await tester.pumpAndSettle();
+    expect(find.text('共 2 笔'), findsOneWidget);
+  });
 }
