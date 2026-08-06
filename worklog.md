@@ -637,3 +637,28 @@
   2. 600px 视口下备注 chips 在折叠区外，tap 警告 off-screen → 测试先 ensureVisible 再点。
   3. Gradle `IncrementalSplitterRunnable`（已知）→ 杀进程重试 38.1s 成功。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）；候选大功能：周期记账（重复记账）。
+
+## 2026-08-08 19:00 — 迭代 v4.6：周期记账（重复流水自动生成）+ 版本号 4.6.0 + 最终 release
+
+- 任务内容：
+  - A. 周期记账核心：`RecurringRule` 模型（每周/每月/每年 + 锚点/下次日期/启用/账本 + `nextAfter` 月末钳制）；Repository 持久化（recurring_rules_v1，clearAll 一并清除）。
+  - B. AppState：load 时加载规则并 `generateDueRecurring()`（nextDate ≤ 今天逐期生成流水并推进，防重复、防死循环 guard=400）；CRUD + 账本切换时生成；JSON 备份/恢复包含规则。
+  - C. 记一笔：meta 行新增「周期」选择（不重复/每周/每月/每年 底部弹层）；保存新流水时若设置周期则同时创建规则（下次日期 = 锚点 + 周期）。
+  - D. 我的页：「周期记账」区块（规则列表：频率·分类 + 金额·下次日期 + 启用开关 + 删除），仅当前账本有规则时显示。
+  - E. 测试：新增 5 项（日期推进含月末/闰年钳制、到期生成且不重复、持久化往返、记一笔设置周期创建规则、我的页显示区块），75/75 通过。
+  - F. web 冒烟：记一笔选「每月」保存 → 规则写入 localStorage、流水 +¥100；把 nextDate 改为过去重载 → 自动生成 8月1日 流水（本月支出 +¥100 到 ¥1,200）、我的页出现「删除周期规则」行；零控制台错误。截图 50-recurring.png。
+  - G. 版本号 4.6.0+46（aapt 校验 versionName=4.6.0/versionCode=46）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `0953B80A...12DB`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/models/recurring_rule.dart`（新增）
+  - `lib/data/transaction_repository.dart`（load/saveRecurringRules + clearAll）
+  - `lib/data/app_state.dart`（规则状态/getter/generateDueRecurring/CRUD/账本切换/备份恢复/clearAll）
+  - `lib/pages/add_transaction_page.dart`（周期选择行 + 保存创建规则）
+  - `lib/pages/profile_page.dart`（周期记账区块 + _RecurringRow）
+  - `pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/50-recurring.png`（新增）
+- commit hash：`1f539c1`；已 push（4c5e848..1f539c1 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 75/75；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：
+  1. 月末钳制 bug：用当前月天数钳制导致 8/31 + 1月 → 10/1；改为用目标月天数（DateTime(y, m+2, 0)）钳制。
+  2. web 上 PaperGroup 标题/行文本不进语义 innerText（与 v4.2「支出分类排行」相同现象）→ 用「删除周期规则」工具提示节点 + 自动生成流水证明区块与规则均在渲染；行内容以单元/组件测试为权威验证。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
