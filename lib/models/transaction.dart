@@ -3,6 +3,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'category_icons.dart';
+
 /// 收支类型
 enum TxType {
   expense('支出'),
@@ -22,17 +24,59 @@ class TxCategory {
     required this.name,
     required this.icon,
     required this.isExpense,
+    this.isCustom = false,
+    this.iconKey,
   });
 
   final String id;
   final String name;
   final IconData icon;
+
+  /// 是否属于支出分类
   final bool isExpense;
+
+  /// 是否用户自定义
+  final bool isCustom;
+
+  /// 自定义图标 key（见 category_icons.dart）
+  final String? iconKey;
 
   static TxCategory expense(String id, String name, IconData icon) =>
       TxCategory(id: id, name: name, icon: icon, isExpense: true);
   static TxCategory income(String id, String name, IconData icon) =>
       TxCategory(id: id, name: name, icon: icon, isExpense: false);
+
+  /// 自定义分类
+  static TxCategory custom({
+    required String id,
+    required String name,
+    required String iconKey,
+    required bool isExpense,
+  }) =>
+      TxCategory(
+        id: id,
+        name: name,
+        icon: categoryIconByKey(iconKey),
+        isExpense: isExpense,
+        isCustom: true,
+        iconKey: iconKey,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'iconKey': iconKey,
+        'isExpense': isExpense,
+      };
+
+  factory TxCategory.fromJson(Map<String, dynamic> json) => TxCategory(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        icon: categoryIconByKey((json['iconKey'] as String?) ?? 'more'),
+        isExpense: json['isExpense'] as bool? ?? true,
+        isCustom: true,
+        iconKey: json['iconKey'] as String? ?? 'more',
+      );
 }
 
 /// 单笔账目；金额以「分」为单位存储（int，避免浮点误差）
@@ -95,7 +139,7 @@ class Transaction {
       );
 }
 
-/// 预设分类（黑白线性图标，不用彩虹分类色）
+/// 分类注册表：预设 + 自定义
 class TxCategories {
   TxCategories._();
 
@@ -121,15 +165,33 @@ class TxCategories {
     TxCategory.income('other_i', '其他', Icons.more_horiz_outlined),
   ];
 
-  static List<TxCategory> of(TxType type) =>
-      type == TxType.expense ? expense : income;
+  /// 用户自定义分类（由 AppState 在加载后注入）
+  static List<TxCategory> _custom = const [];
 
-  /// 按 id 查找分类；找不到时回退到「其他」
+  static List<TxCategory> get custom => List.unmodifiable(_custom);
+
+  static void setCustom(List<TxCategory> categories) {
+    _custom = List.unmodifiable(categories);
+  }
+
+  /// 某类型的全部分类（预设 + 自定义）
+  static List<TxCategory> of(TxType type) {
+    final presets = type == TxType.expense ? expense : income;
+    return [
+      ...presets,
+      ..._custom.where((c) =>
+          c.isExpense == (type == TxType.expense)),
+    ];
+  }
+
+  /// 按 id 查找分类（预设 + 自定义）；找不到回退到「其他」
   static TxCategory byId(String id) {
+    for (final c in _custom) {
+      if (c.id == id) return c;
+    }
     for (final c in [...expense, ...income]) {
       if (c.id == id) return c;
     }
     return id.startsWith('other_i') ? income.last : expense.last;
   }
 }
-

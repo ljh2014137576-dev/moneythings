@@ -37,6 +37,7 @@ class _StatsPageState extends State<StatsPage> {
     final monthTx = state.ofMonth(_month);
     final summary = state.summaryOf(_month);
     final ranking = state.categoryExpenseRanking(_month);
+    final incomeRanking = state.categoryIncomeRanking(_month);
     final series = state.dailyExpenseSeries(_month);
     final days = series.length;
 
@@ -112,6 +113,17 @@ class _StatsPageState extends State<StatsPage> {
                         padding: const EdgeInsets.all(kSpace4),
                         child: CategoryRanking(items: ranking, maxItems: 8),
                       ),
+                      if (incomeRanking.isNotEmpty) ...[
+                        const SizedBox(height: kSpace4),
+                        PaperGroup(
+                          title: '收入分类排行',
+                          padding: const EdgeInsets.all(kSpace4),
+                          child: CategoryRanking(
+                            items: incomeRanking,
+                            maxItems: 8,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
           ),
@@ -382,5 +394,3 @@ class _VSep extends StatelessWidget {
     return Container(width: 1, height: 36, color: kDividerSubtle);
   }
 }
-
-

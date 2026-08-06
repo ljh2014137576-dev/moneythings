@@ -209,5 +209,52 @@ void main() {
     expect(find.text('统计'), findsOneWidget);
     expect(find.text('我的'), findsOneWidget);
   });
+ 
+  test('自定义分类：注册表与持久化', () async {
+    SharedPreferences.setMockInitialValues({});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addCustomCategory(name: '宠物', iconKey: 'pets', isExpense: true);
+    expect(TxCategories.of(TxType.expense).any((c) => c.name == '宠物'), isTrue);
+    expect(TxCategories.byId(state.customCategories.first.id).name, '宠物');
+
+    // 重新加载后仍保留
+    final state2 = AppState();
+    await state2.load();
+    expect(state2.customCategories.any((c) => c.name == '宠物'), isTrue);
+
+    await state2.removeCustomCategory(state2.customCategories.first.id);
+    expect(TxCategories.of(TxType.expense).any((c) => c.name == '宠物'), isFalse);
+  });
+
+  testWidgets('我的页新增自定义分类并出现在记一笔', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final state = AppState();
+    await state.load();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('分类管理'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('新增').first);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, '宠物');
+    await tester.tap(find.text('保存').last);
+    await tester.pumpAndSettle();
+
+    // 回首页进入记一笔，分类网格应包含「宠物」
+    await tester.tap(find.text('首页'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('记一笔').first);
+    await tester.pumpAndSettle();
+    expect(find.text('宠物'), findsWidgets);
+  });
 }
 

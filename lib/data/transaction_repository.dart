@@ -12,6 +12,7 @@ class TransactionRepository {
   static const String _kTxKey = 'transactions_v1';
   static const String _kBudgetKey = 'monthly_budget_cents';
   static const String _kSeededKey = 'seeded_v1';
+  static const String _kCustomKey = 'custom_categories_v1';
 
   Future<List<Transaction>> loadTransactions() async {
     final prefs = await SharedPreferences.getInstance();
@@ -45,6 +46,29 @@ class TransactionRepository {
     await prefs.setInt(_kBudgetKey, cents);
   }
 
+ 
+  Future<List<TxCategory>> loadCustomCategories() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kCustomKey);
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      return [
+        for (final e in list)
+          if (e is Map<String, dynamic>) TxCategory.fromJson(e),
+      ];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> saveCustomCategories(List<TxCategory> categories) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _kCustomKey,
+      jsonEncode([for (final c in categories) c.toJson()]),
+    );
+  }
   /// 首次启动写入示例数据，让首页 / 统计立即可体验
   Future<void> seedIfFirstLaunch() async {
     final prefs = await SharedPreferences.getInstance();

@@ -23,6 +23,7 @@ class AppState extends ChangeNotifier {
 
   List<Transaction> _transactions = [];
   int _monthlyBudget = 0;
+  List<TxCategory> _customCategories = [];
   bool _loaded = false;
 
   List<Transaction> get transactions => List.unmodifiable(_transactions);
@@ -33,6 +34,8 @@ class AppState extends ChangeNotifier {
     await _repository.seedIfFirstLaunch();
     _transactions = await _repository.loadTransactions();
     _monthlyBudget = await _repository.loadBudget();
+    _customCategories = await _repository.loadCustomCategories();
+    TxCategories.setCustom(_customCategories);
     _loaded = true;
     notifyListeners();
   }
@@ -69,6 +72,45 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+ 
+  List<TxCategory> get customCategories => List.unmodifiable(_customCategories);
+
+  Future<void> addCustomCategory({
+    required String name,
+    required String iconKey,
+    required bool isExpense,
+  }) async {
+    final cat = TxCategory.custom(
+      id: 'c_${DateTime.now().microsecondsSinceEpoch}',
+      name: name,
+      iconKey: iconKey,
+      isExpense: isExpense,
+    );
+    _customCategories = [..._customCategories, cat];
+    await _syncCustom();
+  }
+
+  Future<void> removeCustomCategory(String id) async {
+    _customCategories = [
+      for (final c in _customCategories)
+        if (c.id != id) c,
+    ];
+    await _syncCustom();
+  }
+
+ 
+  Future<void> updateCustomCategory(TxCategory cat) async {
+    _customCategories = [
+      for (final c in _customCategories)
+        if (c.id == cat.id) cat else c,
+    ];
+    await _syncCustom();
+  }
+  Future<void> _syncCustom() async {
+    TxCategories.setCustom(_customCategories);
+    await _repository.saveCustomCategories(_customCategories);
+    notifyListeners();
+  }
   Future<void> clearAll() async {
     _transactions = [];
     await _repository.clearAll();
@@ -136,6 +178,21 @@ class AppState extends ChangeNotifier {
     return ranked;
   }
 
+ 
+  /// 某月分类收入排行（降序）
+  List<({TxCategory category, int amount})> categoryIncomeRanking(DateTime month) {
+    final map = <String, int>{};
+    for (final t in ofMonth(month)) {
+      if (t.type == TxType.income) {
+        map[t.categoryId] = (map[t.categoryId] ?? 0) + t.amount;
+      }
+    }
+    final ranked = map.entries.map((e) {
+      return (category: TxCategories.byId(e.key), amount: e.value);
+    }).toList()
+      ..sort((a, b) => b.amount.compareTo(a.amount));
+    return ranked;
+  }
   /// 账户当前余额 = 初始余额 + 收支合计
   int balanceOf(Account account) {
     int sum = account.initialBalance;

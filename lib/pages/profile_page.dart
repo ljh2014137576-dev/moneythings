@@ -6,9 +6,11 @@ import 'package:provider/provider.dart';
 
 import '../data/app_state.dart';
 import '../models/account.dart';
+import '../models/transaction.dart';
 import '../theme/app_colors.dart';
 import '../widgets/amount_text.dart';
 import '../widgets/budget_dialog.dart';
+import '../widgets/category_dialog.dart';
 import '../services/csv_exporter.dart';
 import '../services/export_target.dart';
 import '../widgets/paper_group.dart';
@@ -113,6 +115,8 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildAccounts(state),
           const SizedBox(height: kSpace4),
           _buildBudget(state),
+          const SizedBox(height: kSpace4),
+          _buildCategories(state),
           const SizedBox(height: kSpace4),
           _buildData(state),
         ],
@@ -236,6 +240,114 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
     );
+  }
+
+  Widget _buildCategories(AppState state) {
+    return PaperGroup(
+      title: '分类管理',
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _CategorySection(
+            title: '支出分类',
+            categories: TxCategories.of(TxType.expense),
+            onAdd: () => _addCategory(TxType.expense),
+            onTap: _tapCategory,
+          ),
+          const Divider(indent: kSpace4, endIndent: kSpace4),
+          _CategorySection(
+            title: '收入分类',
+            categories: TxCategories.of(TxType.income),
+            onAdd: () => _addCategory(TxType.income),
+            onTap: _tapCategory,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addCategory(TxType type) async {
+    final cat = await showCategoryDialog(context, type: type);
+    if (cat != null && mounted) {
+      await context.read<AppState>().addCustomCategory(
+            name: cat.name,
+            iconKey: cat.iconKey ?? 'more',
+            isExpense: type == TxType.expense,
+          );
+    }
+  }
+
+  Future<void> _tapCategory(TxCategory c) async {
+    if (!c.isCustom) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('预设分类不可修改')),
+      );
+      return;
+    }
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(kSpace4, kSpace3, kSpace4, kSpace2),
+              child: Text(c.name,
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined,
+                  size: 20, color: kInkPrimary),
+              title: const Text('编辑分类'),
+              onTap: () => Navigator.of(context).pop('edit'),
+            ),
+            ListTile(
+              leading:
+                  const Icon(Icons.delete_outline, size: 20, color: kDanger),
+              title: const Text('删除分类',
+                  style: TextStyle(color: kDanger)),
+              onTap: () => Navigator.of(context).pop('delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    final state = context.read<AppState>();
+    if (action == 'edit') {
+      final edited = await showCategoryDialog(context, editing: c);
+      if (edited != null && mounted) {
+        await state.updateCustomCategory(edited);
+      }
+    } else if (action == 'delete') {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('删除这个分类？',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+          content: const Text('该分类下的历史账目会归入「其他」。',
+              style: TextStyle(fontSize: 14, color: kInkSecondary)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: kDanger),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('删除'),
+            ),
+          ],
+        ),
+      );
+      if (ok == true && mounted) {
+        await state.removeCustomCategory(c.id);
+      }
+    }
   }
 
   Widget _buildData(AppState state) {
@@ -381,3 +493,121 @@ class _DataRow extends StatelessWidget {
 }
 
 
+ 
+class _CategorySection extends StatelessWidget {
+  const _CategorySection({
+    required this.title,
+    required this.categories,
+    required this.onAdd,
+    required this.onTap,
+  });
+
+  final String title;
+  final List<TxCategory> categories;
+  final VoidCallback onAdd;
+  final ValueChanged<TxCategory> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(kSpace4, kSpace3, kSpace4, kSpace4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 13, color: kInkSecondary)),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: onAdd,
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(48, 32),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  foregroundColor: kAccentBlue,
+                  textStyle: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w500),
+                ),
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: const Text('新增'),
+              ),
+            ],
+          ),
+          const SizedBox(height: kSpace2),
+          Wrap(
+            spacing: kSpace3,
+            runSpacing: kSpace3,
+            children: [
+              for (final c in categories) _CategoryItem(category: c, onTap: () => onTap(c)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryItem extends StatelessWidget {
+  const _CategoryItem({required this.category, required this.onTap});
+
+  final TxCategory category;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = category.isCustom ? kAccentBlue : kInkPrimary;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(kRadiusTable),
+      child: SizedBox(
+        width: 56,
+        child: Column(
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0F1EF),
+                    borderRadius: BorderRadius.circular(kRadiusTable),
+                  ),
+                  child: Icon(category.icon, size: 20, color: color),
+                ),
+                if (category.isCustom)
+                  Positioned(
+                    right: -4,
+                    top: -4,
+                    child: Container(
+                      width: 16,
+                      height: 16,
+                      decoration: const BoxDecoration(
+                        color: kAccentBlue,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close_rounded,
+                          size: 11, color: Colors.white),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              category.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight:
+                    category.isCustom ? FontWeight.w600 : FontWeight.w400,
+                color: category.isCustom ? kAccentBlue : kInkSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
