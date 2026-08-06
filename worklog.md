@@ -447,3 +447,14 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 55/55；web 实测日期快捷 chips 渲染，零控制台错误。
 - 遇到的问题与解决方案：日期快捷测试中 chip 在测试视口外 → 简化测试为验证渲染（点击为纯 setState）。
 - 下一步：上架执行（RELEASE.md）、真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-08 03:00 — 迭代 v3.7：结余走势点击跳转 + 版本号 3.6.0 + 最终 release
+
+- 任务内容：
+  - B. 统计结余走势：点击某月柱 → 切换到该月（与年度对比对称的交互增强）。
+  - A. 版本号同步 3.6.0+36；最终 release 重建（53.7MB，SHA-256 `E31B5CA7...FACE`，MoneyThings 签名）；RELEASE.md 更新版本/SHA/55 测试。
+- 修改文件：
+  - `lib/pages/stats_page.dart`、`pubspec.yaml`、`RELEASE.md`
+- commit hash：`854405b`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 55/55；release 构建+签名校验。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
