@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../data/app_state.dart';
 import '../models/book.dart';
+import '../models/category_icons.dart';
 import '../theme/app_colors.dart';
 
 /// 打开账本切换弹层（列表 + 新建 + 删除）
@@ -21,12 +22,12 @@ class _BookSwitcherSheet extends StatelessWidget {
 
   Future<void> _create(BuildContext context) async {
     final state = context.read<AppState>();
-    final name = await showDialog<String>(
+    final result = await showDialog<(String, String)>(
       context: context,
       builder: (context) => const _NewBookDialog(),
     );
-    if (name != null && name.trim().isNotEmpty) {
-      await state.addBook(name);
+    if (result != null && result.$1.trim().isNotEmpty) {
+      await state.addBook(result.$1, iconKey: result.$2);
     }
   }
 
@@ -59,15 +60,17 @@ class _BookSwitcherSheet extends StatelessWidget {
   }
   Future<void> _rename(BuildContext context, Book book) async {
     final state = context.read<AppState>();
-    final name = await showDialog<String>(
+    final result = await showDialog<(String, String)>(
       context: context,
       builder: (context) => _NewBookDialog(
         title: '重命名账本',
         initialName: book.name,
+        initialIconKey: book.iconKey,
       ),
     );
-    if (name != null && name.trim().isNotEmpty) {
-      await state.renameBook(book.id, name);
+    if (result != null && result.$1.trim().isNotEmpty) {
+      await state.renameBook(book.id, result.$1,
+          iconKey: result.$2);
     }
   }
 
@@ -89,7 +92,7 @@ class _BookSwitcherSheet extends StatelessWidget {
           for (final b in state.books)
             ListTile(
               dense: true,
-              leading: const Icon(Icons.menu_book_outlined,
+              leading: Icon(categoryIconByKey(b.iconKey),
                   size: 20, color: kInkPrimary),
               title: Text(b.name,
                   style: TextStyle(
@@ -143,10 +146,15 @@ class _BookSwitcherSheet extends StatelessWidget {
 }
 
 class _NewBookDialog extends StatefulWidget {
-  const _NewBookDialog({this.title = '新建账本', this.initialName});
+  const _NewBookDialog({
+    this.title = '新建账本',
+    this.initialName,
+    this.initialIconKey,
+  });
 
   final String title;
   final String? initialName;
+  final String? initialIconKey;
 
   @override
   State<_NewBookDialog> createState() => _NewBookDialogState();
@@ -154,6 +162,7 @@ class _NewBookDialog extends StatefulWidget {
 
 class _NewBookDialogState extends State<_NewBookDialog> {
   late final _controller = TextEditingController(text: widget.initialName ?? '');
+  late String _iconKey = widget.initialIconKey ?? kCategoryIconChoices.first.$1;
 
   @override
   void dispose() {
@@ -166,11 +175,52 @@ class _NewBookDialogState extends State<_NewBookDialog> {
     return AlertDialog(
       title: Text(widget.title,
           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
-      content: TextField(
-        controller: _controller,
-        autofocus: true,
-        maxLength: 12,
-        decoration: const InputDecoration(hintText: '账本名称，如：工作、旅行', counterText: ''),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            maxLength: 12,
+            decoration: const InputDecoration(
+                hintText: '账本名称，如：工作、旅行', counterText: ''),
+          ),
+          const SizedBox(height: kSpace3),
+          const Text('选择图标',
+              style: TextStyle(fontSize: 12, color: kInkSecondary)),
+          const SizedBox(height: kSpace2),
+          Wrap(
+            spacing: kSpace2,
+            runSpacing: kSpace2,
+            children: [
+              for (final c in kCategoryIconChoices)
+                InkWell(
+                  onTap: () => setState(() => _iconKey = c.$1),
+                  borderRadius: BorderRadius.circular(kRadiusTable),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 120),
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: _iconKey == c.$1
+                          ? kAccentSoft
+                          : const Color(0xFFF0F1EF),
+                      borderRadius: BorderRadius.circular(kRadiusTable),
+                      border: _iconKey == c.$1
+                          ? Border.all(color: kAccentBlue, width: 1.5)
+                          : null,
+                    ),
+                    child: Icon(c.$2,
+                        size: 19,
+                        color: _iconKey == c.$1
+                            ? kAccentBlue
+                            : kInkPrimary),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
       actions: [
         TextButton(
@@ -182,7 +232,7 @@ class _NewBookDialogState extends State<_NewBookDialog> {
           onPressed: () {
             final name = _controller.text.trim();
             if (name.isEmpty) return;
-            Navigator.of(context).pop(name);
+            Navigator.of(context).pop((name, _iconKey));
           },
           child: const Text('创建'),
         ),

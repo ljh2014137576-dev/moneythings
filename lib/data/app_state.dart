@@ -69,6 +69,7 @@ class AppState extends ChangeNotifier {
     _books = await _repository.loadBooks();
     _currentBookId = await _repository.loadCurrentBookId();
     _lastAccountId = await _repository.loadLastAccountId();
+    _recentSearches = await _repository.loadRecentSearches();
     _dailyReminder = await _repository.loadDailyReminder();
     _budgetNotify = await _repository.loadBudgetNotify();
     _onboarded = await _repository.loadOnboarded();
@@ -122,6 +123,28 @@ class AppState extends ChangeNotifier {
 
 
   String get lastAccountId => _lastAccountId;
+
+  List<String> _recentSearches = [];
+
+  List<String> get recentSearches => List.unmodifiable(_recentSearches);
+
+  /// 记录最近搜索词（去重置顶，最多 5 条）
+  Future<void> recordSearch(String q) async {
+    final t = q.trim();
+    if (t.isEmpty) return;
+    _recentSearches = [
+      t,
+      ..._recentSearches.where((e) => e != t),
+    ].take(5).toList();
+    await _repository.saveRecentSearches(_recentSearches);
+    notifyListeners();
+  }
+
+  Future<void> clearRecentSearches() async {
+    _recentSearches = [];
+    await _repository.saveRecentSearches([]);
+    notifyListeners();
+  }
   bool get dailyReminder => _dailyReminder;
 
   Future<void> setDailyReminder(bool value) async {
@@ -501,23 +524,26 @@ Future<CsvImportResult> importCsv(String csv) async {
     notifyListeners();
   }
 
-  Future<void> addBook(String name) async {
+  Future<void> addBook(String name, {String iconKey = 'menu_book'}) async {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
     final book = Book(
       id: 'b_${DateTime.now().microsecondsSinceEpoch}',
       name: trimmed,
+      iconKey: iconKey,
     );
     _books = [..._books, book];
     await _repository.saveBooks(_books);
     notifyListeners();
   }
 
-  Future<void> renameBook(String id, String name) async {
+  Future<void> renameBook(String id, String name,
+      {String? iconKey}) async {
     final trimmed = name.trim();
     if (trimmed.isEmpty || id == kDefaultBook.id) return;
     _books = [
-      for (final b in _books) b.id == id ? b.copyWith(name: trimmed) : b,
+      for (final b in _books)
+        b.id == id ? b.copyWith(name: trimmed, iconKey: iconKey) : b,
     ];
     await _repository.saveBooks(_books);
     notifyListeners();

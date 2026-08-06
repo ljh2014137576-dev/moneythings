@@ -2,18 +2,29 @@
 library;
 
 class Book {
-  const Book({required this.id, required this.name});
+  const Book({
+    required this.id,
+    required this.name,
+    this.iconKey = 'menu_book',
+  });
 
   final String id;
   final String name;
+  final String iconKey;
 
-  Book copyWith({String? name}) => Book(id: id, name: name ?? this.name);
+  Book copyWith({String? name, String? iconKey}) => Book(
+        id: id,
+        name: name ?? this.name,
+        iconKey: iconKey ?? this.iconKey,
+      );
 
-  Map<String, dynamic> toJson() => {'id': id, 'name': name};
+  Map<String, dynamic> toJson() =>
+      {'id': id, 'name': name, 'iconKey': iconKey};
 
   factory Book.fromJson(Map<String, dynamic> json) => Book(
         id: json['id'] as String,
         name: json['name'] as String,
+        iconKey: (json['iconKey'] as String?) ?? 'menu_book',
       );
 }
 

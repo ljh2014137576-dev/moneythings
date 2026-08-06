@@ -1407,6 +1407,31 @@ void main() {
     expect(find.text('今天'), findsWidgets);
     expect(find.text('昨天'), findsWidgets);
   });
+ 
+  test('账本图标持久化', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.addBook('旅行', iconKey: 'flight');
+    final book = state.books.firstWhere((b) => b.name == '旅行');
+    expect(book.iconKey, 'flight');
+    final state2 = AppState();
+    await state2.load();
+    final book2 = state2.books.firstWhere((b) => b.name == '旅行');
+    expect(book2.iconKey, 'flight');
+  });
+
+  test('最近搜索去重置顶', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.recordSearch('咖啡');
+    await state.recordSearch('地铁');
+    await state.recordSearch('咖啡');
+    expect(state.recentSearches, ['咖啡', '地铁']);
+    await state.clearRecentSearches();
+    expect(state.recentSearches, isEmpty);
+  });
 }
 
 

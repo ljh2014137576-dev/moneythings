@@ -1,6 +1,7 @@
 ﻿/// 明细页：按月分组流水列表，可按收支筛选
 library;
 
+import 'dart:async';
 import 'dart:collection';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
@@ -35,6 +36,7 @@ class _LedgerPageState extends State<LedgerPage> {
   _Filter _filter = _Filter.all;
   final _searchController = TextEditingController();
   String _query = '';
+  Timer? _searchDebounce;
   bool _showAll = false;
   String _accountFilter = 'all';
   bool _selectionMode = false;
@@ -54,6 +56,7 @@ class _LedgerPageState extends State<LedgerPage> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -253,6 +256,7 @@ class _LedgerPageState extends State<LedgerPage> {
           ),
           const SizedBox(height: kSpace2),
           _buildSearchField(),
+          if (_query.isEmpty) _buildRecentSearches(),
           const SizedBox(height: kSpace2),
           _buildTimeRow(),
           const SizedBox(height: kSpace2),
@@ -261,6 +265,64 @@ class _LedgerPageState extends State<LedgerPage> {
           _buildAccountFilterRow(),
           const SizedBox(height: kSpace2),
           _buildRangeRow(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentSearches() {
+    final recents = context.watch<AppState>().recentSearches;
+    if (recents.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: kSpace2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('最近搜索',
+                  style:
+                      TextStyle(fontSize: 12, color: kInkSecondary)),
+              const Spacer(),
+              TextButton(
+                onPressed: () =>
+                    context.read<AppState>().clearRecentSearches(),
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(48, 28),
+                  padding: EdgeInsets.zero,
+                ),
+                child: const Text('清除',
+                    style:
+                        TextStyle(fontSize: 12, color: kInkDisabled)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Wrap(
+            spacing: kSpace2,
+            runSpacing: kSpace2,
+            children: [
+              for (final s in recents)
+                InkWell(
+                  onTap: () {
+                    _searchController.text = s;
+                    setState(() => _query = s);
+                  },
+                  borderRadius: BorderRadius.circular(kRadiusTable),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: kSpace3, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F1EF),
+                      borderRadius: BorderRadius.circular(kRadiusTable),
+                    ),
+                    child: Text(s,
+                        style: const TextStyle(
+                            fontSize: 12, color: kInkPrimary)),
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );
@@ -275,7 +337,16 @@ class _LedgerPageState extends State<LedgerPage> {
       ),
       child: TextField(
         controller: _searchController,
-        onChanged: (v) => setState(() => _query = v.trim()),
+        onChanged: (v) {
+          setState(() => _query = v.trim());
+          _searchDebounce?.cancel();
+          _searchDebounce = Timer(const Duration(milliseconds: 600), () {
+            final t = v.trim();
+            if (t.isNotEmpty) {
+              context.read<AppState>().recordSearch(t);
+            }
+          });
+        },
         decoration: InputDecoration(
           hintText: '搜索备注或分类',
           hintStyle: const TextStyle(fontSize: 14, color: kInkDisabled),

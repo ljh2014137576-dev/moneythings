@@ -23,6 +23,7 @@ class TransactionRepository {
   static const String _kBudgetNotifyKey = 'budget_notify_v1';
   static const String _kDailyReminderKey = 'daily_reminder_v1';
   static const String _kLastAccountKey = 'last_account_v1';
+  static const String _kRecentSearchesKey = 'recent_searches_v1';
 
   Future<List<Transaction>> loadTransactions() async {
     final prefs = await SharedPreferences.getInstance();
@@ -342,6 +343,16 @@ class TransactionRepository {
     };
     final list = notes[cat] ?? const ['日常开销'];
     return list[Random(cat.hashCode).nextInt(list.length)];
+  }
+
+  Future<List<String>> loadRecentSearches() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_kRecentSearchesKey) ?? [];
+  }
+
+  Future<void> saveRecentSearches(List<String> items) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_kRecentSearchesKey, items);
   }
 }
 
