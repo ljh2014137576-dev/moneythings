@@ -168,3 +168,20 @@
   2. 多次顶层变量重名冲突 → 统一用 var + 顶层 await。
   3. home_page 表头替换时跳行数算错多删 3 行 → 用括号深度检查定位并修复。
 - 下一步计划：本地预算预警通知、深色模式、商店素材排版、release 上架。
+
+## 2026-08-07 07:00 — 迭代 v1.7：预算预警 / 合计条 / 导出账本列 / release 校验
+
+- 任务内容：
+  - A. 预算 80% 预警：首页预算条达 80%+ 时显示「已用 91%，注意控制」（红字），超支仍显示超支金额。
+  - B. 明细筛选合计条：明细列表顶部固定显示「共 N 笔 · 支出 ¥x · 收入 ¥y」（随筛选/搜索实时变化）。
+  - C. CSV 导出增强：加「账本」列；改为导出**当前账本**的流水（多账本下更符合直觉）；`CsvExporter` 支持 `bookNames` 映射。
+  - D. Release 重建与校验：`flutter build apk --release` 成功（51.1MB）；SHA-256 `2B94260E...9549B`；apksigner 验证 MoneyThings 证书。
+- 修改文件：
+  - `lib/pages/home_page.dart`（预算预警条）、`lib/pages/ledger_page.dart`（合计条 + _LedgerSummary）、`lib/services/csv_exporter.dart`、`lib/data/app_state.dart`（currentBookTransactions）、`lib/pages/profile_page.dart`（按当前账本导出）
+  - `test/widget_test.dart`（27 测试，CSV 断言更新）、`screenshots/12-budget-warning.png`、`13-ledger-summary.png`
+- commit hash：`456714e`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 27/27；web 实测：预算 91% 显示「已用 91%，注意控制」、合计条「共 18 笔 · 支出 ¥1,000.00 · 收入 ¥14,000.00」，零控制台错误；release APK 签名校验通过。
+- 遇到的问题与解决方案：
+  1. PowerShell 双引号 `${...}` 展开损坏 Dart 插值 → 统一用 node 单引号字符串/反引号转义写入，整体重写小文件。
+  2. 多次行拼接误伤文件 → 每次改完立即 analyze 验证。
+- 下一步计划：本地预算预警通知（系统通知）、深色模式、商店素材排版、上架。
