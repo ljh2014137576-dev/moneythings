@@ -402,7 +402,7 @@ void main() {
     await tester.tap(find.text('导入').last);
     await tester.pumpAndSettle();
     // 预览确认
-    await tester.tap(find.text('确认导入').last);
+    await tester.tap(find.text('追加导入').last);
     await tester.pumpAndSettle();
     expect(find.textContaining('导入 1 笔'), findsOneWidget);
     expect(state.transactions.any((t) => t.note == '导入测试'), isTrue);

@@ -78,7 +78,7 @@ class _ProfilePageState extends State<ProfilePage> {
     // 解析预览 + 确认
     final preview = CsvImporter.parseCsv(pasted);
     if (!mounted) return;
-    final ok = await showDialog<bool>(
+    final ok = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('确认导入',
@@ -111,18 +111,26 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(context).pop(),
             child: const Text('取消'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: kDanger),
+            onPressed: () => Navigator.of(context).pop('replace'),
+            child: const Text('替换全部'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(minimumSize: const Size(120, 44)),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('确认导入'),
+            onPressed: () => Navigator.of(context).pop('append'),
+            child: const Text('追加导入'),
           ),
         ],
       ),
     );
-    if (ok != true || !mounted) return;
+    if (ok == null || !mounted) return;
+    if (ok == 'replace') {
+      await state.clearAll();
+    }
     final result = await state.importCsv(pasted);
     if (!mounted) return;
     final parts = [
