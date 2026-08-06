@@ -14,6 +14,7 @@ import '../widgets/budget_dialog.dart';
 import '../widgets/book_switcher.dart';
 import '../widgets/category_dialog.dart';
 import '../services/csv_exporter.dart';
+import '../services/csv_importer.dart';
 import '../services/export_target.dart';
 import '../services/notification_service.dart';
 import '../widgets/paper_group.dart';
@@ -73,6 +74,34 @@ class _ProfilePageState extends State<ProfilePage> {
     if (pasted == null || pasted.trim().isEmpty || !mounted) return;
 
     final state = context.read<AppState>();
+    // 解析预览 + 确认
+    final preview = CsvImporter.parseCsv(pasted);
+    if (!mounted) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认导入',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+        content: Text(
+          '将导入 ${preview.transactions.length} 笔，跳过 ${preview.skipped} 行'
+          '${preview.errors.isNotEmpty ? '，错误 ${preview.errors.length} 行' : ''}。',
+          style: const TextStyle(
+              fontSize: 14, color: kInkSecondary, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(minimumSize: const Size(120, 44)),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('确认导入'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
     final result = await state.importCsv(pasted);
     if (!mounted) return;
     final parts = [

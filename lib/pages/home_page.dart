@@ -35,6 +35,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late DateTime _month;
+  bool _weekly = false;
 
   @override
   void initState() {
@@ -46,8 +47,15 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final summary = state.summaryOf(_month);
-    final recent = state.ofMonth(_month).take(6).toList();
+    final summary = _weekly
+        ? (state.weekSummary ??
+            MonthSummary(expense: 0, income: 0))
+        : state.summaryOf(_month);
+    final recent = (_weekly
+            ? state.currentBookTransactions
+            : state.ofMonth(_month))
+        .take(6)
+        .toList();
     final ranking = state.categoryExpenseRanking(_month);
     final isCurrentMonth = _isCurrent(_month);
     final budget = isCurrentMonth ? state.monthlyBudget : 0;
@@ -64,9 +72,27 @@ class _HomePageState extends State<HomePage> {
           children: [
             _buildHeader(),
             const SizedBox(height: kSpace2),
-            MonthSelector(
-              month: _month,
-              onChanged: (m) => setState(() => _month = m),
+            if (!_weekly) ...[
+              MonthSelector(
+                month: _month,
+                onChanged: (m) => setState(() => _month = m),
+              ),
+            ],
+            const SizedBox(height: kSpace2),
+            Row(
+              children: [
+                _HomeModeTag(
+                  label: '本月',
+                  selected: !_weekly,
+                  onTap: () => setState(() => _weekly = false),
+                ),
+                const SizedBox(width: kSpace2),
+                _HomeModeTag(
+                  label: '本周',
+                  selected: _weekly,
+                  onTap: () => setState(() => _weekly = true),
+                ),
+              ],
             ),
             const SizedBox(height: kSpace3),
             _buildSummary(
@@ -152,8 +178,9 @@ class _HomePageState extends State<HomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('本月支出',
-              style: TextStyle(fontSize: 13, color: kInkSecondary)),
+          Text(_weekly ? '本周支出' : '本月支出',
+              style:
+                  const TextStyle(fontSize: 13, color: kInkSecondary)),
           const SizedBox(height: 4),
           AmountText(summary.expense, size: 36, weight: FontWeight.w700),
           const SizedBox(height: kSpace3),
@@ -401,7 +428,7 @@ class _BudgetBar extends StatelessWidget {
                 ? '已超出预算 ¥${AmountText.format(spent - budget, showSymbol: false)}'
                 : nearLimit
                     ? '已用 ${(ratio * 100).round()}%，注意控制'
-                    : '剩余 ¥${AmountText.format(remaining, showSymbol: false)} · 日均可用 ¥${AmountText.format(daily, showSymbol: false)}',
+                    : '剩余 ¥${AmountText.format(remaining, showSymbol: false)} · 日均 ¥${AmountText.format(daily, showSymbol: false)} · 剩 ${context.read<AppState>().budgetDaysLeft} 天',
             style: TextStyle(
                 fontSize: 11, color: over ? kDanger : kInkDisabled),
           ),
@@ -461,6 +488,47 @@ class _MiniBar extends StatelessWidget {
               fontFeatures: const [FontFeature.tabularFigures()],
             )),
       ],
+    );
+  }
+}
+
+
+class _HomeModeTag extends StatelessWidget {
+  const _HomeModeTag({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(kRadiusTable),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? kAccentSoft : kPaperSurface,
+          borderRadius: BorderRadius.circular(kRadiusTable),
+          border: Border.all(
+            color: selected ? kAccentBlue : kDividerDefault,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            color: selected ? kAccentBlue : kInkSecondary,
+          ),
+        ),
+      ),
     );
   }
 }

@@ -406,6 +406,24 @@ class AppState extends ChangeNotifier {
     return summaryOf(DateTime(now.year, now.month)).expense;
   }
 
+  /// 本周（周一起）收支概览
+  MonthSummary? get weekSummary {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final monday = today.subtract(Duration(days: now.weekday - 1));
+    int exp = 0, inc = 0;
+    for (final t in _bookTx) {
+      if (!t.date.isBefore(monday)) {
+        if (t.type == TxType.expense) {
+          exp += t.amount;
+        } else {
+          inc += t.amount;
+        }
+      }
+    }
+    return MonthSummary(expense: exp, income: inc);
+  }
+
   /// 本月预算剩余（分，不小于 0）
   int get budgetRemaining {
     final r = monthlyBudget - currentMonthExpense;

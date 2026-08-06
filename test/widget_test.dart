@@ -385,6 +385,9 @@ void main() {
     );
     await tester.tap(find.text('导入').last);
     await tester.pumpAndSettle();
+    // 预览确认
+    await tester.tap(find.text('确认导入').last);
+    await tester.pumpAndSettle();
     expect(find.textContaining('导入 1 笔'), findsOneWidget);
     expect(state.transactions.any((t) => t.note == '导入测试'), isTrue);
   });
@@ -512,7 +515,7 @@ void main() {
 
     expect(find.text('结余走势'), findsOneWidget);
     expect(find.textContaining('剩余 ¥1,000.00'), findsOneWidget);
-    expect(find.textContaining('日均可用'), findsOneWidget);
+    expect(find.textContaining('日均'), findsOneWidget);
   });
 
   testWidgets('明细左滑删除可撤销', (tester) async {
@@ -869,6 +872,57 @@ void main() {
     await tester.pumpAndSettle();
     // 金额输入框应显示 12.50
     expect(find.text('12.50'), findsOneWidget);
+  });
+
+  test('本周概览 weekSummary', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    // 今天一笔支出
+    await state.addTransaction(Transaction(
+      id: 'wd1',
+      type: TxType.expense,
+      amount: 5000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: now,
+    ));
+    // 上周一笔支出（不应计入本周）
+    await state.addTransaction(Transaction(
+      id: 'wd2',
+      type: TxType.expense,
+      amount: 9000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: now.subtract(const Duration(days: 8)),
+    ));
+    final week = state.weekSummary;
+    expect(week, isNotNull);
+    expect(week!.expense, 5000);
+  });
+
+  testWidgets('首页切换本周概览', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addTransaction(Transaction(
+      id: 'hd1',
+      type: TxType.expense,
+      amount: 8800,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime.now(),
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    expect(find.text('本月支出'), findsOneWidget);
+    await tester.tap(find.text('本周'));
+    await tester.pumpAndSettle();
+    expect(find.text('本周支出'), findsOneWidget);
+    expect(find.text('¥88.00'), findsWidgets);
   });
 }
 
