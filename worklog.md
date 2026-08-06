@@ -409,3 +409,15 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 52/52（金额搜索匹配/排除、CSV meta 行导入跳过）；浏览器备注搜索与数据含 ¥30.00 确认（金额搜索由单元测试权威验证，浏览器输入焦点受 harness 干扰）。
 - 遇到的问题与解决方案：一次 replace 误伤 ledger 文件（内容被追加到尾部）→ git 回退后用精确行插入重做；node 顶层变量冲突 → 用唯一前缀。
 - 下一步计划：上架执行（RELEASE.md）、真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-08 00:00 — 迭代 v3.4：导入追加/替换 + 版本号 3.3.0 + 最终 release
+
+- 任务内容：
+  - B. CSV 导入「追加/替换」：导入预览确认弹窗新增「替换全部」（红色，先清空再导入）与「追加导入」两个选项，取消关闭。
+  - A. 版本号同步 3.3.0+33；最终 release 重建（53.7MB，SHA-256 `BE7E9796...35A8`，MoneyThings 签名）；RELEASE.md 更新版本/SHA/52 测试。
+- 修改文件：
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`RELEASE.md`、`test/widget_test.dart`（52 测试）
+- commit hash：`2333bfb`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 52/52；release 构建+签名校验。
+- 遇到的问题与解决方案：replace 误改了「清除全部」弹窗类型（showDialog<bool>→String）→ 精确修正两处弹窗类型。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
