@@ -454,7 +454,17 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   fontSize: 26, fontWeight: FontWeight.w600, color: kInkPrimary)),
           const SizedBox(width: kSpace2),
           Expanded(
-            child: TextField(
+            child: GestureDetector(
+              onLongPress: () {
+                final text = _amountController.text;
+                if (text.isNotEmpty) {
+                  _amountController.selection = TextSelection(
+                    baseOffset: 0,
+                    extentOffset: text.length,
+                  );
+                }
+              },
+              child: TextField(
               controller: _amountController,
               focusNode: _amountFocus,
               autofocus: !_isEdit,
@@ -471,6 +481,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 contentPadding: EdgeInsets.zero,
                 isDense: true,
               ),
+            ),
             ),
           ),
           Text(
