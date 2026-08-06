@@ -1,0 +1,38 @@
+﻿# 交付清单（RELEASE）
+
+> 记账本 v2.7 · 2026-08-07 · 可上架状态
+
+## 安装包
+
+- **Release APK**：`build/app/outputs/flutter-apk/app-release.apk`（53.6 MB）
+- **SHA-256**：`0B7510BDB1A5DF8FC651A240F36C55D7B0F843F0A01A1D74B6697B89D26E65EB`
+- **签名**：MoneyThings keystore（`android/upload-keystore.jks`，**不入库，请妥善备份**）
+  - 证书：CN=MoneyThings, OU=Dev, O=MoneyThings, L=Shanghai, ST=Shanghai, C=CN
+  - SHA-256 digest：`a7e997bb7fd9ebd7dd79f927621b9355995916732c9f589c4e08d9be8854e15a`
+
+## 上架素材（均在仓库内）
+
+| 素材 | 路径 |
+|---|---|
+| 应用图标（全套 mipmap） | `assets/icon/` + `android/app/src/main/res/` |
+| 商店截图（1080×1920 ×5） | `screenshots/store/1-home-1080.png` ~ `5-add-1080.png` |
+| 宣传横幅（1024×500） | `screenshots/store/banner-1024x500.png` |
+| 文案（名称/简介/描述/关键词） | `STORE_TEXT.md` |
+| 隐私政策 | `PRIVACY.md` |
+| 上架清单 | `CHECKLIST.md` |
+| 真机冒烟脚本 | `SMOKE_TEST.md` |
+
+## 质量门禁
+
+- `flutter analyze`：0 问题
+- `flutter test`：47/47 通过（含大字体 2.0x 无障碍、JSON 备份恢复、多账本、预算按账本、导入预览等）
+- 功能覆盖：首页/明细/统计/我的/记一笔、多账本、预算+系统通知、自定义分类、导入导出+JSON 备份、首启引导、图标、release 签名
+
+## 上架步骤（摘要）
+
+1. 注册 Google Play 开发者账号（一次性 $25）
+2. Play Console 新建应用，上传 `app-release.apk`
+3. 启用 **Play App Signing**（上传密钥后由 Google 管理）
+4. 填写商店文案（`STORE_TEXT.md`）、隐私政策 URL（可托管 GitHub/Gitee Pages）
+5. 上传截图与图标
+6. 内部测试轨道 → 按 `SMOKE_TEST.md` 真机冒烟 → 正式版发布

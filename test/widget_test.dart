@@ -148,11 +148,18 @@ void main() {
     await tester.tap(find.text('餐饮'));
     await tester.tap(find.text('保存'));
     await tester.pumpAndSettle();
+    // 等待「已保存」SnackBar 消失，避免遮挡后续点击
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
     expect(find.text('¥42.00'), findsWidgets);
 
     await tester.tap(find.text('明细').first);
     await tester.pumpAndSettle();
     expect(find.text('¥42.00'), findsWidgets);
+    // 清除残留 SnackBar，避免遮挡行点击
+    ScaffoldMessenger.of(tester.element(find.byType(Scaffold).first))
+        .clearSnackBars();
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byType(TransactionTile).first);
     await tester.pumpAndSettle();

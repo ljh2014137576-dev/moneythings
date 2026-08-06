@@ -199,7 +199,27 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     } else {
       await state.addTransaction(tx);
     }
-    if (mounted) Navigator.of(context).pop();
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('已保存 \${AmountText.format(amount)}'),
+          action: SnackBarAction(
+            label: '继续记一笔',
+            onPressed: () {
+              navigator.push(
+                MaterialPageRoute(
+                  builder: (_) => const AddTransactionPage(),
+                ),
+              );
+            },
+          ),
+        ),
+      );
   }
 
   Future<void> _delete() async {
