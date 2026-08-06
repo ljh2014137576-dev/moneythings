@@ -1154,6 +1154,25 @@ void main() {
     await pumpPage(const ProfilePage());
     await pumpPage(const AddTransactionPage());
   });
+
+  test('记一笔记住上次账户', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    expect(state.lastAccountId, 'alipay');
+    await state.addTransaction(Transaction(
+      id: 'la1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'card',
+      date: DateTime(2026, 8, 6),
+    ));
+    expect(state.lastAccountId, 'card');
+    final state2 = AppState();
+    await state2.load();
+    expect(state2.lastAccountId, 'card');
+  });
 }
 
 
