@@ -680,3 +680,22 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 77/77；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：规则行标题在 600px 视口边缘 tap 落空 → 测试先 scrollUntilVisible 到行标题再 ensureVisible 再点。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-08 23:00 — 迭代 v4.8：金额区间快捷预设 + 周期规则后续预览 + 版本号 4.8.0 + 最终 release
+
+- 任务内容：
+  - A. 明细金额区间快捷预设：金额区间弹层顶部新增 3 个预设 chips（≤100 / 100~500 / ≥500），一键填入最低/最高。
+  - B. 周期规则后续预览：`RecurringRule.nextOccurrences(from, freq, count)` 计算后续 N 个发生日期；编辑弹层显示「后续：10月1日、11月1日、12月1日」（随频率/下次日期实时变化）。
+  - C. 测试：新增 2 项（后续发生日期序列、金额区间预设筛选），79/79 通过。
+  - D. web 冒烟：金额弹层预设 chips 渲染，点 100~500 → 金额：100.00 ~ 500.00 → 3 笔 ¥500；周期编辑弹层显示「后续：10月1日、11月1日、12月1日」；零控制台错误。截图 52-recurring-preview.png。
+  - E. 版本号 4.8.0+48（aapt 校验 versionName=4.8.0/versionCode=48）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `DB9058A9...4068`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/models/recurring_rule.dart`（nextOccurrences）
+  - `lib/pages/ledger_page.dart`（_AmountSheet 预设 chips + _applyPreset/_presetChip）
+  - `lib/pages/profile_page.dart`（_RecurringEditSheet 后续预览 + _previewText）
+  - `pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/52-recurring-preview.png`（新增）
+- commit hash：`22dcd27`；已 push（98a6d03..22dcd27 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 79/79；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：无阻塞问题（沿用 UTF-8 安全编辑与语义节点坐标点击验证）。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
