@@ -260,3 +260,17 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 38/38（本周概览排除上周、首页切换本周支出 ¥88、导入预览确认、预算剩余/日均）；web 实测：本周/本月切换、本周支出 ¥632、预算剩余天数渲染，零控制台错误。
 - 遇到的问题与解决方案：首页三元表达式括号与标题残留导致语法错误 → 逐处修复；导入预览 `${}` 被 `\$` 转义成字面量 → 去掉反斜杠；测试适配预览确认弹窗（确认导入按钮 .last）。
 - 下一步计划：上架执行（CHECKLIST）、真机通知冒烟、深色模式评估。
+
+## 2026-08-07 13:00 — 迭代 v2.3：结余走势 6/12 月、长按复制账目、导出命名、更新日志
+
+- 任务内容：
+  - A. 结余走势「6月/12月」切换：统计页结余走势图标题旁切换，数据范围实时更新。
+  - B. 明细长按菜单：长按流水行弹出「编辑 / 复制为新的账目 / 删除」；复制=预填内容（日期保持今天）作为新账目保存（`AddTransactionPage.copyFrom`）。
+  - C. 导出文件名含账本名（`记账本流水_账本名_日期.csv`，全部时用「全部」）；「关于」对话框加入更新日志。
+- 修改文件：
+  - `lib/pages/stats_page.dart`、`lib/widgets/transaction_tile.dart`、`lib/pages/ledger_page.dart`、`lib/pages/add_transaction_page.dart`、`lib/pages/profile_page.dart`
+  - `test/widget_test.dart`（39 测试）、`screenshots/24-about.png`
+- commit hash：`098c196`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 39/39（长按→复制→保存新增）；web 实测：6/12 月切换、关于更新日志渲染，零控制台错误。
+- 遇到的问题与解决方案：无阻塞；沿用已有模式（_ChartModeTag 复用、长按菜单参考分类弹层）。
+- 下一步计划：上架执行（CHECKLIST）、真机通知冒烟、深色模式评估。
