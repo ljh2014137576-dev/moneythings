@@ -662,3 +662,21 @@
   1. 月末钳制 bug：用当前月天数钳制导致 8/31 + 1月 → 10/1；改为用目标月天数（DateTime(y, m+2, 0)）钳制。
   2. web 上 PaperGroup 标题/行文本不进语义 innerText（与 v4.2「支出分类排行」相同现象）→ 用「删除周期规则」工具提示节点 + 自动生成流水证明区块与规则均在渲染；行内容以单元/组件测试为权威验证。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-08 21:00 — 迭代 v4.7：周期规则编辑 + 版本号 4.7.0 + 最终 release
+
+- 任务内容：
+  - A. 周期规则编辑：我的页「周期记账」规则行整行可点击（InkWell），打开 `_RecurringEditSheet` 底部弹层编辑金额/分类/账户/频率（每周/每月/每年）/下次日期（日期选择器）/备注，保存调用 updateRecurringRule。
+  - B. `RecurringRule.copyWith` 扩展支持 amount/categoryId/accountId/note/frequency/nextDate 编辑字段。
+  - C. 测试：新增 2 项（copyWith 编辑字段、编辑弹层改金额与频率保存生效），77/77 通过。
+  - D. web 冒烟：注入规则 → 我的页规则行渲染 → 点击打开编辑弹层（金额/分类/账户/频率/下次/保存齐全）→ 金额改 2000 保存 → localStorage 规则 amount 变 200000、旧 100000 消失；零控制台错误。截图 51-recurring-edit.png。
+  - E. 版本号 4.7.0+47（aapt 校验 versionName=4.7.0/versionCode=47）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `1F8291C8...0B36`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/models/recurring_rule.dart`（copyWith 扩展）
+  - `lib/pages/profile_page.dart`（_RecurringRow onEdit + _editRecurring + _RecurringEditSheet 弹层）
+  - `pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/51-recurring-edit.png`（新增）
+- commit hash：`02b6519`；已 push（c50bc50..02b6519 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 77/77；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：规则行标题在 600px 视口边缘 tap 落空 → 测试先 scrollUntilVisible 到行标题再 ensureVisible 再点。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
