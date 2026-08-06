@@ -2156,4 +2156,93 @@ void main() {
     expect(find.textContaining('五十'), findsNothing);
     expect(find.textContaining('八百'), findsNothing);
   });
+  testWidgets('明细多选批量修改账户', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'b1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'wechat',
+      date: DateTime(now.year, now.month, now.day),
+      note: '流水甲',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'b2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'food',
+      accountId: 'wechat',
+      date: DateTime(now.year, now.month, now.day),
+      note: '流水乙',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.textContaining('流水甲'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('多选删除'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('全选'));
+    await tester.pumpAndSettle();
+    expect(find.text('已选 2 项'), findsOneWidget);
+    await tester.tap(find.byTooltip('修改选中'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('修改账户'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('支付宝').last);
+    await tester.pumpAndSettle();
+    expect(state.transactions.every((t) => t.accountId == 'alipay'), isTrue);
+    expect(find.text('已选 0 项'), findsNothing);
+  });
+
+  testWidgets('明细多选批量修改分类', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'bc1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'transport',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '分类甲',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'bc2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'shopping',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '分类乙',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.textContaining('分类甲'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('多选删除'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('全选'));
+    await tester.pumpAndSettle();
+    expect(find.text('已选 2 项'), findsOneWidget);
+    await tester.tap(find.byTooltip('修改选中'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('修改分类'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('餐饮').last);
+    await tester.pumpAndSettle();
+    expect(state.transactions.every((t) => t.categoryId == 'food'), isTrue);
+    expect(find.text('已选 0 项'), findsNothing);
+  });
 }

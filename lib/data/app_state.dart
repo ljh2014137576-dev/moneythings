@@ -121,6 +121,27 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 批量更新指定流水（改分类/账户；未提供的字段保持不变）
+  Future<void> bulkUpdateTransactions(
+    List<String> ids, {
+    String? categoryId,
+    String? accountId,
+  }) async {
+    if (ids.isEmpty) return;
+    final idSet = ids.toSet();
+    _transactions = [
+      for (final t in _transactions)
+        idSet.contains(t.id)
+            ? t.copyWith(
+                categoryId: categoryId ?? t.categoryId,
+                accountId: accountId ?? t.accountId,
+              )
+            : t,
+    ];
+    await _persist();
+    notifyListeners();
+  }
+
   /// 生成到期周期流水：对每个启用规则，把 nextDate <= 今天的每次发生生成流水并推进 nextDate
   Future<int> generateDueRecurring() async {
     if (!_loaded) return 0;

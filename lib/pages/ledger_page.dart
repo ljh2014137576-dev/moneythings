@@ -277,6 +277,12 @@ class _LedgerPageState extends State<LedgerPage> {
                 style: TextStyle(fontSize: 13, color: kAccentBlue)),
           ),
           IconButton(
+            tooltip: '修改选中',
+            onPressed: _editSelected,
+            icon: const Icon(Icons.edit_outlined,
+                size: 20, color: kAccentBlue),
+          ),
+          IconButton(
             tooltip: '删除选中',
             onPressed: _deleteSelected,
             icon: const Icon(Icons.delete_outline_rounded,
@@ -762,6 +768,151 @@ class _LedgerPageState extends State<LedgerPage> {
         : state.ofMonth(_month);
     final ids = _visible(source).map((t) => t.id).toSet();
     setState(() => _selectedIds.addAll(ids));
+  }
+
+  Future<void> _editSelected() async {
+    if (_selectedIds.isEmpty) return;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                  kSpace4, kSpace3, kSpace4, kSpace2),
+              child: Text('批量修改 ${_selectedIds.length} 笔',
+                  style: TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.sell_outlined,
+                  size: 20, color: kInkPrimary),
+              title: const Text('修改分类'),
+              onTap: () => Navigator.of(context).pop('category'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.account_balance_wallet_outlined,
+                  size: 20, color: kInkPrimary),
+              title: const Text('修改账户'),
+              onTap: () => Navigator.of(context).pop('account'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (action == null || !mounted) return;
+    if (action == 'category') {
+      await _pickBulkCategory();
+    } else {
+      await _pickBulkAccount();
+    }
+  }
+
+  Future<void> _pickBulkCategory() async {
+    final categories = [
+      ...TxCategories.of(TxType.expense),
+      ...TxCategories.of(TxType.income),
+    ];
+    final picked = await showModalBottomSheet<TxCategory>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(kSpace4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('选择分类',
+                  style:
+                      TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+              const SizedBox(height: kSpace3),
+              Wrap(
+                spacing: kSpace2,
+                runSpacing: kSpace2,
+                children: [
+                  for (final c in categories)
+                    InkWell(
+                      onTap: () => Navigator.of(context).pop(c),
+                      borderRadius: BorderRadius.circular(kRadiusTable),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: kSpace3, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0F1EF),
+                          borderRadius: BorderRadius.circular(kRadiusTable),
+                        ),
+                        child: Text(c.name,
+                            style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500)),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (picked != null && mounted) {
+      await context
+          .read<AppState>()
+          .bulkUpdateTransactions(_selectedIds.toList(), categoryId: picked.id);
+      _exitSelection();
+    }
+  }
+
+  Future<void> _pickBulkAccount() async {
+    final picked = await showModalBottomSheet<Account>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(kSpace4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('选择账户',
+                  style:
+                      TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+              const SizedBox(height: kSpace3),
+              Wrap(
+                spacing: kSpace2,
+                runSpacing: kSpace2,
+                children: [
+                  for (final a in kDefaultAccounts)
+                    InkWell(
+                      onTap: () => Navigator.of(context).pop(a),
+                      borderRadius: BorderRadius.circular(kRadiusTable),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: kSpace3, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0F1EF),
+                          borderRadius: BorderRadius.circular(kRadiusTable),
+                        ),
+                        child: Text(a.name,
+                            style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500)),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (picked != null && mounted) {
+      await context
+          .read<AppState>()
+          .bulkUpdateTransactions(_selectedIds.toList(), accountId: picked.id);
+      _exitSelection();
+    }
   }
 
   Future<void> _deleteSelected() async {
