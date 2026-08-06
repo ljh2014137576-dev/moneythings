@@ -80,3 +80,23 @@
   3. PowerShell 双引号中 `${...}` 被当变量展开导致 Dart 代码被截断（环比符号、预算文案两处）→ 统一用单引号 here-string 写入。
 - 下一步计划：
   - 预算预警通知（本地提醒）、多账本、深色模式、分类自定义、release 签名发布。
+
+## 2026-08-07 02:30 — 迭代 v1.2：自定义分类 / 收入排行 / release 签名
+
+- 任务内容：
+  - A. 自定义分类：`TxCategory` 支持序列化与自定义标记；`TxCategories` 注册表合并预设+自定义（`setCustom/of/byId`）；仓库与 `AppState` 增加自定义分类持久化（增/改/删，编辑保留 id 不丢历史）；「我的→分类管理」支出/收入两组，自定义项带蓝色角标、点击可编辑/删除；新增/编辑对话框含名称与 40 个线性图标选择；「记一笔」分类网格自动包含自定义分类。
+  - B. 统计收入分类排行：`AppState.categoryIncomeRanking` + 统计页「收入分类排行」分组（当月有收入时显示）。
+  - C. Release 签名：keytool 生成 `android/upload-keystore.jks`（不入库）；`android/keystore.properties`（不入库，ASCII 避免 BOM 坑）；`app/build.gradle.kts` 读取签名配置，缺失时回退 debug 签名；`flutter build apk --release` 成功（50.8MB），apksigner 验证证书 CN=MoneyThings。
+- 修改文件：
+  - `lib/models/transaction.dart`（分类注册表+序列化）、`lib/models/category_icons.dart`（新增，40 图标）
+  - `lib/widgets/category_dialog.dart`（新增）、`lib/pages/profile_page.dart`（分类管理 UI）、`lib/data/app_state.dart`、`lib/data/transaction_repository.dart`
+  - `lib/pages/stats_page.dart`（收入排行）、`test/widget_test.dart`（13 测试）
+  - `android/app/build.gradle.kts`（签名配置）、`.gitignore`（keystore、android/**/build）
+  - `screenshots/3-stats-v1.2.png`、`4-profile-v1.2.png`
+- commit hash：`9d5c4d5`（A+B）→ `353e16d`（C）；均已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 13/13（含自定义分类注册表/持久化、管理 UI→记一笔联动）；web 语义树确认「收入分类排行」「分类管理」渲染正常、无控制台错误；release APK 构建并验证签名。
+- 遇到的问题与解决方案：
+  1. PowerShell UTF-8 带 BOM 写入 keystore.properties → Java Properties 键名带 BOM 前缀 → 改 ASCII 写入。
+  2. storeFile 相对 app 模块解析路径错误 → 改 `rootProject.file()`。
+  3. release 构建 Metaspace OOM → 杀旧 Gradle 守护进程重试（读取 -Xmx8G/MaxMetaspace4G）。
+- 下一步计划：本地预算预警通知、多账本、深色模式、release 上架准备（图标已就绪）。
