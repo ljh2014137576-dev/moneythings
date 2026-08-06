@@ -421,3 +421,16 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 52/52；release 构建+签名校验。
 - 遇到的问题与解决方案：replace 误改了「清除全部」弹窗类型（showDialog<bool>→String）→ 精确修正两处弹窗类型。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-08 01:00 — 迭代 v3.5：本周小结 + 合计条结余
+
+- 任务内容：
+  - A. 可复制的「本周小结」：`AppState.weekSummaryText` 生成周报（周一起至今天，收入/支出/结余/笔数）；「我的→数据」新增「本周小结（复制）」入口（与本月小结共用弹窗）。
+  - B. 明细合计条显示结余：收入-支出（正=绿、负=红），与笔数/支出/收入并排。
+- 修改文件：
+  - `lib/data/app_state.dart`、`lib/pages/profile_page.dart`、`lib/pages/ledger_page.dart`
+  - `test/widget_test.dart`（54 测试）、`screenshots/37-ledger-balance.png`、`38-week-summary.png`
+- commit hash：`a82add1`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 54/54（周报内容、合计条结余）；web 实测合计条结余与本周小结弹窗，零控制台错误。
+- 遇到的问题与解决方案：合计条插入时旧块残留（final balance + 重复收入段）→ 定位删除；MonthSummary 非 const → 去掉 const。
+- 下一步：上架执行（RELEASE.md）、真机通知冒烟（SMOKE_TEST.md）。
