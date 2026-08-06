@@ -20,3 +20,13 @@
 - commit hash：`853f7fe`（本地提交，尚未 push）
 - 遇到的问题：`gh` 尚未登录，无法 push；github.com 直连超时，但本机已有全局 ghfast.top 镜像配置，远程仓库可达且为空仓库。
 - 下一步：用户完成 `gh auth login` 后执行 push。
+
+## 2026-08-06 — 切换 SSH 远程并推送到 GitHub
+
+- 任务内容：弃用 gh，改用已配置的 SSH 密钥（id_ed25519）推送；远程由 https(ghfast.top 镜像) 切换为 `git@github.com:ljh2014137576-dev/moneythings.git`。
+- 修改文件：
+  - `G:\moneythings-goal\.git\config`（remote url 改为 SSH）
+  - `G:\moneythings-goal\worklog.md`（追加本条）
+- commit hash：`be402cd`（master 已推送；本条提交后追加推送）
+- 遇到的问题：gh 未登录且 github.com HTTPS 直连超时；SSH 22/443 经 Clash Verge 可达，认证通过（Hi ljh2014137576-dev!）。
+- 下一步：后续每次修改后直接 add → commit → push。
