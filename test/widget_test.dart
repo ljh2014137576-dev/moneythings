@@ -472,6 +472,8 @@ void main() {
     );
     await tester.tap(find.text('现金'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('设置初始余额'));
+    await tester.pumpAndSettle();
     expect(find.text('现金 · 初始余额'), findsOneWidget);
     await tester.enterText(find.byType(TextField), '500');
     await tester.tap(find.text('保存'));
@@ -686,12 +688,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('日期：全部日期'), findsOneWidget);
 
-    // 打开范围：两次确定（1 号 ~ 今天）
+    // 打开范围：预设「近 7 天」
     await tester.tap(find.textContaining('日期：'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('确定'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('确定'));
+    await tester.tap(find.text('近 7 天'));
     await tester.pumpAndSettle();
     expect(find.textContaining('~ '), findsOneWidget);
     expect(find.textContaining('一号'), findsWidgets);
@@ -1058,6 +1058,59 @@ void main() {
     await tester.tap(find.text('+100'));
     await tester.pumpAndSettle();
     expect(find.text('150.00'), findsOneWidget);
+  });
+
+  testWidgets('统计页支出占比环图', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('统计'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('支出占比'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('支出占比'), findsOneWidget);
+  });
+
+  testWidgets('我的账户点查看流水进入筛选后的明细', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'al1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 3),
+      note: '支付宝A',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'al2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'food',
+      accountId: 'card',
+      date: DateTime(now.year, now.month, 4),
+      note: '银行卡B',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('支付宝'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('查看该账户流水'));
+    await tester.pumpAndSettle();
+    expect(find.text('支付宝 · 流水'), findsOneWidget);
+    expect(find.textContaining('支付宝A'), findsWidgets);
+    expect(find.textContaining('银行卡B'), findsNothing);
   });
 }
 

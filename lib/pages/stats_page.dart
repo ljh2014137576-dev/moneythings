@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../data/app_state.dart';
+import '../models/transaction.dart';
 import '../theme/app_colors.dart';
 import '../widgets/amount_text.dart';
 import '../widgets/category_ranking.dart';
@@ -123,6 +124,11 @@ class _StatsPageState extends State<StatsPage> {
                           weekly: weekSeries,
                           incomeSeries: incomeSeries),
                       const SizedBox(height: kSpace4),
+                      if (ranking.isNotEmpty) ...[
+                        const SizedBox(height: kSpace4),
+                        _buildDonut(ranking),
+                      ],
+                      const SizedBox(height: kSpace4),
                       PaperGroup(
                         title: '支出分类排行',
                         padding: const EdgeInsets.all(kSpace4),
@@ -141,6 +147,101 @@ class _StatsPageState extends State<StatsPage> {
                       ],
                     ],
                   ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDonut(
+      List<({TxCategory category, int amount})> ranking) {
+    final top = ranking.take(5).toList();
+    final other = ranking.skip(5).fold<int>(0, (s, e) => s + e.amount);
+    final total = ranking.fold<int>(0, (s, e) => s + e.amount);
+    final maxAmt = ranking.first.amount;
+    const grays = [
+      Color(0xFF8A8E8B),
+      Color(0xFFA9ADA9),
+      Color(0xFFC2C5C1),
+      Color(0xFFD9DBD8),
+      Color(0xFFE7E8E6),
+    ];
+    final sections = <PieChartSectionData>[
+      for (int i = 0; i < top.length; i++)
+        PieChartSectionData(
+          value: top[i].amount.toDouble(),
+          color: top[i].amount == maxAmt
+              ? kAccentBlue
+              : grays[i % grays.length],
+          radius: 40,
+          showTitle: false,
+        ),
+      if (other > 0)
+        PieChartSectionData(
+          value: other.toDouble(),
+          color: const Color(0xFFEFEFED),
+          radius: 40,
+          showTitle: false,
+        ),
+    ];
+    return PaperGroup(
+      title: '支出占比',
+      padding: const EdgeInsets.all(kSpace4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 150,
+            height: 150,
+            child: PieChart(
+              PieChartData(
+                sections: sections,
+                centerSpaceRadius: 44,
+                sectionsSpace: 2,
+                startDegreeOffset: -90,
+              ),
+            ),
+          ),
+          const SizedBox(width: kSpace4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (int i = 0; i < top.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: top[i].amount == maxAmt
+                                ? kAccentBlue
+                                : grays[i % grays.length],
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(top[i].category.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 12, color: kInkSecondary)),
+                        ),
+                        Text(
+                          '${(top[i].amount / total * 100).round()}%',
+                          style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: kInkPrimary,
+                              fontFeatures: [FontFeature.tabularFigures()]),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
         ],
       ),

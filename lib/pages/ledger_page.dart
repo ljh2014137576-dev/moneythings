@@ -21,7 +21,10 @@ import 'add_transaction_page.dart';
 enum _Filter { all, expense, income }
 
 class LedgerPage extends StatefulWidget {
-  const LedgerPage({super.key});
+  const LedgerPage({super.key, this.initialAccountId});
+
+  /// 打开时预置的账户筛选
+  final String? initialAccountId;
 
   @override
   State<LedgerPage> createState() => _LedgerPageState();
@@ -42,6 +45,9 @@ class _LedgerPageState extends State<LedgerPage> {
     super.initState();
     final now = DateTime.now();
     _month = DateTime(now.year, now.month);
+    if (widget.initialAccountId != null) {
+      _accountFilter = widget.initialAccountId!;
+    }
   }
 
   @override
@@ -321,34 +327,90 @@ class _LedgerPageState extends State<LedgerPage> {
 
   Future<void> _showRangeSheet() async {
     final now = DateTime.now();
-    final start = _rangeStart ?? DateTime(now.year, now.month, 1);
-    final end = _rangeEnd ?? now;
-    final pickedStart = await showDatePicker(
+    final today = DateTime(now.year, now.month, now.day);
+    final preset = await showModalBottomSheet<String>(
       context: context,
-      initialDate: start,
-      firstDate: DateTime(2000),
-      lastDate: now,
-      helpText: '选择开始日期',
-      cancelText: '取消',
-      confirmText: '确定',
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding:
+                  EdgeInsets.fromLTRB(kSpace4, kSpace4, kSpace4, kSpace2),
+              child: Text('日期范围',
+                  style: TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
+            const Divider(height: 1),
+            _presetTile(context, '本月', 'month', () => setRange(
+                DateTime(now.year, now.month, 1), today)),
+            _presetTile(context, '上月', 'lastMonth', () => setRange(
+                DateTime(now.year, now.month - 1, 1),
+                DateTime(now.year, now.month, 0))),
+            _presetTile(context, '近 7 天', 'week7', () => setRange(
+                today.subtract(const Duration(days: 6)), today)),
+            _presetTile(context, '近 30 天', 'month30', () => setRange(
+                today.subtract(const Duration(days: 29)), today)),
+            _presetTile(context, '自定义', 'custom', () =>
+                Navigator.of(context).pop('custom')),
+          ],
+        ),
+      ),
     );
-    if (pickedStart == null || !mounted) return;
-    final pickedEnd = await showDatePicker(
-      context: context,
-      initialDate: pickedStart.isAfter(end) ? pickedStart : end,
-      firstDate: pickedStart,
-      lastDate: now,
-      helpText: '选择结束日期',
-      cancelText: '取消',
-      confirmText: '确定',
-    );
-    if (pickedEnd == null || !mounted) return;
+    if (preset == null || !mounted) return;
+    if (preset == 'custom') {
+      final start = _rangeStart ?? DateTime(now.year, now.month, 1);
+      final end = _rangeEnd ?? now;
+      final pickedStart = await showDatePicker(
+        context: context,
+        initialDate: start,
+        firstDate: DateTime(2000),
+        lastDate: now,
+        helpText: '选择开始日期',
+        cancelText: '取消',
+        confirmText: '确定',
+      );
+      if (pickedStart == null || !mounted) return;
+      final pickedEnd = await showDatePicker(
+        context: context,
+        initialDate: pickedStart.isAfter(end) ? pickedStart : end,
+        firstDate: pickedStart,
+        lastDate: now,
+        helpText: '选择结束日期',
+        cancelText: '取消',
+        confirmText: '确定',
+      );
+      if (pickedEnd == null || !mounted) return;
+      setRange(
+          DateTime(pickedStart.year, pickedStart.month, pickedStart.day),
+          DateTime(pickedEnd.year, pickedEnd.month, pickedEnd.day));
+    }
+  }
+
+  void setRange(DateTime start, DateTime end) {
     setState(() {
-      _rangeStart =
-          DateTime(pickedStart.year, pickedStart.month, pickedStart.day);
-      _rangeEnd =
-          DateTime(pickedEnd.year, pickedEnd.month, pickedEnd.day);
+      _rangeStart = start;
+      _rangeEnd = end;
     });
+  }
+
+  Widget _presetTile(BuildContext context, String label, String value,
+      VoidCallback onTap) {
+    return ListTile(
+      dense: true,
+      title: Text(label, style: const TextStyle(fontSize: 15)),
+      trailing: const Icon(Icons.chevron_right_rounded,
+          size: 18, color: kInkDisabled),
+      onTap: () {
+        if (value == 'custom') {
+          onTap();
+        } else {
+          Navigator.of(context).pop(value);
+          onTap();
+        }
+      },
+    );
   }
 
   Widget _buildFilterRow() {

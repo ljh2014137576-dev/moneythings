@@ -18,6 +18,7 @@ import '../services/csv_importer.dart';
 import '../services/export_target.dart';
 import '../services/notification_service.dart';
 import '../widgets/paper_group.dart';
+import 'ledger_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -274,12 +275,67 @@ class _ProfilePageState extends State<ProfilePage> {
             _AccountRow(
               account: accounts[i],
               balance: state.balanceOf(accounts[i]),
-              onTap: () => _editAccountBalance(accounts[i]),
+              onTap: () => _accountMenu(accounts[i]),
             ),
           ],
         ],
       ),
     );
+  }
+
+  Future<void> _accountMenu(Account account) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding:
+                  const EdgeInsets.fromLTRB(kSpace4, kSpace3, kSpace4, kSpace2),
+              child: Text(account.name,
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.receipt_long_outlined,
+                  size: 20, color: kInkPrimary),
+              title: const Text('查看该账户流水'),
+              onTap: () => Navigator.of(context).pop('ledger'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined,
+                  size: 20, color: kInkPrimary),
+              title: const Text('设置初始余额'),
+              onTap: () => Navigator.of(context).pop('balance'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+    if (action == 'ledger') {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => Scaffold(
+            backgroundColor: kPageBackground,
+            appBar: AppBar(
+              backgroundColor: kPageBackground,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              title: Text('${account.name} · 流水',
+                  style: const TextStyle(
+                      fontSize: 17, fontWeight: FontWeight.w600)),
+            ),
+            body: LedgerPage(initialAccountId: account.id),
+          ),
+        ),
+      );
+    } else if (action == 'balance') {
+      await _editAccountBalance(account);
+    }
   }
 
   Future<void> _editAccountBalance(Account account) async {
