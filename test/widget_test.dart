@@ -2091,4 +2091,69 @@ void main() {
     expect(state.recurringRules.first.frequency, RecurFrequency.yearly);
     expect(state.recurringRules.first.note, '房租');
   });
+  test('周期规则后续发生日期预览', () {
+    final monthly = RecurringRule.nextOccurrences(
+        DateTime(2026, 9, 1), RecurFrequency.monthly,
+        count: 3);
+    expect(monthly, [
+      DateTime(2026, 10, 1),
+      DateTime(2026, 11, 1),
+      DateTime(2026, 12, 1),
+    ]);
+    final weekly = RecurringRule.nextOccurrences(
+        DateTime(2026, 8, 8), RecurFrequency.weekly,
+        count: 2);
+    expect(weekly, [DateTime(2026, 8, 15), DateTime(2026, 8, 22)]);
+  });
+
+  testWidgets('金额区间快捷预设筛选', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'ap1',
+      type: TxType.expense,
+      amount: 5000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '五十',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'ap2',
+      type: TxType.expense,
+      amount: 20000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '两百',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'ap3',
+      type: TxType.expense,
+      amount: 80000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '八百',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    expect(find.text('共 3 笔'), findsOneWidget);
+    await tester.tap(find.textContaining('金额：全部金额'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('100 ~ 500'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('确定'));
+    await tester.pumpAndSettle();
+    // 100~500 元 → 只剩 ¥200
+    expect(find.text('共 1 笔'), findsOneWidget);
+    expect(find.textContaining('两百'), findsOneWidget);
+    expect(find.textContaining('五十'), findsNothing);
+    expect(find.textContaining('八百'), findsNothing);
+  });
 }

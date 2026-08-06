@@ -76,6 +76,21 @@ class RecurringRule {
     }
   }
 
+  /// 从 from 起按频率生成后续 count 个日期（不含 from 本身）
+  static List<DateTime> nextOccurrences(
+    DateTime from,
+    RecurFrequency f, {
+    int count = 3,
+  }) {
+    final out = <DateTime>[];
+    var d = from;
+    for (int i = 0; i < count; i++) {
+      d = nextAfter(d, f);
+      out.add(d);
+    }
+    return out;
+  }
+
   RecurringRule copyWith({
     int? amount,
     String? categoryId,

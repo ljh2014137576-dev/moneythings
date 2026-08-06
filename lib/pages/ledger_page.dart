@@ -1158,6 +1158,29 @@ class _AmountSheetState extends State<_AmountSheet> {
     super.dispose();
   }
 
+  void _applyPreset(int? min, int? max) {
+    _minCtrl.text = min == null ? '' : (min / 100).toStringAsFixed(2);
+    _maxCtrl.text = max == null ? '' : (max / 100).toStringAsFixed(2);
+    setState(() {});
+  }
+
+  Widget _presetChip(String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(kRadiusTable),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: kSpace3, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0F1EF),
+          borderRadius: BorderRadius.circular(kRadiusTable),
+        ),
+        child: Text(label,
+            style: const TextStyle(
+                fontSize: 13, fontWeight: FontWeight.w500)),
+      ),
+    );
+  }
+
   int? _parseYuan(String s) {
     final v = double.tryParse(s.trim());
     if (v == null || v < 0) return null;
@@ -1175,6 +1198,16 @@ class _AmountSheetState extends State<_AmountSheet> {
           children: [
             const Text('金额区间（元）',
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            const SizedBox(height: kSpace2),
+            Row(
+              children: [
+                _presetChip('≤ 100', () => _applyPreset(null, 10000)),
+                const SizedBox(width: kSpace2),
+                _presetChip('100 ~ 500', () => _applyPreset(10000, 50000)),
+                const SizedBox(width: kSpace2),
+                _presetChip('≥ 500', () => _applyPreset(50000, null)),
+              ],
+            ),
             const SizedBox(height: kSpace3),
             Row(
               children: [
