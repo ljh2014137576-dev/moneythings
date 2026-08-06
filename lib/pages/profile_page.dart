@@ -135,14 +135,65 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Future<void> _showMonthlySummary() async {
+    final state = context.read<AppState>();
+    final now = DateTime.now();
+    final text = state.monthSummaryText(DateTime(now.year, now.month));
+    final copied = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('本月小结',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+        content: SingleChildScrollView(
+          child: Text(text,
+              style: const TextStyle(
+                  fontSize: 13, color: kInkPrimary, height: 1.7)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('关闭'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(minimumSize: const Size(96, 44)),
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: text));
+              if (context.mounted) Navigator.of(context).pop(true);
+            },
+            child: const Text('复制'),
+          ),
+        ],
+      ),
+    );
+    if (copied == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('已复制到剪贴板')),
+      );
+    }
+  }
+
   Future<void> _backupJson() async {
     final state = context.read<AppState>();
     final json = state.exportJson();
-    await Clipboard.setData(ClipboardData(text: json));
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已备份到剪贴板（JSON）')),
+    final now = DateTime.now();
+    final stamp = '${now.year}${_p2(now.month)}${_p2(now.day)}';
+    try {
+      final where = await exportFile(
+        json,
+        '记账本备份_$stamp.json',
+        'application/json',
       );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('已导出备份 → $where')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('备份失败：$e')),
+        );
+      }
     }
   }
 
@@ -676,7 +727,13 @@ class _ProfilePageState extends State<ProfilePage> {
               },
             ),
           _DataRow(
-            icon: Icons.upload_file_outlined,
+            icon: Icons.article_outlined,
+            label: '本月小结（复制）',
+            color: kInkPrimary,
+            onTap: _showMonthlySummary,
+          ),
+          _DataRow(
+            icon: Icons.save_alt_outlined,
             label: '备份到剪贴板 (JSON)',
             color: kInkPrimary,
             onTap: _backupJson,

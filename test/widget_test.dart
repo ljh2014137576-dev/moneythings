@@ -1210,6 +1210,36 @@ void main() {
     expect(cmp[2].lastYear, 3000);
     expect(cmp[0].thisYear, 0);
   });
+
+  test('本月小结文本 monthSummaryText', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addTransaction(Transaction(
+      id: 's1',
+      type: TxType.expense,
+      amount: 5000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(2026, 8, 6),
+    ));
+    await state.addTransaction(Transaction(
+      id: 's2',
+      type: TxType.income,
+      amount: 20000,
+      categoryId: 'salary',
+      accountId: 'card',
+      date: DateTime(2026, 8, 10),
+    ));
+    final text = state.monthSummaryText(DateTime(2026, 8));
+    expect(text, contains('2026年8月 记账小结'));
+    expect(text, contains('收入：200.00'));
+    expect(text, contains('支出：50.00'));
+    expect(text, contains('结余：150.00'));
+    expect(text, contains('笔数：2 笔'));
+    expect(text, contains('支出最多：餐饮 50.00'));
+  });
 }
 
 

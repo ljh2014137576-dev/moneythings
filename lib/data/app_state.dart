@@ -419,6 +419,28 @@ Future<CsvImportResult> importCsv(String csv) async {
     }
     return out;
   }
+
+  /// 生成某月记账小结文本（可复制分享）
+  String monthSummaryText(DateTime month) {
+    final s = summaryOf(month);
+    final txs = ofMonth(month);
+    final ranking = categoryExpenseRanking(month);
+    final days = DateTime(month.year, month.month + 1, 0).day;
+    final daily = txs.isEmpty ? 0 : s.expense ~/ days;
+    final top = ranking.isNotEmpty ? ranking.first : null;
+    String fmt(int cents) => (cents / 100).toStringAsFixed(2);
+    final buf = StringBuffer();
+    buf.writeln('${month.year}年${month.month}月 记账小结');
+    buf.writeln('收入：${fmt(s.income)}');
+    buf.writeln('支出：${fmt(s.expense)}');
+    buf.writeln('结余：${fmt(s.balance)}');
+    buf.writeln('笔数：${txs.length} 笔');
+    buf.writeln('日均支出：${fmt(daily)}');
+    if (top != null) {
+      buf.writeln('支出最多：${top.category.name} ${fmt(top.amount)}');
+    }
+    return buf.toString();
+  }
   /// 账户当前余额 = 初始余额 + 收支合计
   int balanceOf(Account account) {
     int sum = account.initialBalance;
