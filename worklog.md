@@ -330,3 +330,17 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 47/47（含大字体 2.0x 无溢出、lastAccountId 持久化）；web 实测默认账户记忆，零控制台错误。
 - 遇到的问题与解决方案：2x 大字体下抓出两处真实溢出（明细合计条 Row、统计合计条固定高度）→ 分别改 Wrap 与自适应高度；独立页渲染需初始化 intl 中文数据。
 - 下一步计划：上架执行（CHECKLIST）、真机通知冒烟、深色模式评估。
+
+## 2026-08-07 18:00 — 迭代 v2.8：保存后继续记一笔 + 上架交付收尾
+
+- 任务内容：
+  - C. 记一笔保存后：SnackBar「已保存 ¥xx」+「继续记一笔」快捷再次记账。
+  - A. 最终 release 重建（53.6MB，SHA-256 `0B7510BD...65EB`，MoneyThings 签名）；修复 R8 堆溢出（jvmargs -Xmx12G）；新增 `RELEASE.md` 交付清单（APK/校验/素材/质量门禁/上架步骤）。
+  - B. 新增 `SMOKE_TEST.md` 真机冒烟脚本（含系统通知/定时提醒等需真机项，其余标注自动化已验）。
+- 修改文件：
+  - `lib/pages/add_transaction_page.dart`、`android/gradle.properties`
+  - `RELEASE.md`、`SMOKE_TEST.md`（新增）、`test/widget_test.dart`（47 测试）
+- commit hash：`4d1ca2d`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 47/47；release APK 构建+签名校验。
+- 遇到的问题与解决方案：R8 Java heap OOM（30 分钟构建失败）→ jvmargs 提至 -Xmx12G 后 79s 构建成功；测试被保存 SnackBar 遮挡点击 → 显式 clearSnackBars。
+- 下一步：用户注册 Play 账号后按 `RELEASE.md` + `SMOKE_TEST.md` 上架；真机确认系统通知与定时提醒。
