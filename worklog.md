@@ -274,3 +274,17 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 39/39（长按→复制→保存新增）；web 实测：6/12 月切换、关于更新日志渲染，零控制台错误。
 - 遇到的问题与解决方案：无阻塞；沿用已有模式（_ChartModeTag 复用、长按菜单参考分类弹层）。
 - 下一步计划：上架执行（CHECKLIST）、真机通知冒烟、深色模式评估。
+
+## 2026-08-07 14:00 — 迭代 v2.4：支出/收入图表切换、首页总资产、JSON 全量备份/恢复
+
+- 任务内容：
+  - A. 统计柱状图「支出/收入」切换：`dailyIncomeSeries`；统计页每日/每周切换行下新增「支出/收入」切换，收入柱状图实时切换（标题/数据/选中）。
+  - B. 首页总资产：结余走势卡标题右侧显示「总资产 ¥xx」（tabular 数字）。
+  - C. JSON 全量备份/恢复：`AppState.exportJson/importJson`（交易/账户/自定义分类/账本/当前账本/预算/通知开关）；「我的→数据」新增「备份到剪贴板 (JSON)」「从备份恢复 (JSON)」入口，恢复前可粘贴并校验版本。
+- 修改文件：
+  - `lib/data/app_state.dart`、`lib/pages/stats_page.dart`、`lib/pages/home_page.dart`、`lib/pages/profile_page.dart`
+  - `test/widget_test.dart`（41 测试）、`screenshots/25-home-assets.png`、`26-backup.png`
+- commit hash：`3f22724`；已 push。
+- 验证：`flutter analyze` 0 问题；`flutter test` 41/41（每日收入序列、JSON round-trip 含账本/预算/备注）；web 实测：首页总资产、收入切换、备份/恢复入口，零控制台错误。
+- 遇到的问题与解决方案：无阻塞。
+- 下一步计划：上架执行（CHECKLIST）、真机通知冒烟、深色模式评估。
