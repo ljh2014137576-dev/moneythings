@@ -102,6 +102,13 @@ class AppState extends ChangeNotifier {
     return MonthSummary(expense: exp, income: inc);
   }
 
+  /// 与上月支出差额（正数=支出增加）
+  int expenseDeltaOf(DateTime month) {
+    final cur = summaryOf(month).expense;
+    final prev = summaryOf(DateTime(month.year, month.month - 1)).expense;
+    return cur - prev;
+  }
+
   /// 某月每日支出序列（1..daysInMonth）
   List<int> dailyExpenseSeries(DateTime month) {
     final days = DateTime(month.year, month.month + 1, 0).day;
@@ -154,5 +161,6 @@ class AppState extends ChangeNotifier {
     return summaryOf(DateTime(now.year, now.month)).expense;
   }
 }
+
 
 

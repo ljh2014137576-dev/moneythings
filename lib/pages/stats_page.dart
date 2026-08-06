@@ -99,7 +99,11 @@ class _StatsPageState extends State<StatsPage> {
                     padding: const EdgeInsets.fromLTRB(
                         kPagePadding, 0, kPagePadding, kSpace6),
                     children: [
-                      _buildSummaryStrip(summary, monthTx.length),
+                      _buildSummaryStrip(
+                        summary,
+                        monthTx.length,
+                        state.expenseDeltaOf(_month),
+                      ),
                       const SizedBox(height: kSpace3),
                       _buildBarChart(series),
                       const SizedBox(height: kSpace4),
@@ -116,19 +120,23 @@ class _StatsPageState extends State<StatsPage> {
     );
   }
 
-  Widget _buildSummaryStrip(MonthSummary summary, int count) {
+  Widget _buildSummaryStrip(MonthSummary summary, int count, int delta) {
     final daysInMonth = DateTime(_month.year, _month.month + 1, 0).day;
     final daily = count == 0 ? 0 : summary.expense ~/ daysInMonth;
     return PaperGroup(
       padding: EdgeInsets.zero,
       child: SizedBox(
-        height: 84,
+        height: 96,
         child: Row(
           children: [
             _StatCell(
               label: '总支出',
               value: AmountText.format(summary.expense),
               color: kInkPrimary,
+              subtitle: delta == 0
+                  ? '与上月持平'
+                  : '较上月 ${delta > 0 ? '+' : ''}${AmountText.format(delta.abs(), showSymbol: false)}',
+              subtitleColor: delta > 0 ? kDanger : kSuccess,
             ),
             const _VSep(),
             _StatCell(
@@ -319,11 +327,15 @@ class _StatCell extends StatelessWidget {
     required this.label,
     required this.value,
     required this.color,
+    this.subtitle,
+    this.subtitleColor = kInkSecondary,
   });
 
   final String label;
   final String value;
   final Color color;
+  final String? subtitle;
+  final Color subtitleColor;
 
   @override
   Widget build(BuildContext context) {
@@ -343,6 +355,19 @@ class _StatCell extends StatelessWidget {
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              subtitle!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 10,
+                color: subtitleColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -357,4 +382,5 @@ class _VSep extends StatelessWidget {
     return Container(width: 1, height: 36, color: kDividerSubtle);
   }
 }
+
 

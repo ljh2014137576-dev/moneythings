@@ -9,6 +9,8 @@ import '../models/account.dart';
 import '../theme/app_colors.dart';
 import '../widgets/amount_text.dart';
 import '../widgets/budget_dialog.dart';
+import '../services/csv_exporter.dart';
+import '../services/export_target.dart';
 import '../widgets/paper_group.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -57,6 +59,38 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     }
   }
+
+  Future<void> _exportCsv() async {
+    final state = context.read<AppState>();
+    if (state.transactions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('暂无数据可导出')),
+      );
+      return;
+    }
+    final now = DateTime.now();
+    final stamp = '${now.year}${_p2(now.month)}${_p2(now.day)}';
+    final csv = CsvExporter.exportCsv(state.transactions);
+    try {
+      final where = await exportCsvFile(
+        csv,
+        '记账本流水_$stamp.csv',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('已导出 ${state.transactions.length} 条流水 → $where')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('导出失败：$e')),
+        );
+      }
+    }
+  }
+
+  static String _p2(int v) => v.toString().padLeft(2, '0');
 
   @override
   Widget build(BuildContext context) {
@@ -224,6 +258,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 }
               },
             ),
+          _DataRow(
+            icon: Icons.ios_share_outlined,
+            label: '导出数据 (CSV)',
+            color: kInkPrimary,
+            onTap: _exportCsv,
+          ),
           _DataRow(
             icon: Icons.delete_sweep_outlined,
             label: '清除全部数据',

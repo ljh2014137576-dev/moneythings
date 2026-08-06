@@ -105,6 +105,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   Future<void> _pickAccount() async {
     final state = context.read<AppState>();
+
     final selected = await showModalBottomSheet<Account>(
       context: context,
       builder: (context) => _AccountSheet(
@@ -129,6 +130,52 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       return;
     }
     final state = context.read<AppState>();
+ 
+    // 预算超额提醒：仅当月支出且已设置预算
+    final now = DateTime.now();
+    final isThisMonth =
+        _date.year == now.year && _date.month == now.month;
+    if (isThisMonth &&
+        _type == TxType.expense &&
+        state.monthlyBudget > 0) {
+      var spent = state.summaryOf(DateTime(now.year, now.month)).expense;
+      // 编辑时扣除该笔原有金额，避免重复计算
+      final e = widget.editing;
+      if (e != null &&
+          e.date.year == now.year &&
+          e.date.month == now.month) {
+        spent -= e.amount;
+      }
+      final projected = spent + amount;
+      if (projected > state.monthlyBudget) {
+        final over = projected - state.monthlyBudget;
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('超出本月预算',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+            content: Text(
+              '本月预算 ${AmountText.format(state.monthlyBudget)}，'
+              '保存这笔支出后将超出 ${AmountText.format(over)}。仍要保存吗？',
+              style: const TextStyle(
+                  fontSize: 14, color: kInkSecondary, height: 1.5),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                style: TextButton.styleFrom(foregroundColor: kDanger),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('继续保存'),
+              ),
+            ],
+          ),
+        );
+        if (ok != true || !mounted) return;
+      }
+    }
     final tx = Transaction(
       id: widget.editing?.id ?? _newId(),
       type: _type,
@@ -604,6 +651,7 @@ class _AccountSheet extends StatelessWidget {
     );
   }
 }
+
 
 
 
