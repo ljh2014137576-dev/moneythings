@@ -1439,14 +1439,16 @@ void main() {
     await state.load();
     await state.clearAll();
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = DateTime(now.year, now.month, now.day - 1);
     await state.addTransaction(Transaction(
       id: 'srt1',
       type: TxType.expense,
       amount: 500,
       categoryId: 'food',
       accountId: 'alipay',
-      date: DateTime(now.year, now.month, now.day),
-      note: '小额',
+      date: today,
+      note: '今日小额',
     ));
     await state.addTransaction(Transaction(
       id: 'srt2',
@@ -1454,18 +1456,28 @@ void main() {
       amount: 9000,
       categoryId: 'food',
       accountId: 'alipay',
-      date: DateTime(now.year, now.month, now.day),
-      note: '大额',
+      date: yesterday,
+      note: '昨日大额',
     ));
     await tester.pumpWidget(MoneyApp(state: state));
     await tester.pumpAndSettle();
     await tester.tap(find.text('明细'));
     await tester.pumpAndSettle();
+    // 默认日期排序：今天的小额在前
+    expect(
+      tester
+          .widgetList<TransactionTile>(find.byType(TransactionTile))
+          .first
+          .transaction
+          .amount,
+      500,
+    );
     // 切到金额排序
     await tester.tap(find.text('日期'));
     await tester.pumpAndSettle();
-    // 金额排序后大额在前：第一个 TransactionTile 金额应 90.00
-    final first = tester.widgetList<TransactionTile>(find.byType(TransactionTile)).first;
+    // 金额排序后跨天大额在前：第一个 TransactionTile 金额应 90.00
+    final first =
+        tester.widgetList<TransactionTile>(find.byType(TransactionTile)).first;
     expect(first.transaction.amount, 9000);
   });
 

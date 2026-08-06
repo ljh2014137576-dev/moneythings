@@ -108,15 +108,32 @@ class _LedgerPageState extends State<LedgerPage> {
     return matched;
   }
 
-  Map<DateTime, List<Transaction>> _groupByDay(List<Transaction> list) {
+  Map<DateTime, List<Transaction>> _groupByDay(
+    List<Transaction> list, {
+    bool byAmount = false,
+  }) {
     final map = <DateTime, List<Transaction>>{};
     for (final t in list) {
       final key = DateTime(t.date.year, t.date.month, t.date.day);
       map.putIfAbsent(key, () => []).add(t);
     }
-    final sorted = map.entries.toList()
-      ..sort((a, b) => b.key.compareTo(a.key));
+    final sorted = map.entries.toList();
+    if (byAmount) {
+      // 金额排序：分组按组内最大金额降序（组内已按金额降序）
+      sorted.sort((a, b) => _groupMaxAmount(b.value)
+          .compareTo(_groupMaxAmount(a.value)));
+    } else {
+      sorted.sort((a, b) => b.key.compareTo(a.key));
+    }
     return LinkedHashMap.fromEntries(sorted);
+  }
+
+  int _groupMaxAmount(List<Transaction> items) {
+    var max = 0;
+    for (final t in items) {
+      if (t.amount > max) max = t.amount;
+    }
+    return max;
   }
 
   @override
@@ -129,7 +146,7 @@ class _LedgerPageState extends State<LedgerPage> {
     if (_sortByAmount) {
       visible.sort((a, b) => b.amount.compareTo(a.amount));
     }
-    final groups = _groupByDay(visible);
+    final groups = _groupByDay(visible, byAmount: _sortByAmount);
     int sumExpense = 0, sumIncome = 0;
     for (final t in visible) {
       if (t.type == TxType.expense) {
