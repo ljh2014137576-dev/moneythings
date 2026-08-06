@@ -1,4 +1,4 @@
-﻿# 工作日志（worklog）
+# 工作日志（worklog）
 
 ## 2026-08-06 — 创建 AGENTS.md 项目规则
 
@@ -496,3 +496,27 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 59/59（金额排序首位=大额、清除后金额消失）；web 实测清除金额按钮，零控制台错误。
 - 遇到的问题与解决方案：排序逻辑放在 _visible 早退之后未生效 → 移到 build 层对 visible 排序；金额输入框显示原始文本非格式化 → 测试断言改 '88'。
 - 下一步：上架执行（RELEASE.md）、真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-08 07:00 — 迭代 v4.0 收尾：版本号 4.0.0+40 + 排序跨天修复 + 最终 release
+
+- 任务内容：
+  - A. 版本号同步 4.0.0+40；「关于」对话框版本/更新日志更新为 v4.0 系列；README 版本历史补全 v1.5~v4.0（原先只到 v3.1 且缺失大量条目）。
+  - B. 修复 v4.0「金额排序」跨天失效 bug：`_groupByDay` 原先固定按日期降序重排分组，导致全局金额排序被覆盖（最大金额 +¥14,000 的 8月5日 仍排第 3）；现按组内最大金额降序排分组（组内已按金额降序），金额排序后最大流水置顶。
+  - C. 单测「明细按金额排序」加强为跨天场景（大额在昨日、默认日期排序小额在前 → 切金额排序后大额在前），旧代码会失败、新代码通过。
+  - D. 最终 release 重建（53.7MB，SHA-256 `BEB75032...B2DD`，MoneyThings 签名校验通过）；RELEASE.md / CHECKLIST.md 同步版本、SHA、59/59 测试、4.0.0+40。
+  - E. web 冒烟：关于对话框显示「版本 4.0.0」；金额输入后「清除金额」按钮出现并可清空；明细切金额排序后 +¥14,000 置顶、日分组按最大金额降序；截图 24-about / 42-ledger-sort / 43-amount-clear 更新，零控制台错误。
+- 修改文件：
+  - `pubspec.yaml`（4.0.0+40）
+  - `lib/pages/profile_page.dart`（关于：版本 4.0.0 + 更新日志 v4.0/v3.8/v3.6/v3.3/v3.0）
+  - `lib/pages/ledger_page.dart`（`_groupByDay` 支持按金额排分组 + `_groupMaxAmount`）
+  - `test/widget_test.dart`（明细按金额排序 → 跨天断言）
+  - `README.md`（版本历史补全 v1.5~v4.0）
+  - `RELEASE.md`（v4.0 / 新 SHA / 59 测试）
+  - `CHECKLIST.md`（APK 53.7MB / 新 SHA / 59 测试 / 4.0.0+40）
+  - `screenshots/24-about.png`、`42-ledger-sort.png`、`43-amount-clear.png`
+- commit hash：`a91004e`；已 push（1303c39..a91004e master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 59/59；release 构建 + apksigner 签名校验（CN=MoneyThings）；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：
+  1. PowerShell 5.1 `Set-Content -Encoding utf8` 给 pubspec 加了 BOM 且把中文注释按 ANSI 读成乱码 → `git checkout` 还原后用 UTF-8 无 BOM 显式读写只改版本行；README/RELEASE/CHECKLIST 的 BOM 也一并剥离。
+  2. 行级替换误删 `_groupByDay` 方法体 → 先还原区域再按行插入重建，`flutter analyze` 确认结构。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
