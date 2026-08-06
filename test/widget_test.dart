@@ -1395,6 +1395,18 @@ void main() {
     expect(find.textContaining('结余'), findsWidgets);
     expect(find.textContaining('¥15.00'), findsWidgets);
   });
+ 
+  testWidgets('记一笔日期快捷（今天/昨天）渲染', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('记一笔').first);
+    await tester.pumpAndSettle();
+    expect(find.text('今天'), findsWidgets);
+    expect(find.text('昨天'), findsWidgets);
+  });
 }
 
 

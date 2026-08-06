@@ -394,6 +394,16 @@ class _StatsPageState extends State<StatsPage> {
                       );
                     },
                   ),
+                  touchCallback: (event, response) {
+                    if (event is FlTapUpEvent &&
+                        response != null &&
+                        response.spot != null) {
+                      final m = response.spot!.touchedBarGroup.x + 1;
+                      if (m >= 1 && m <= 12) {
+                        setState(() => _month = DateTime(_month.year, m));
+                      }
+                    }
+                  },
                 ),
               ),
             ),

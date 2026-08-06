@@ -94,6 +94,14 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     return yuan * 100 + fen;
   }
 
+  List<(String, DateTime)> _quickDates() {
+    final now = DateTime.now();
+    return [
+      ('今天', now),
+      ('昨天', now.subtract(const Duration(days: 1))),
+    ];
+  }
+
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -545,6 +553,21 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
             label: '日期',
             value: dateFmt.format(_date),
             onTap: _pickDate,
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(kSpace4, kSpace2, kSpace4, kSpace2),
+            child: Row(
+              children: [
+                for (final q in _quickDates())
+                  Padding(
+                    padding: const EdgeInsets.only(right: kSpace2),
+                    child: _QuickAmountChip(
+                      label: q.$1,
+                      onTap: () => setState(() => _date = q.$2),
+                    ),
+                  ),
+              ],
+            ),
           ),
           const Divider(indent: 52),
           _SelectRow(
