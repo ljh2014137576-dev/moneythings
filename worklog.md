@@ -1331,3 +1331,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 135/135；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：新增备注行「+ 自定义」与金额行同名 → 旧金额测试需 .first；web 注入 StringList 需单层 JSON（`["培训"]`），双层会导致 getStringList 解析崩溃（TypeError String is not List）→ 已用单层注入验证。
 - 下一步：统计/明细「全部账本」范围切换，或首页「本周/今日」小结复制；上架执行只差 Play 账号。
+## 2026-08-08 10:30 — 迭代 v4.45：统计自定义范围每日支出/收入切换 + 版本号 4.45.0 + 最终 release
+
+- 任务内容：
+  - A. `AppState.rangeDailyIncomeSeries(start, end)`：日期范围逐日收入序列（与 rangeDailySeries 对应）。
+  - B. 统计自定义范围「每日支出」图新增「支出/收入」切换（复用 _ChartModeTag，样式与本月每日图一致）：`_rangeIncome` 状态 + 范围分支切换行 + `_buildRangeBarChart(series, {income})` 动态标题「每日支出 / 每日收入」；切换钮加 ValueKey('rangeIncomeToggle')。
+  - C. 测试：扩展单元测试「日期范围汇总与序列」（incomeSeries [0,0,0,0,5000]）；扩展组件测试「统计页自定义日期范围」（先断言结余走势 → 滚动到切换钮 → 切收入 → 每日收入出现），135/135 通过。
+  - D. web 冒烟：统计页自定义 8月1日~8月7日 → 每日支出 → 点「收入」→ 每日收入（轴升到 2.0w，对应 8/5 收入 1.4w）；截图 89-range-income.png。
+  - E. 版本号 4.45.0+85（aapt 校验 versionName=4.45.0/versionCode=85）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.6MB，SHA-256 `FF32E89A...6400`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（rangeDailyIncomeSeries）
+  - `lib/pages/stats_page.dart`（范围切换行 + _rangeIncome + 动态标题 + key）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/89-range-income.png`（新增）
+- commit hash：`2f47478`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 135/135；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：范围图表在测试视口外（ListView 懒构建）→ 组件测试先滚动到切换钮再断言；「结余走势（范围）」断言需在滚动前执行（滚动后移出视口）。
+- 下一步：统计/明细「全部账本」范围切换，或「记一笔」金额记忆；上架执行只差 Play 账号。
