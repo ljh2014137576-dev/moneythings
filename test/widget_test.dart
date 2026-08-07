@@ -3140,4 +3140,79 @@ void main() {
     expect(find.text('收入'), findsOneWidget);
     expect(find.textContaining('范围支出'), findsNothing);
   });
+  test('批量移动流水到其他账本', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addBook('旅行账本');
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'mv1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '移一',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'mv2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '移二',
+    ));
+    final bookId = state.books.firstWhere((b) => b.name == '旅行账本').id;
+    await state.moveTransactionsToBook(['mv1', 'mv2'], bookId);
+    // 当前账本已无
+    expect(state.currentBookTransactions.any((t) => t.note == '移一'), isFalse);
+    expect(state.transactions.length, 2);
+    // 目标账本有
+    await state.setCurrentBook(bookId);
+    expect(state.currentBookTransactions.length, 2);
+  });
+
+  testWidgets('明细多选批量移动到其他账本', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addBook('旅行账本');
+    await state.addTransaction(Transaction(
+      id: 'wmv1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '批量移',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.textContaining('批量移'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('多选删除'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('全选'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('修改选中'));
+    await tester.pumpAndSettle();
+    expect(find.text('移动到其他账本'), findsOneWidget);
+    await tester.tap(find.text('移动到其他账本'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('旅行账本'));
+    await tester.pumpAndSettle();
+    // 当前账本已无该笔
+    expect(state.currentBookTransactions.any((t) => t.note == '批量移'), isFalse);
+    final bookId = state.books.firstWhere((b) => b.name == '旅行账本').id;
+    await state.setCurrentBook(bookId);
+    expect(
+        state.currentBookTransactions.any((t) => t.note == '批量移'), isTrue);
+  });
 }

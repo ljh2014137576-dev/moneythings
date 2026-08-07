@@ -141,6 +141,19 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 批量移动流水到指定账本
+  Future<void> moveTransactionsToBook(
+      List<String> ids, String bookId) async {
+    if (ids.isEmpty) return;
+    final idSet = ids.toSet();
+    _transactions = [
+      for (final t in _transactions)
+        idSet.contains(t.id) ? t.copyWith(bookId: bookId) : t,
+    ];
+    await _persist();
+    notifyListeners();
+  }
+
   /// 批量更新指定流水（改分类/账户；未提供的字段保持不变）
   Future<void> bulkUpdateTransactions(
     List<String> ids, {

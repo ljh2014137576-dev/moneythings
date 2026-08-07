@@ -811,6 +811,12 @@ class _LedgerPageState extends State<LedgerPage> {
               title: const Text('修改账户'),
               onTap: () => Navigator.of(context).pop('account'),
             ),
+            ListTile(
+              leading: const Icon(Icons.menu_book_outlined,
+                  size: 20, color: kInkPrimary),
+              title: const Text('移动到其他账本'),
+              onTap: () => Navigator.of(context).pop('movebook'),
+            ),
           ],
         ),
       ),
@@ -818,8 +824,58 @@ class _LedgerPageState extends State<LedgerPage> {
     if (action == null || !mounted) return;
     if (action == 'category') {
       await _pickBulkCategory();
+    } else if (action == 'movebook') {
+      await _pickBulkBook();
     } else {
       await _pickBulkAccount();
+    }
+  }
+
+  Future<void> _pickBulkBook() async {
+    final state = context.read<AppState>();
+    final books = state.books
+        .where((b) => b.id != state.currentBookId)
+        .toList();
+    if (books.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('暂无其他账本')),
+      );
+      return;
+    }
+    final picked = await showModalBottomSheet<Book>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding:
+                  EdgeInsets.fromLTRB(kSpace4, kSpace3, kSpace4, kSpace2),
+              child: Text('移动到账本',
+                  style: TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
+            const Divider(height: 1),
+            for (final b in books)
+              ListTile(
+                leading: const Icon(Icons.menu_book_outlined,
+                    size: 20, color: kInkPrimary),
+                title: Text(b.name),
+                onTap: () => Navigator.of(context).pop(b),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null && mounted) {
+      await state.moveTransactionsToBook(
+          _selectedIds.toList(), picked.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('已移动 ${_selectedIds.length} 笔到「${picked.name}」')),
+      );
+      _exitSelection();
     }
   }
 
