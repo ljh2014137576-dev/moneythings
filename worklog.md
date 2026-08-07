@@ -1153,3 +1153,24 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 118/118；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：批量弹层加第 5 项后小窗口 RenderFlex overflow → 弹层内容包 SingleChildScrollView；新测试点击第 5 项需 ensureVisible。
 - 下一步：周期记账「到期提醒通知」或首页细节增强；上架执行只差 Play 账号。
+## 2026-08-08 00:30 — 迭代 v4.35：周期记账到期提醒通知 + 版本号 4.35.0 + 最终 release
+
+- 任务内容：
+  - A. `NotificationService.scheduleRecurringReminders(rules)`：为每个启用规则在其 nextDate 当天 09:00 调度本地通知（先取消旧调度再重排，通知 id 由 rule.id hashCode 派生）；`cancelRecurringReminders()` 取消全部。标题「周期记账：分类名」，正文「M月d日 需记一笔 ¥金额」。
+  - B. `AppState`：新增 `recurringRemind`（默认 true）+ `setRecurringRemind` + `_syncRecurringNotifications`；在 9 处规则变更后同步提醒（生成到期/立即生成/新增/编辑/删除/跳过/补生成/CSV 导入/JSON 恢复）；JSON 备份恢复含该字段。
+  - C. `TransactionRepository`：新增 `recurring_remind_v1` 的 load/save（默认 true）。
+  - D. 我的页提醒区新增「周期记账提醒（到期当天）」开关（每日提醒下方）。
+  - E. 测试：新增 2 项（周期记账提醒开关持久化、我的页周期记账提醒开关），120/120 通过。
+  - F. web 冒烟：我的页滚动到提醒区 → 截图 79-recurring-remind.png → 关闭「周期记账提醒」→ localStorage `recurring_remind_v1=false` 校验通过。
+  - G. 版本号 4.35.0+75（aapt 校验 versionName=4.35.0/versionCode=75）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.5MB，SHA-256 `E7CF22F4...318E`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/services/notification_service.dart`（周期提醒调度/取消）
+  - `lib/data/transaction_repository.dart`（recurring_remind_v1）
+  - `lib/data/app_state.dart`（recurringRemind + _syncRecurringNotifications + 规则变更同步 + JSON 字段）
+  - `lib/pages/profile_page.dart`（提醒区开关）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/79-recurring-remind.png`（新增）
+- commit hash：`7b42e65`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 120/120；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：web 冒烟首次点击开关未生效（滚动未稳定）→ 重新定位 switch 节点后第二次点击成功；测试环境通知为 no-op（未 init 直接返回），不影响断言。
+- 下一步：真机通知冒烟（SMOKE_TEST.md 补充周期提醒条目）或首页细节增强；上架执行只差 Play 账号。
