@@ -15,7 +15,7 @@
 
 ## 3. 应用
 - [x] Release APK：`build/app/outputs/flutter-apk/app-release.apk`（53.7MB）
-  - SHA-256：`5BF4857E6EAB22FFF2469C7C0E95717A0147D925FBEA7F4B1F29B45A8DC398A7`
+  - SHA-256：`DC614B3D9C4CCEF5596BDC016C19F871F1BE9D7DA8C7D4AAFF9A3ACF3DE461C5`
   - 签名：MoneyThings keystore（`android/upload-keystore.jks`，不入库，请妥善备份！）
 - [ ] 使用 Play App Signing（上传密钥，Google 管理签名密钥）
 - [ ] 上传 APK 到 Play Console 内部测试轨道 → 内部测试 → 正式版
@@ -27,11 +27,11 @@
 
 ## 5. 上架前自检（自动化）
 - [x] `flutter analyze`：0 问题
-- [x] `flutter test`：97/97 通过
+- [x] `flutter test`：98/98 通过
 - [x] 真机冒烟：首页 / 记一笔 / 明细搜索与左滑删除 / 统计 / 多账本切换 / 预算提醒 / 导出导入
 - [ ] 弱网与离线：核心功能完全离线可用（无网络依赖）
 - [ ] 大字体与无障碍：语义标签已覆盖主要交互（读屏可操作）
 
 ## 6. 版本管理
-- [ ] 每次发版更新 `pubspec.yaml` version（当前 4.18.0+58）
+- [ ] 每次发版更新 `pubspec.yaml` version（当前 4.19.0+59）
 - [ ] 更新 `worklog.md` 与 `STORE_TEXT.md` 版本号

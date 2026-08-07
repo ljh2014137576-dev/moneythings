@@ -362,6 +362,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     _buildAmountField(),
                     _buildQuickAmountRow(),
                     const SizedBox(height: kSpace3),
+                    _buildKeypad(),
+                    const SizedBox(height: kSpace3),
                     if (_type == TxType.transfer) ...[
                       _buildTransferHint(),
                     ] else ...[
@@ -527,6 +529,71 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     setState(() {});
   }
 
+  Widget _buildKeypad() {
+    const keys = [
+      ['1', '2', '3'],
+      ['4', '5', '6'],
+      ['7', '8', '9'],
+      ['.', '0', '⌫'],
+    ];
+    return Container(
+      decoration: BoxDecoration(
+        color: kPaperSurface,
+        border: Border.all(color: kDividerDefault, width: 1),
+        borderRadius: BorderRadius.circular(kRadiusTable),
+      ),
+      child: Column(
+        children: [
+          for (int r = 0; r < keys.length; r++) ...[
+            if (r > 0) const Divider(height: 1, color: kDividerSubtle),
+            Row(
+              children: [
+                for (int c = 0; c < keys[r].length; c++) ...[
+                  if (c > 0)
+                    const VerticalDivider(
+                        width: 1, color: kDividerSubtle),
+                  Expanded(
+                    child: _KeypadKey(
+                      label: keys[r][c],
+                      onTap: () {
+                        final k = keys[r][c];
+                        if (k == '⌫') {
+                          _backspaceAmount();
+                        } else {
+                          _appendToAmount(k);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _appendToAmount(String ch) {
+    var text = _amountController.text;
+    if (ch == '.') {
+      if (text.contains('.')) return;
+      text = text.isEmpty ? '0.' : '$text.';
+    } else {
+      text = text == '0' ? ch : '$text$ch';
+    }
+    if (!RegExp(r'^\d*\.?\d{0,2}$').hasMatch(text)) return;
+    _amountController.text = text;
+    setState(() {});
+  }
+
+  void _backspaceAmount() {
+    final t = _amountController.text;
+    if (t.isEmpty) return;
+    _amountController.text = t.substring(0, t.length - 1);
+    setState(() {});
+  }
+
   Widget _buildAmountField() {
     return Container(
       decoration: BoxDecoration(
@@ -558,7 +625,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               focusNode: _amountFocus,
               autofocus: !_isEdit,
               onChanged: (_) => setState(() {}),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: TextInputType.none,
               inputFormatters: [_AmountInputFormatter()],
               style: amountStyle(size: 32),
               decoration: InputDecoration(
@@ -1031,6 +1098,36 @@ class _QuickAmountChip extends StatelessWidget {
                 fontWeight: FontWeight.w500,
                 color: kInkPrimary,
                 fontFeatures: [FontFeature.tabularFigures()])),
+      ),
+    );
+  }
+}
+
+class _KeypadKey extends StatelessWidget {
+  const _KeypadKey({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label == '⌫' ? '删除一位' : '数字 $label',
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          height: 52,
+          child: Center(
+            child: Text(
+              label,
+              style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w500,
+                  color: kInkPrimary),
+            ),
+          ),
+        ),
       ),
     );
   }

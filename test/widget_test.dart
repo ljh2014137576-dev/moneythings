@@ -2724,4 +2724,33 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byTooltip('导出周期规则'), findsOneWidget);
   });
+  testWidgets('记一笔数字键盘输入/退格/小数点', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('记一笔').first);
+    await tester.pumpAndSettle();
+    // 键盘输入 1 2
+    await tester.tap(find.text('1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('2'));
+    await tester.pumpAndSettle();
+    expect(find.text('12'), findsOneWidget);
+    // 退格
+    await tester.tap(find.text('⌫'));
+    await tester.pumpAndSettle();
+    expect(find.text('12'), findsNothing);
+    // 小数点 + 数字
+    await tester.tap(find.text('.'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('5'));
+    await tester.pumpAndSettle();
+    expect(find.text('1.5'), findsOneWidget);
+    // 重复小数点被忽略
+    await tester.tap(find.text('.'));
+    await tester.pumpAndSettle();
+    expect(find.text('1.5'), findsOneWidget);
+  });
 }
