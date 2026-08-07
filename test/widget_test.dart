@@ -4798,4 +4798,65 @@ void main() {
       findsWidgets,
     );
   });
+  testWidgets('我的页周期规则全部补生成', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    final d6 = DateTime(now.year, now.month - 6, 1);
+    final d3 = DateTime(now.year, now.month - 3, 1);
+    await state.addRecurringRule(RecurringRule(
+      id: 'bfa1',
+      type: TxType.expense,
+      amount: 5000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      note: '规则一',
+      date: d6,
+      nextDate: d3,
+      frequency: RecurFrequency.monthly,
+    ));
+    await state.addRecurringRule(RecurringRule(
+      id: 'bfa2',
+      type: TxType.expense,
+      amount: 3000,
+      categoryId: 'shopping',
+      accountId: 'alipay',
+      note: '规则二',
+      date: d6,
+      nextDate: d3,
+      frequency: RecurFrequency.monthly,
+    ));
+    await state.addRecurringRule(RecurringRule(
+      id: 'bfa3',
+      type: TxType.expense,
+      amount: 1000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      note: '停用',
+      date: d6,
+      nextDate: d3,
+      frequency: RecurFrequency.monthly,
+      active: false,
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byTooltip('全部补生成'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    final before = state.transactions.length;
+    await tester.tap(find.byTooltip('全部补生成'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('补生成'));
+    await tester.pumpAndSettle();
+    // 两条启用规则各补 7 期（-6 月至本月），停用规则不补
+    expect(state.transactions.length, before + 14);
+    expect(state.transactions.where((t) => t.note == '停用'), isEmpty);
+  });
 }

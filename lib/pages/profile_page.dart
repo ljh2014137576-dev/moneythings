@@ -425,17 +425,66 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  /// 全部补生成：补齐所有启用规则的过期历史流水（已存在的自动跳过）
+  Future<void> _backfillAllRecurring() async {
+    final state = context.read<AppState>();
+    final rules = state.recurringRules.where((r) => r.active).toList();
+    if (rules.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('没有可补生成的启用规则')),
+      );
+      return;
+    }
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('全部补生成'),
+        content: Text(
+            '将补齐 ${rules.length} 条启用规则的过期历史流水（已存在的自动跳过），确认？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('补生成'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    int total = 0;
+    for (final r in rules) {
+      total += await state.backfillRecurring(r.id);
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已补生成 $total 笔流水')),
+    );
+  }
   Widget _buildRecurring(AppState state) {
     final rules = state.recurringRules;
     if (rules.isEmpty) return const SizedBox.shrink();
     return PaperGroup(
       title: '周期记账',
       padding: EdgeInsets.zero,
-      trailing: IconButton(
-        tooltip: '导出周期规则',
-        onPressed: _exportRecurringCsv,
-        icon: const Icon(Icons.ios_share_outlined,
-            size: 20, color: kAccentBlue),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: '全部补生成',
+            onPressed: _backfillAllRecurring,
+            icon: const Icon(Icons.playlist_add_check_rounded,
+                size: 20, color: kAccentBlue),
+          ),
+          IconButton(
+            tooltip: '导出周期规则',
+            onPressed: _exportRecurringCsv,
+            icon: const Icon(Icons.ios_share_outlined,
+                size: 20, color: kAccentBlue),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -1168,7 +1217,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.57.0',
+            Text('版本 4.58.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -1177,7 +1226,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.57 统计全部账本\nv4.56 周期规则下次日期+1期\nv4.55 多选合计金额\nv4.54 账本汇总合计行\nv4.53 明细显示账本名\nv4.52 待报销合计\nv4.51 批量标记可报销\nv4.50 结余走势粒度（3/6/12月）\nv4.49 周期提醒提前天数\nv4.48 明细复制选中到账本\nv4.47 报销标记\nv4.46 明细全部账本\nv4.45 范围每日收入图\nv4.44 常用备注自定义\nv4.43 常用金额自定义\nv4.42 首页今日概览\nv4.41 统计收入占比环图\nv4.40 周期规则复制\nv4.39 首页账本汇总\nv4.38 统计自定义范围记忆\nv4.37 首页本周最近流水\nv4.36 首页本周支出分类\nv4.35 周期记账到期提醒\nv4.34 明细按分类批量删除\nv4.33 明细按分类批量修改账户\nv4.32 统计年度收入对比\nv4.31 明细按分类移动到其他账本\nv4.30 周期规则按月补生成\nv4.29 统计自定义范围结余走势\nv4.28 明细批量移动到其他账本\nv4.27 统计页自定义日期范围\nv4.26 我的页数据概况\nv4.25 明细复制到其他账本\nv4.24 首页总资产下钻账户',
+            Text('v4.58 周期全部补生成\nv4.57 统计全部账本\nv4.56 周期规则下次日期+1期\nv4.55 多选合计金额\nv4.54 账本汇总合计行\nv4.53 明细显示账本名\nv4.52 待报销合计\nv4.51 批量标记可报销\nv4.50 结余走势粒度（3/6/12月）\nv4.49 周期提醒提前天数\nv4.48 明细复制选中到账本\nv4.47 报销标记\nv4.46 明细全部账本\nv4.45 范围每日收入图\nv4.44 常用备注自定义\nv4.43 常用金额自定义\nv4.42 首页今日概览\nv4.41 统计收入占比环图\nv4.40 周期规则复制\nv4.39 首页账本汇总\nv4.38 统计自定义范围记忆\nv4.37 首页本周最近流水\nv4.36 首页本周支出分类\nv4.35 周期记账到期提醒\nv4.34 明细按分类批量删除\nv4.33 明细按分类批量修改账户\nv4.32 统计年度收入对比\nv4.31 明细按分类移动到其他账本\nv4.30 周期规则按月补生成\nv4.29 统计自定义范围结余走势\nv4.28 明细批量移动到其他账本\nv4.27 统计页自定义日期范围\nv4.26 我的页数据概况\nv4.25 明细复制到其他账本\nv4.24 首页总资产下钻账户',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),
