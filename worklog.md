@@ -1660,3 +1660,18 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 160/160；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：插入提示文本时误留悬空括号 → 修复；「长按删除」提示在 web 语义树不显示（仅内联文本，功能由组件测试覆盖）。
 - 下一步：首页今日模式预算显示，或「明细」按月导出；上架执行只差 Play 账号。
+## 2026-08-09 06:30 — 迭代 v4.65：统计预算对比卡点击调整预算 + 版本号 4.65.0 + 最终 release
+
+- 任务内容：
+  - A. 统计「预算对比」卡在已设预算时整卡可点击：点击进度区域打开 `showBudgetDialog` 调整预算（未设时原有「设置每月预算」入口不变）。
+  - B. 测试：新增组件测试「统计页预算卡点击调整」（预算 10000 → 点击卡片 → 输入 20000 → 保存 → budget=2000000），161/161 通过。
+  - C. web 冒烟：注入预算 200000 → 统计卡显示「预算 2,000.00 已用 50%」→ 点击卡片 → 预算对话框 → 改 30000 → 保存 → localStorage `book_budgets_v1` default=3000000；截图 109-budget-adjust.png。
+  - D. 版本号 4.65.0+105（aapt 校验 versionName=4.65.0/versionCode=105）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `97C11079...7238`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/stats_page.dart`（预算卡已设时整卡可点 + showBudgetDialog）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/109-budget-adjust.png`（新增）
+- commit hash：`4a72f0c`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 161/161；release 构建（连续两次 Gradle 失败为已知 Metaspace 问题，第三次杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：web 端预算卡文本为合并语义节点 → 用 textContent 包含「已用 50%」定位点击；预算输入为元 → 断言按分换算。
+- 下一步：首页今日模式预算显示，或「明细」按月导出；上架执行只差 Play 账号。
