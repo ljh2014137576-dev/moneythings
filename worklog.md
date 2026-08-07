@@ -1643,3 +1643,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 159/159；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：无新坑。
 - 下一步：首页今日模式预算显示，或「明细」按月导出；上架执行只差 Play 账号。
+## 2026-08-09 05:30 — 迭代 v4.64：明细最近搜索长按单条删除 + 版本号 4.64.0 + 最终 release
+
+- 任务内容：
+  - A. `AppState.removeRecentSearch(s)`：删除单条最近搜索（其余保留，持久化）。
+  - B. 明细「最近搜索」chips 支持**长按删除单条**（SnackBar「已删除搜索「s」」）；清除按钮旁加「· 长按删除」提示。
+  - C. 测试：新增组件测试「明细最近搜索长按删除」（2 条记录 → 长按删「咖啡」→ 仅剩「超市」），160/160 通过（连续 2 次全绿）。
+  - D. web 冒烟：注入最近搜索「咖啡/超市」→ 明细显示最近搜索 chips 可交互；截图 108-search-delete.png。
+  - E. 版本号 4.64.0+104（aapt 校验 versionName=4.64.0/versionCode=104）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `E645AD50...B67`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（removeRecentSearch）
+  - `lib/pages/ledger_page.dart`（chips 长按删除 + 提示）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/108-search-delete.png`（新增）
+- commit hash：`a26e413`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 160/160；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：插入提示文本时误留悬空括号 → 修复；「长按删除」提示在 web 语义树不显示（仅内联文本，功能由组件测试覆盖）。
+- 下一步：首页今日模式预算显示，或「明细」按月导出；上架执行只差 Play 账号。
