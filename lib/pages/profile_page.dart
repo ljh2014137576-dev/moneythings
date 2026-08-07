@@ -362,6 +362,8 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: kSpace3),
           _buildAssets(state),
           const SizedBox(height: kSpace4),
+          _buildDataOverview(state),
+          const SizedBox(height: kSpace4),
           _buildAccounts(state),
           const SizedBox(height: kSpace4),
           _buildRecurring(state),
@@ -461,6 +463,39 @@ class _ProfilePageState extends State<ProfilePage> {
         initial: rule,
         onSave: (edited) => state.updateRecurringRule(edited),
         onSkip: () => state.skipNextOccurrence(rule.id),
+      ),
+    );
+  }
+
+  Widget _buildDataOverview(AppState state) {
+    return PaperGroup(
+      title: '数据概况',
+      padding: const EdgeInsets.all(kSpace4),
+      child: Row(
+        children: [
+          _overviewCell('流水', '${state.transactions.length} 笔'),
+          _overviewCell('账户', '${state.accounts.length} 个'),
+          _overviewCell('账本', '${state.books.length} 个'),
+          _overviewCell('周期规则', '${state.recurringRuleCount} 条'),
+        ],
+      ),
+    );
+  }
+
+  Widget _overviewCell(String label, String value) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: kInkPrimary)),
+          const SizedBox(height: 2),
+          Text(label,
+              style:
+                  const TextStyle(fontSize: 11, color: kInkSecondary)),
+        ],
       ),
     );
   }
@@ -1033,7 +1068,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.25.0',
+            Text('版本 4.26.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -1042,7 +1077,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.25 明细复制到其他账本\nv4.24 首页总资产下钻账户\nv4.23 记一笔保存撤销\nv4.22 周期规则 CSV 导入\nv4.21 明细全部时间年份分组',
+            Text('v4.26 我的页数据概况\nv4.25 明细复制到其他账本\nv4.24 首页总资产下钻账户\nv4.23 记一笔保存撤销\nv4.22 周期规则 CSV 导入',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),

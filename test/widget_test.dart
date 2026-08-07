@@ -1138,6 +1138,12 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('我的'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('支付宝'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('支付宝'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('查看该账户流水'));
@@ -2031,6 +2037,12 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('我的'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('周期记账'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('周期记账'), findsOneWidget);
     expect(find.textContaining('每月 · 居住'), findsOneWidget);
     expect(find.textContaining('下次 9月1日'), findsOneWidget);
@@ -2547,6 +2559,12 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('我的'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('支付宝'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('支付宝'));
     await tester.pumpAndSettle();
     expect(find.textContaining('本月转账：转出 50.00'), findsOneWidget);
@@ -2934,7 +2952,13 @@ void main() {
     await tester.tap(find.textContaining('总资产'));
     await tester.pumpAndSettle();
     expect(find.text('我的'), findsWidgets);
-    expect(find.text('账户'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('数据概况'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('数据概况'), findsOneWidget);
   });
   test('复制流水到其他账本', () async {
     SharedPreferences.setMockInitialValues({'onboarded_v1': true});
@@ -2989,5 +3013,47 @@ void main() {
     await tester.tap(find.text('旅行账本'));
     await tester.pumpAndSettle();
     expect(state.transactions.where((t) => t.note == '待复制').length, 2);
+  });
+  testWidgets('我的页显示数据概况', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addTransaction(Transaction(
+      id: 'do1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(2026, 8, 1),
+    ));
+    await state.addTransaction(Transaction(
+      id: 'do2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(2026, 8, 2),
+    ));
+    await state.addRecurringRule(RecurringRule(
+      id: 'dor1',
+      type: TxType.expense,
+      amount: 100000,
+      categoryId: 'home',
+      accountId: 'alipay',
+      note: '房租',
+      date: DateTime(2026, 8, 1),
+      nextDate: DateTime(2026, 9, 1),
+      frequency: RecurFrequency.monthly,
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    expect(find.text('数据概况'), findsOneWidget);
+    expect(find.text('2 笔'), findsOneWidget);
+    expect(find.text('4 个'), findsOneWidget);
+    expect(find.text('1 个'), findsOneWidget);
+    expect(find.text('1 条'), findsOneWidget);
   });
 }

@@ -68,6 +68,9 @@ class AppState extends ChangeNotifier {
   List<RecurringRule> get recurringRules =>
       List.unmodifiable(_rules.where((r) => r.bookId == _currentBookId));
 
+  /// 全部账本的周期规则数
+  int get recurringRuleCount => _rules.length;
+
   Future<void> load() async {
     await _repository.seedIfFirstLaunch();
     _transactions = await _repository.loadTransactions();
