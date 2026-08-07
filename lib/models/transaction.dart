@@ -1,4 +1,4 @@
-﻿/// 交易领域模型与预设分类
+/// 交易领域模型与预设分类
 library;
 
 import 'package:flutter/material.dart';
@@ -110,6 +110,7 @@ class Transaction {
   final String? transferToAccountId;
 
   Transaction copyWith({
+    String? id,
     TxType? type,
     int? amount,
     String? categoryId,
@@ -120,7 +121,7 @@ class Transaction {
     String? transferToAccountId,
   }) {
     return Transaction(
-      id: id,
+      id: id ?? this.id,
       type: type ?? this.type,
       amount: amount ?? this.amount,
       categoryId: categoryId ?? this.categoryId,

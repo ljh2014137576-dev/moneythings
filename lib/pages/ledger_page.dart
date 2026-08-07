@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../data/app_state.dart';
 import '../models/account.dart';
+import '../models/book.dart';
 import '../models/transaction.dart';
 import '../theme/app_colors.dart';
 import '../services/csv_exporter.dart';
@@ -988,6 +989,12 @@ class _LedgerPageState extends State<LedgerPage> {
               onTap: () => Navigator.of(context).pop('copy'),
             ),
             ListTile(
+              leading: const Icon(Icons.menu_book_outlined,
+                  size: 20, color: kInkPrimary),
+              title: const Text('复制到其他账本'),
+              onTap: () => Navigator.of(context).pop('copybook'),
+            ),
+            ListTile(
               leading: const Icon(Icons.checklist_rounded,
                   size: 20, color: kInkPrimary),
               title: const Text('多选删除'),
@@ -1016,11 +1023,61 @@ class _LedgerPageState extends State<LedgerPage> {
           builder: (_) => AddTransactionPage(copyFrom: tx),
         ),
       );
+    } else if (action == 'copybook') {
+      await _copyToBook(tx);
     } else if (action == 'delete') {
       await _deleteWithUndo(tx);
     }
 
   }
+  Future<void> _copyToBook(Transaction tx) async {
+    final state = context.read<AppState>();
+    final books = state.books
+        .where((b) => b.id != state.currentBookId)
+        .toList();
+    if (books.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('暂无其他账本')),
+      );
+      return;
+    }
+    final picked = await showModalBottomSheet<Book>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding:
+                  EdgeInsets.fromLTRB(kSpace4, kSpace3, kSpace4, kSpace2),
+              child: Text('复制到账本',
+                  style: TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
+            const Divider(height: 1),
+            for (final b in books)
+              ListTile(
+                leading: const Icon(Icons.menu_book_outlined,
+                    size: 20, color: kInkPrimary),
+                title: Text(b.name),
+                onTap: () => Navigator.of(context).pop(b),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null && mounted) {
+      final ok =
+          await state.copyTransactionToBook(tx.id, picked.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(ok ? '已复制到「${picked.name}」' : '复制失败')),
+        );
+      }
+    }
+  }
+
   Future<void> _showAmountSheet() async {
     await showModalBottomSheet<void>(
       context: context,

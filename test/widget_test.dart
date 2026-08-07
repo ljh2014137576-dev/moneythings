@@ -2936,4 +2936,58 @@ void main() {
     expect(find.text('我的'), findsWidgets);
     expect(find.text('账户'), findsOneWidget);
   });
+  test('复制流水到其他账本', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addBook('旅行账本');
+    await state.addTransaction(Transaction(
+      id: 'cp1',
+      type: TxType.expense,
+      amount: 5000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(2026, 8, 6),
+      note: '复制我',
+    ));
+    final bookId = state.books.firstWhere((b) => b.name == '旅行账本').id;
+    final ok = await state.copyTransactionToBook('cp1', bookId);
+    expect(ok, isTrue);
+    expect(state.transactions.where((t) => t.note == '复制我').length, 2);
+    await state.setCurrentBook(bookId);
+    expect(
+        state.currentBookTransactions.any((t) => t.note == '复制我'), isTrue);
+  });
+
+  testWidgets('明细长按复制到其他账本', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addBook('旅行账本');
+    await state.addTransaction(Transaction(
+      id: 'lb1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '待复制',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.textContaining('待复制'));
+    await tester.pumpAndSettle();
+    expect(find.text('复制到其他账本'), findsOneWidget);
+    await tester.tap(find.text('复制到其他账本'));
+    await tester.pumpAndSettle();
+    expect(find.text('复制到账本'), findsOneWidget);
+    await tester.tap(find.text('旅行账本'));
+    await tester.pumpAndSettle();
+    expect(state.transactions.where((t) => t.note == '待复制').length, 2);
+  });
 }

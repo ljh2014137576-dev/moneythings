@@ -113,6 +113,22 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 复制流水到指定账本（新 id，保留日期/分类/账户/备注）
+  Future<bool> copyTransactionToBook(
+      String txId, String bookId) async {
+    final tx = _transactions.where((t) => t.id == txId).firstOrNull;
+    if (tx == null) return false;
+    final copy = tx.copyWith(
+      id: 'cp_${DateTime.now().microsecondsSinceEpoch}',
+      bookId: bookId,
+    );
+    _transactions = [..._transactions, copy]
+      ..sort((a, b) => b.date.compareTo(a.date));
+    await _persist();
+    notifyListeners();
+    return true;
+  }
+
   Future<void> deleteTransaction(String id) async {
     _transactions = [
       for (final t in _transactions)
