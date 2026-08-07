@@ -3882,4 +3882,56 @@ void main() {
     expect(copied.amount, 5000);
     expect(copied.frequency, RecurFrequency.monthly);
   });
+  testWidgets('统计页收入占比环图', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'dn1',
+      type: TxType.expense,
+      amount: 1000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 3),
+    ));
+    await state.addTransaction(Transaction(
+      id: 'dn2',
+      type: TxType.income,
+      amount: 2000,
+      categoryId: 'salary',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 5),
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('统计'));
+    await tester.pumpAndSettle();
+    // 占比环图在列表中部，先滚动到「支出占比」
+    await tester.scrollUntilVisible(
+      find.text('支出占比'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('支出占比'), findsOneWidget);
+    // 切到收入（收入切换钮带 Key，避免与年度卡片同名文本混淆）
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('incomeToggleTag')),
+      -200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('incomeToggleTag')));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('收入占比'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('收入占比'), findsOneWidget);
+    expect(find.text('支出占比'), findsNothing);
+  });
 }

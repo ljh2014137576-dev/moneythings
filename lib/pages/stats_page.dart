@@ -324,9 +324,14 @@ class _StatsPageState extends State<StatsPage> {
                           weekly: weekSeries,
                           incomeSeries: incomeSeries),
                       const SizedBox(height: kSpace4),
-                      if (ranking.isNotEmpty) ...[
+                      if (_incomeChart
+                          ? incomeRanking.isNotEmpty
+                          : ranking.isNotEmpty) ...[
                         const SizedBox(height: kSpace4),
-                        _buildDonut(ranking),
+                        _buildDonut(
+                          _incomeChart ? incomeRanking : ranking,
+                          income: _incomeChart,
+                        ),
                       ],
                       const SizedBox(height: kSpace4),
                       PaperGroup(
@@ -645,7 +650,8 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   Widget _buildDonut(
-      List<({TxCategory category, int amount})> ranking) {
+      List<({TxCategory category, int amount})> ranking, {
+      bool income = false}) {
     final top = ranking.take(5).toList();
     final other = ranking.skip(5).fold<int>(0, (s, e) => s + e.amount);
     final total = ranking.fold<int>(0, (s, e) => s + e.amount);
@@ -676,7 +682,7 @@ class _StatsPageState extends State<StatsPage> {
         ),
     ];
     return PaperGroup(
-      title: '支出占比',
+      title: income ? '收入占比' : '支出占比',
       padding: const EdgeInsets.all(kSpace4),
       child: Row(
         children: [
@@ -749,6 +755,7 @@ class _StatsPageState extends State<StatsPage> {
         ),
         const SizedBox(width: kSpace2),
         _ChartModeTag(
+          key: const ValueKey('incomeToggleTag'),
           label: '收入',
           selected: _incomeChart,
           onTap: () => setState(() => _incomeChart = true),
@@ -1618,6 +1625,7 @@ class _VSep extends StatelessWidget {
 
 class _ChartModeTag extends StatelessWidget {
   const _ChartModeTag({
+    super.key,
     required this.label,
     required this.selected,
     required this.onTap,
