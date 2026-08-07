@@ -529,6 +529,64 @@ class AppState extends ChangeNotifier {
     }
     return result;
   }
+  /// 指定日期范围内的流水（当前账本，含边界）
+  List<Transaction> inRange(DateTime start, DateTime end) => _bookTx
+      .where((t) => !t.date.isBefore(start) && !t.date.isAfter(end))
+      .toList();
+
+  /// 日期范围汇总（支出/收入/笔数/日均支出）
+  ({int expense, int income, int count, int dailyExpense})
+      rangeSummary(DateTime start, DateTime end) {
+    int exp = 0, inc = 0, count = 0;
+    for (final t in inRange(start, end)) {
+      if (t.type == TxType.expense) {
+        exp += t.amount;
+        count++;
+      } else if (t.type == TxType.income) {
+        inc += t.amount;
+        count++;
+      }
+    }
+    final days = end.difference(start).inDays + 1;
+    return (
+      expense: exp,
+      income: inc,
+      count: count,
+      dailyExpense: count == 0 ? 0 : exp ~/ days,
+    );
+  }
+
+  /// 日期范围每日支出序列
+  List<int> rangeDailySeries(DateTime start, DateTime end) {
+    final days = end.difference(start).inDays + 1;
+    final list = List<int>.filled(days, 0);
+    for (final t in inRange(start, end)) {
+      if (t.type == TxType.expense) {
+        final idx = t.date.difference(start).inDays;
+        if (idx >= 0 && idx < days) list[idx] += t.amount;
+      }
+    }
+    return list;
+  }
+
+  /// 日期范围分类排行（支出/收入）
+  List<({TxCategory category, int amount})> rangeCategoryRanking(
+      DateTime start, DateTime end, {
+      bool income = false}) {
+    final map = <String, int>{};
+    for (final t in inRange(start, end)) {
+      if (income ? t.type == TxType.income : t.type == TxType.expense) {
+        map[t.categoryId] = (map[t.categoryId] ?? 0) + t.amount;
+      }
+    }
+    final ranked = map.entries
+        .map((e) =>
+            (category: TxCategories.byId(e.key), amount: e.value))
+        .toList()
+      ..sort((a, b) => b.amount.compareTo(a.amount));
+    return ranked;
+  }
+
   /// 某月（年份+月份）的流水
   List<Transaction> ofMonth(DateTime month) {
     final y = month.year, m = month.month;

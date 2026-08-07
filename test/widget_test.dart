@@ -3056,4 +3056,88 @@ void main() {
     expect(find.text('1 个'), findsOneWidget);
     expect(find.text('1 条'), findsOneWidget);
   });
+  test('日期范围汇总与序列', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addTransaction(Transaction(
+      id: 'r1',
+      type: TxType.expense,
+      amount: 1000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(2026, 8, 1),
+    ));
+    await state.addTransaction(Transaction(
+      id: 'r2',
+      type: TxType.expense,
+      amount: 2000,
+      categoryId: 'home',
+      accountId: 'alipay',
+      date: DateTime(2026, 8, 3),
+    ));
+    await state.addTransaction(Transaction(
+      id: 'r3',
+      type: TxType.income,
+      amount: 5000,
+      categoryId: 'salary',
+      accountId: 'alipay',
+      date: DateTime(2026, 8, 5),
+    ));
+    await state.addTransaction(Transaction(
+      id: 'r4',
+      type: TxType.transfer,
+      amount: 999,
+      categoryId: 'transfer',
+      accountId: 'alipay',
+      transferToAccountId: 'wechat',
+      date: DateTime(2026, 8, 6),
+    ));
+    final s = state.rangeSummary(DateTime(2026, 8, 1), DateTime(2026, 8, 5));
+    expect(s.expense, 3000);
+    expect(s.income, 5000);
+    expect(s.count, 3); // 转账不计
+    final series = state.rangeDailySeries(DateTime(2026, 8, 1), DateTime(2026, 8, 5));
+    expect(series, [1000, 0, 2000, 0, 0]);
+    final ranking = state.rangeCategoryRanking(DateTime(2026, 8, 1), DateTime(2026, 8, 5));
+    expect(ranking.first.category.name, '居住');
+  });
+
+  testWidgets('统计页自定义日期范围', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'wr1',
+      type: TxType.expense,
+      amount: 1000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '范围支出',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('统计'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('自定义'));
+    await tester.pumpAndSettle();
+    // 起始日期（默认今天 → 确定）
+    await tester.tap(find.text('起始日期'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('确定'));
+    await tester.pumpAndSettle();
+    // 结束日期
+    await tester.tap(find.text('结束日期'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('确定'));
+    await tester.pumpAndSettle();
+    // 范围汇总出现
+    expect(find.textContaining('汇总'), findsWidgets);
+    expect(find.text('收入'), findsOneWidget);
+    expect(find.textContaining('范围支出'), findsNothing);
+  });
 }

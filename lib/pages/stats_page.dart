@@ -32,6 +32,9 @@ class _StatsPageState extends State<StatsPage> {
   bool _weekly = false;
   bool _incomeChart = false;
   int _balanceMonths = 12;
+  bool _rangeMode = false;
+  DateTime? _rangeStart;
+  DateTime? _rangeEnd;
 
   void _openCategory(TxCategory category) {
     Navigator.of(context).push(
@@ -185,6 +188,22 @@ class _StatsPageState extends State<StatsPage> {
     final incomeSeries = state.dailyIncomeSeries(_month);
     final days = series.length;
 
+    final rangeActive =
+        _rangeMode && _rangeStart != null && _rangeEnd != null;
+    final rangeSummary = rangeActive
+        ? state.rangeSummary(_rangeStart!, _rangeEnd!)
+        : null;
+    final rangeRanking = rangeActive
+        ? state.rangeCategoryRanking(_rangeStart!, _rangeEnd!)
+        : const <({TxCategory category, int amount})>[];
+    final rangeIncomeRanking = rangeActive
+        ? state.rangeCategoryRanking(_rangeStart!, _rangeEnd!,
+            income: true)
+        : const <({TxCategory category, int amount})>[];
+    final rangeSeries = rangeActive
+        ? state.rangeDailySeries(_rangeStart!, _rangeEnd!)
+        : const <int>[];
+
     // 默认选中支出最高的一天
     if (_selectedDay < 0 || _selectedDay >= days) {
       int best = 0;
@@ -215,12 +234,14 @@ class _StatsPageState extends State<StatsPage> {
                   month: _month,
                   onChanged: (m) => setState(() => _month = m),
                 ),
+                const SizedBox(height: kSpace2),
+                _buildRangeToggle(),
               ],
             ),
           ),
           const SizedBox(height: kSpace3),
           Expanded(
-            child: monthTx.isEmpty
+            child: (rangeActive ? rangeSummary!.count == 0 : monthTx.isEmpty)
                 ? Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -244,6 +265,34 @@ class _StatsPageState extends State<StatsPage> {
                     padding: const EdgeInsets.fromLTRB(
                         kPagePadding, 0, kPagePadding, kSpace6),
                     children: [
+                      if (rangeActive) ...[
+                        _buildRangeSummaryStrip(
+                            rangeSummary!, _rangeStart!, _rangeEnd!),
+                        const SizedBox(height: kSpace3),
+                        _buildRangeBarChart(rangeSeries),
+                        const SizedBox(height: kSpace4),
+                        PaperGroup(
+                          title: '支出分类排行',
+                          padding: const EdgeInsets.all(kSpace4),
+                          child: CategoryRanking(
+                            items: rangeRanking,
+                            maxItems: 8,
+                            onTapCategory: _openCategory,
+                          ),
+                        ),
+                        if (rangeIncomeRanking.isNotEmpty) ...[
+                          const SizedBox(height: kSpace4),
+                          PaperGroup(
+                            title: '收入分类排行',
+                            padding: const EdgeInsets.all(kSpace4),
+                            child: CategoryRanking(
+                              items: rangeIncomeRanking,
+                              maxItems: 8,
+                              onTapCategory: _openCategory,
+                            ),
+                          ),
+                        ],
+                      ] else ...[
                       _buildSummaryStrip(
                         summary,
                         monthTx.length,
@@ -292,10 +341,123 @@ class _StatsPageState extends State<StatsPage> {
                       ],
                       const SizedBox(height: kSpace4),
                       _buildYearSummaryCard(state, _month.year),
+                      ],
                     ],
                   ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRangeSummaryStrip(
+      ({int expense, int income, int count, int dailyExpense}) s,
+      DateTime start, DateTime end) {
+    final fmt = DateFormat('M月d日', 'zh_CN');
+    return PaperGroup(
+      padding: const EdgeInsets.all(kSpace4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('${fmt.format(start)} ~ ${fmt.format(end)} 汇总',
+              style: const TextStyle(
+                  fontSize: 13, color: kInkSecondary)),
+          const SizedBox(height: 4),
+          AmountText(s.expense, size: 36, weight: FontWeight.w700),
+          const SizedBox(height: kSpace3),
+          Row(
+            children: [
+              _ysCell('收入', AmountText.format(s.income), kSuccess),
+              _ysCell('结余', AmountText.format(s.income - s.expense), kInkPrimary),
+              _ysCell('笔数', '${s.count} 笔', kInkPrimary),
+              _ysCell('日均支出', AmountText.format(s.dailyExpense), kInkSecondary),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRangeBarChart(List<int> series) {
+    final maxV = series.fold<int>(0, (m, e) => e > m ? e : m);
+    final niceMax = _niceMax(maxV / 100.0);
+    return PaperGroup(
+      title: '每日支出',
+      padding: const EdgeInsets.fromLTRB(kSpace3, kSpace2, kSpace3, kSpace4),
+      child: SizedBox(
+        height: 200,
+        child: BarChart(
+          BarChartData(
+            maxY: niceMax,
+            minY: 0,
+            alignment: BarChartAlignment.spaceAround,
+            barGroups: [
+              for (int i = 0; i < series.length; i++)
+                BarChartGroupData(
+                  x: i,
+                  barRods: [
+                    BarChartRodData(
+                      toY: series[i] / 100.0,
+                      width: series.length > 31 ? 4 : 8,
+                      color: kInkPrimary,
+                      borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(2)),
+                    ),
+                  ],
+                ),
+            ],
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: false,
+              horizontalInterval: niceMax / 4,
+              getDrawingHorizontalLine: (value) =>
+                  FlLine(color: kDividerSubtle, strokeWidth: 1),
+            ),
+            borderData: FlBorderData(show: false),
+            titlesData: FlTitlesData(
+              topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false)),
+              rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false)),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 42,
+                  interval: niceMax / 4,
+                  getTitlesWidget: (value, meta) {
+                    if (value <= 0) return const SizedBox.shrink();
+                    return Text(_compact(value),
+                        style: const TextStyle(
+                            fontSize: 10, color: kInkDisabled));
+                  },
+                ),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 24,
+                  interval: 1,
+                  getTitlesWidget: (value, meta) {
+                    final i = value.toInt();
+                    if (i < 0 || i >= series.length) {
+                      return const SizedBox.shrink();
+                    }
+                    final show = series.length > 31
+                        ? i % 5 == 0 || i == series.length - 1
+                        : i % 2 == 0 || i == series.length - 1;
+                    if (!show) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text('${i + 1}',
+                          style: const TextStyle(
+                              fontSize: 10, color: kInkDisabled)),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -845,6 +1007,101 @@ class _StatsPageState extends State<StatsPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildRangeToggle() {
+    final fmt = DateFormat('M月d日', 'zh_CN');
+    return Row(
+      children: [
+        const Text('范围：',
+            style: TextStyle(fontSize: 13, color: kInkSecondary)),
+        _ChartModeTag(
+          label: '本月',
+          selected: !_rangeMode,
+          onTap: () => setState(() => _rangeMode = false),
+        ),
+        const SizedBox(width: kSpace2),
+        _ChartModeTag(
+          label: '自定义',
+          selected: _rangeMode,
+          onTap: () => setState(() => _rangeMode = true),
+        ),
+        if (_rangeMode) ...[
+          const SizedBox(width: kSpace2),
+          InkWell(
+            onTap: _pickRangeStart,
+            borderRadius: BorderRadius.circular(kRadiusTable),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text(
+                _rangeStart == null
+                    ? '起始日期'
+                    : '从 ${fmt.format(_rangeStart!)}',
+                style: const TextStyle(
+                    fontSize: 13, color: kAccentBlue),
+              ),
+            ),
+          ),
+          const SizedBox(width: kSpace2),
+          InkWell(
+            onTap: _pickRangeEnd,
+            borderRadius: BorderRadius.circular(kRadiusTable),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text(
+                _rangeEnd == null
+                    ? '结束日期'
+                    : '至 ${fmt.format(_rangeEnd!)}',
+                style: const TextStyle(
+                    fontSize: 13, color: kAccentBlue),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _pickRangeStart() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _rangeStart ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      helpText: '起始日期',
+      cancelText: '取消',
+      confirmText: '确定',
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _rangeStart = picked;
+        if (_rangeEnd != null && _rangeEnd!.isBefore(_rangeStart!)) {
+          _rangeEnd = _rangeStart;
+        }
+      });
+    }
+  }
+
+  Future<void> _pickRangeEnd() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _rangeEnd ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      helpText: '结束日期',
+      cancelText: '取消',
+      confirmText: '确定',
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _rangeEnd = DateTime(
+            picked.year, picked.month, picked.day, 23, 59, 59);
+        if (_rangeStart != null &&
+            _rangeEnd!.isBefore(_rangeStart!)) {
+          _rangeStart = DateTime(picked.year, picked.month, picked.day);
+        }
+      });
+    }
   }
 
   Widget _buildSummaryStrip(MonthSummary summary, int count, int delta) {
