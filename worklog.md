@@ -842,3 +842,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 93/93；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：测试中 mock path_provider/share_plus 通道导致导出挂起 → 改为仅验证按钮存在（导出流程复用已测 CsvExporter，文件写入由真机/浏览器验证）。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-09 17:00 — 迭代 v4.17：CSV 导入账户自动补全 + 版本号 4.17.0 + 最终 release
+
+- 任务内容：
+  - A. CSV 导入账户自动补全：`CsvImporter` 对未知账户名返回占位 id（`imp_unknown_N`）并在结果中记录「占位→账户名」映射（转账转入账户同理）；`AppState.importCsv` 为每个未知账户名自动创建自定义账户（按名称去重，图标默认 card_gift）并把流水/转入账户重映射到新账户 id。
+  - B. 测试：新增 2 项（解析未知账户占位、导入自动创建并映射 + 同名不重复创建），95/95 通过。
+  - C. web 冒烟：导入含「招商卡」账户的 CSV → 确认追加 → localStorage 新增账户、我的页出现「招商卡 本月支出 25.00 · 2 笔 -¥25.00」；零控制台错误。截图 61-import-account.png。
+  - D. 版本号 4.17.0+57（aapt 校验 versionName=4.17.0/versionCode=57）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `CF8C053B...72C`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/services/csv_importer.dart`（CsvImportResult.unknownAccountNames + resolveAccount 占位；移除废弃 _accountIdByName）
+  - `lib/data/app_state.dart`（importCsv 自动建账户 + 重映射）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/61-import-account.png`（新增）
+- commit hash：`1c3e5c9`；已 push（1f7a626..1c3e5c9 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 95/95；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：importCsv 整块字符串替换因缩进不匹配未命中 → 改按行号区间替换。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
