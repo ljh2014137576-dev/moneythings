@@ -1567,3 +1567,18 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 155/155；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：addRecurringRule 后不会自动生成到期流水（仅 load 时）→ 测试断言按「全部 7 期补齐」修正；web 滚动定位周期区需精确滚动。
 - 下一步：首页今日模式预算显示，或「明细」按月份导出；上架执行只差 Play 账号。
+## 2026-08-09 00:30 — 迭代 v4.59：账户余额修正 + 版本号 4.59.0 + 最终 release
+
+- 任务内容：
+  - A. 账户菜单新增「调整余额（修正）」：显示当前余额 → 输入实际余额 → 自动生成差额修正流水（差额>0 记收入、<0 记支出，备注「余额修正」，分类「其他」），余额一致则提示无需调整。
+  - B. 测试：新增组件测试「我的页账户调整余额」（支付宝余额 0 → 调 500 → 余额修正收入 50000、余额=500），156/156 通过；加固既有周期规则测试的 scrollable（ProfilePage 限定，消除 IndexedStack 下 Scrollable.last 偶发错选）。
+  - C. web 冒烟：支付宝（当前 -2,949）→ 调整余额 500 → 生成收入 3449.00「余额修正」；截图 103-adjust-balance.png。
+  - D. 版本号 4.59.0+99（aapt 校验 versionName=4.59.0/versionCode=99）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `B70701E9...CC9F`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/profile_page.dart`（账户菜单项 + _adjustAccountBalance）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/103-adjust-balance.png`（新增）
+- commit hash：`7574a02`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 156/156；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：新增测试后「周期规则全部补生成」偶发失败 → 根因是 scrollUntilVisible 用 Scrollable.last 在 IndexedStack 下会错选滚动容器 → 改用 ProfilePage 限定 descendant 加固多处。
+- 下一步：首页今日模式预算显示，或「明细」按月导出；上架执行只差 Play 账号。
