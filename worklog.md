@@ -859,3 +859,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 95/95；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：importCsv 整块字符串替换因缩进不匹配未命中 → 改按行号区间替换。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-09 19:00 — 迭代 v4.18：周期规则 CSV 导出 + 版本号 4.18.0 + 最终 release
+
+- 任务内容：
+  - A. 周期规则 CSV 导出：`CsvExporter.exportRecurringCsv(rules)` 生成「频率,类型,金额(元),分类,账户,下次日期,备注」清单（UTF-8 BOM，Excel 可开）；我的页周期记账区标题右侧新增导出按钮（tooltip 导出周期规则）→ exportCsvFile 分享/下载。
+  - B. 测试：新增 2 项（CSV 内容断言、周期记账区导出按钮存在），97/97 通过。
+  - C. web 冒烟：注入月租规则 → 我的页周期记账区点「导出周期规则」→ 「已导出」提示（触发 CSV 下载）；零控制台错误。截图 62-recurring-export.png。
+  - D. 版本号 4.18.0+58（aapt 校验 versionName=4.18.0/versionCode=58）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `5BF4857E...98A7`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/services/csv_exporter.dart`（exportRecurringCsv + import recurring_rule）
+  - `lib/pages/profile_page.dart`（周期记账区导出按钮 + _exportRecurringCsv）
+  - `pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/62-recurring-export.png`（新增）
+- commit hash：`81d9a73`；已 push（b84695e..81d9a73 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 97/97；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：无阻塞（沿用 UTF-8 安全编辑与既有导出模式）。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
