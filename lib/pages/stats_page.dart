@@ -1216,10 +1216,21 @@ class _StatsPageState extends State<StatsPage> {
               ),
             )
           else ...[
-            Row(
-              children: [
-                Text(
-                  '预算 ${AmountText.format(budget, showSymbol: false)}',
+            InkWell(
+              onTap: () async {
+                final v = await showBudgetDialog(context, budget);
+                if (v != null && mounted) {
+                  await context.read<AppState>().setBudget(v);
+                }
+              },
+              borderRadius: BorderRadius.circular(kRadiusTable),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        '预算 ${AmountText.format(budget, showSymbol: false)}',
                   style: const TextStyle(
                       fontSize: 12, color: kInkSecondary),
                 ),
@@ -1252,14 +1263,17 @@ class _StatsPageState extends State<StatsPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              over
-                  ? '已超出预算 ¥'
-                  : '已用 ¥ · 剩余 ¥',
-              style: const TextStyle(
-                  fontSize: 11, color: kInkSecondary),
+              const SizedBox(height: 6),
+              Text(
+                over
+                    ? '已超出预算 ¥'
+                    : '已用 ¥ · 剩余 ¥',
+                style: const TextStyle(
+                    fontSize: 11, color: kInkSecondary),
+              ),
+              ],
             ),
+          ),
           ],
         ],
       ),

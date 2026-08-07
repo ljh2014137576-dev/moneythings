@@ -5059,4 +5059,39 @@ void main() {
     expect(state.recentSearches, ['超市']);
     expect(state.recentSearches.contains('咖啡'), isFalse);
   });
+  testWidgets('统计页预算卡点击调整', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'bg1',
+      type: TxType.expense,
+      amount: 3000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 3),
+      note: '预算项',
+    ));
+    await state.setBudget(10000);
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('统计'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('预算对比'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    // 点击预算进度区域打开调整对话框
+    await tester.tap(find.textContaining('预算 100.00'));
+    await tester.pumpAndSettle();
+    expect(find.text('每月预算'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, '20000');
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+    expect(state.monthlyBudget, 2000000);
+  });
 }
