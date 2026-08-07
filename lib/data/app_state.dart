@@ -464,6 +464,44 @@ Future<CsvImportResult> importCsv(String csv) async {
     return MonthSummary(expense: exp, income: inc);
   }
 
+  /// 某年汇总：总支出/总收入/结余/日均支出/笔数/支出最多分类
+  ({int expense, int income, int dailyExpense,
+      int count, String topCategoryName}) yearSummary(
+      int year) {
+    int exp = 0, inc = 0, count = 0;
+    final catMap = <String, int>{};
+    for (final t in _bookTx) {
+      if (t.date.year != year) continue;
+      if (t.type == TxType.expense) {
+        exp += t.amount;
+        catMap[t.categoryId] = (catMap[t.categoryId] ?? 0) + t.amount;
+      } else if (t.type == TxType.income) {
+        inc += t.amount;
+      }
+      count++;
+    }
+    String topName = '';
+    int topAmount = 0;
+    catMap.forEach((k, v) {
+      if (v > topAmount) {
+        topAmount = v;
+        topName = TxCategories.byId(k).name;
+      }
+    });
+    final days = DateTime(year, 12, 31)
+        .difference(DateTime(year, 1, 1))
+        .inDays +
+        1;
+    final daily = count == 0 ? 0 : exp ~/ days;
+    return (
+      expense: exp,
+      income: inc,
+      dailyExpense: daily,
+      count: count,
+      topCategoryName: topName,
+    );
+  }
+
   /// 与上月支出差额（正数=支出增加）
   int expenseDeltaOf(DateTime month) {
     final cur = summaryOf(month).expense;

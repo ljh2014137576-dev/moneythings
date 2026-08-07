@@ -290,9 +290,68 @@ class _StatsPageState extends State<StatsPage> {
                           ),
                         ),
                       ],
+                      const SizedBox(height: kSpace4),
+                      _buildYearSummaryCard(state, _month.year),
                     ],
                   ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildYearSummaryCard(AppState state, int year) {
+    final ys = state.yearSummary(year);
+    if (ys.count == 0) return const SizedBox.shrink();
+    return PaperGroup(
+      title: '$year 年汇总',
+      padding: const EdgeInsets.all(kSpace4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              _ysCell('总支出', AmountText.format(ys.expense), kInkPrimary),
+              _ysCell('总收入', AmountText.format(ys.income), kSuccess),
+            ],
+          ),
+          const SizedBox(height: kSpace3),
+          Row(
+            children: [
+              _ysCell(
+                  '结余',
+                  AmountText.format(ys.income - ys.expense),
+                  kInkPrimary),
+              _ysCell(
+                  '日均支出',
+                  AmountText.format(ys.dailyExpense),
+                  kInkSecondary),
+            ],
+          ),
+          const SizedBox(height: kSpace3),
+          Text(
+            '全年 ${ys.count} 笔 · 支出最多：${ys.topCategoryName}',
+            style: const TextStyle(fontSize: 12, color: kInkSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _ysCell(String label, String value, Color color) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style:
+                  const TextStyle(fontSize: 12, color: kInkSecondary)),
+          const SizedBox(height: 2),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: color)),
         ],
       ),
     );

@@ -2391,4 +2391,82 @@ void main() {
     expect(state.accounts.any((a) => a.name == '招商卡'), isTrue);
     expect(find.text('招商卡'), findsOneWidget);
   });
+  test('yearSummary 年度汇总计算', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addTransaction(Transaction(
+      id: 'y1',
+      type: TxType.expense,
+      amount: 10000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(2026, 1, 15),
+      note: '一月',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'y2',
+      type: TxType.expense,
+      amount: 20000,
+      categoryId: 'home',
+      accountId: 'alipay',
+      date: DateTime(2026, 6, 10),
+      note: '六月',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'y3',
+      type: TxType.income,
+      amount: 50000,
+      categoryId: 'salary',
+      accountId: 'alipay',
+      date: DateTime(2026, 3, 1),
+      note: '工资',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'y4',
+      type: TxType.expense,
+      amount: 999,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(2025, 12, 31),
+      note: '去年',
+    ));
+    final ys = state.yearSummary(2026);
+    expect(ys.expense, 30000);
+    expect(ys.income, 50000);
+    expect(ys.count, 3);
+    expect(ys.topCategoryName, '居住');
+    expect(ys.dailyExpense, 30000 ~/ 365);
+  });
+
+  testWidgets('统计页显示年度汇总', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'wy1',
+      type: TxType.expense,
+      amount: 10000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 15),
+      note: '本月一笔',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('统计'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('${now.year} 年汇总'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('${now.year} 年汇总'), findsOneWidget);
+    expect(find.text('总支出'), findsOneWidget);
+    expect(find.textContaining('全年 1 笔'), findsOneWidget);
+  });
 }
