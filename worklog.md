@@ -1348,3 +1348,19 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 135/135；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：范围图表在测试视口外（ListView 懒构建）→ 组件测试先滚动到切换钮再断言；「结余走势（范围）」断言需在滚动前执行（滚动后移出视口）。
 - 下一步：统计/明细「全部账本」范围切换，或「记一笔」金额记忆；上架执行只差 Play 账号。
+## 2026-08-08 11:30 — 迭代 v4.46：明细页当前账本/全部账本切换 + 版本号 4.46.0 + 最终 release
+
+- 任务内容：
+  - A. 明细页新增「账本：当前账本 / 全部账本」切换（并入时间行，不增加头部高度）：全部账本时数据源改用 `state.transactions`（全部账本全部时间），构建/全选/导出三处数据源统一。
+  - B. 修复：独立切换行会推高头部、使流水 tile 移出测试视口（ListView 懒构建）导致既有测试回归 → 改为并入 `_buildTimeRow` 同排。
+  - C. 测试：新增组件测试「明细全部账本切换」（默认只显示默认本 → 全部账本显示旅行本 → 切回当前账本隐藏），136/136 通过。
+  - D. web 冒烟：注入「旅行账本」+ 一笔「旅行餐费」→ 明细默认当前账本 18 笔 → 切「全部账本」→ 96 笔、旅行餐费出现；截图 90-ledger-all-books.png。
+  - E. 版本号 4.46.0+86（aapt 校验 versionName=4.46.0/versionCode=86）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.6MB，SHA-256 `542B684D...9392`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`（_allBooks + 数据源 3 处 + 时间行并入账本切换）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/90-ledger-all-books.png`（新增）
+- commit hash：`86cb333`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 136/136；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：独立切换行增加头部高度 → 流水 tile 移出缓存区，`明细按账户筛选` 等测试找不到 tile（默认 finder 跳过 offstage）→ 并入时间行同排（零高度增量）解决。
+- 下一步：统计页「全部账本」范围切换，或首页「本周/今日」小结复制；上架执行只差 Play 账号。
