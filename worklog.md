@@ -1455,3 +1455,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 146/146；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：第二次长按「标一」提示 off-screen（批量操作后重渲染滚动位置变化）→ 补 ensureVisible。
 - 下一步：统计页「全部账本」范围切换，或「明细」按报销标记汇总；上架执行只差 Play 账号。
+## 2026-08-08 17:30 — 迭代 v4.52：我的页待报销合计 + 版本号 4.52.0 + 最终 release
+
+- 任务内容：
+  - A. `AppState.reimbursableSummary`：当前账本可报销支出总额/笔数。
+  - B. 我的页「数据概况」卡新增「待报销 ¥X · N 笔」行（蓝色强调，X>0 时显示）。
+  - C. 测试：新增单元测试「待报销合计 reimbursableSummary」（2 笔可报销 800/2，1 笔不可报销不计）+ 组件测试「我的页显示待报销合计」（待报销 5.00 出现），148/148 通过。
+  - D. web 冒烟：注入一笔可报销 123 元 → 我的页数据概况显示「待报销 123.00 1 笔」；截图 96-reimburse-total.png。
+  - E. 版本号 4.52.0+92（aapt 校验 versionName=4.52.0/versionCode=92）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `F9C26EBA...1AC4`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（reimbursableSummary）
+  - `lib/pages/profile_page.dart`（数据概况待报销行）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/96-reimburse-total.png`（新增）
+- commit hash：`d83bc54`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 148/148；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：组件测试「1 笔」与数据概况「流水」cell 同名 → 去掉该断言，仅断言「待报销 5.00」。
+- 下一步：统计页「全部账本」范围切换，或「记一笔」编辑「报销」开关同步；上架执行只差 Play 账号。
