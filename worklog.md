@@ -718,3 +718,19 @@
   1. `const Text('批量修改 ${_selectedIds.length} 笔')` 字符串插值不能 const → 去掉 const。
   2. 选择弹层「支付宝/餐饮」与筛选行同名 → 测试用 `.last`（弹层在树尾部）。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-09 03:00 — 迭代 v4.10：统计页预算对比 + 版本号 4.10.0 + 最终 release
+
+- 任务内容：
+  - A. 统计页预算对比卡：汇总条下方新增「预算对比」PaperGroup（仅当月显示）——预算金额 + 已用百分比 + 进度条 + 已用/剩余（超支红字显示超出额）；未设置预算时显示「设置每月预算」入口（点击弹预算对话框）。
+  - B. 测试：新增 1 项（预算 1000 元 + 支出 680 元 → 显示「已用 68%」与剩余），82/82 通过。
+  - C. web 冒烟：注入预算 1000 元 → 统计页「预算对比 预算 1,000.00 已用 100%」渲染正常（示例数据支出 ¥1,000）；零控制台错误。截图 54-budget-compare.png。
+  - D. 版本号 4.10.0+50（aapt 校验 versionName=4.10.0/versionCode=50）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `506A55B4...8F87`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/stats_page.dart`（_buildBudgetCard + 插入汇总条下方 + import budget_dialog）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/54-budget-compare.png`（新增）
+- commit hash：`456c700`；已 push（18ea52e..456c700 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 82/82；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：卡片标题用「预算对比」避免与首页「本月预算」文本撞名导致 finder 二义性。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
