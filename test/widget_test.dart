@@ -2963,9 +2963,12 @@ void main() {
     expect(back.categoryId, 'home');
     expect(back.accountId, 'alipay');
     expect(back.note, '房租');
+    // 首次日期列往返
+    expect(back.date, DateTime(2026, 8, 1));
     final transfer = parsed.last;
     expect(transfer.type, TxType.transfer);
     expect(transfer.transferToAccountId, 'wechat');
+    expect(transfer.date, DateTime(2026, 8, 1));
   });
 
   test('导入周期规则 CSV 去重', () async {

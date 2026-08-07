@@ -212,6 +212,11 @@ class CsvImporter {
             cols.length > 5 ? cols[5].trim() : '');
         final note = cols.length > 6 ? cols[6].trim() : '';
         final toAccountName = cols.length > 7 ? cols[7].trim() : '';
+        final firstDate =
+            cols.length > 8 ? cols[8].trim() : '';
+        final anchor = firstDate.isEmpty
+            ? nextDate
+            : _parseRecurringDate(firstDate);
         final accountId =
             accountIdByName(accountName) ?? kDefaultAccounts.first.id;
         final toAccountId = type == TxType.transfer && toAccountName.isNotEmpty
@@ -228,7 +233,7 @@ class CsvImporter {
           accountId: accountId,
           transferToAccountId: toAccountId,
           note: note,
-          date: nextDate,
+          date: anchor,
           nextDate: nextDate,
           frequency: freq,
         ));
