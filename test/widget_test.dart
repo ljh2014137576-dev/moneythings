@@ -3450,6 +3450,8 @@ void main() {
     await tester.tap(find.byTooltip('修改选中'));
     await tester.pumpAndSettle();
     expect(find.text('按分类移动到其他账本'), findsOneWidget);
+    await tester.ensureVisible(find.text('按分类移动到其他账本'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('按分类移动到其他账本'));
     await tester.pumpAndSettle();
     // 分类选择（弹层在最后，取 .last）
@@ -3567,6 +3569,8 @@ void main() {
     await tester.tap(find.byTooltip('修改选中'));
     await tester.pumpAndSettle();
     expect(find.text('按分类修改账户'), findsOneWidget);
+    await tester.ensureVisible(find.text('按分类修改账户'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('按分类修改账户'));
     await tester.pumpAndSettle();
     // 分类选择（弹层在最后，取 .last）
@@ -4276,5 +4280,57 @@ void main() {
     expect(result.transactions.length, 2);
     expect(result.transactions.first.reimbursable, isTrue);
     expect(result.transactions.last.reimbursable, isFalse);
+  });
+  testWidgets('明细多选复制选中到其他账本', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addBook('旅行账本');
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'cb1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: now,
+      note: '复制一',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'cb2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'shopping',
+      accountId: 'alipay',
+      date: now,
+      note: '复制二',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.textContaining('复制一'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('多选删除'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('全选'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('修改选中'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('复制选中到其他账本'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('复制选中到其他账本'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('旅行账本'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('复制选中的 2 笔到「旅行账本」'), findsOneWidget);
+    await tester.tap(find.text('复制'));
+    await tester.pumpAndSettle();
+    // 原账本保留，目标账本 +2
+    expect(state.currentBookTransactions.length, 2);
+    final tripId = state.books.firstWhere((b) => b.name == '旅行账本').id;
+    await state.setCurrentBook(tripId);
+    expect(state.currentBookTransactions.length, 2);
   });
 }

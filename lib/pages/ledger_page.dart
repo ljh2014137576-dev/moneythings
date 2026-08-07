@@ -849,6 +849,12 @@ class _LedgerPageState extends State<LedgerPage> {
               onTap: () => Navigator.of(context).pop('movebook'),
             ),
             ListTile(
+              leading: const Icon(Icons.copy_outlined,
+                  size: 20, color: kInkPrimary),
+              title: const Text('复制选中到其他账本'),
+              onTap: () => Navigator.of(context).pop('copybook'),
+            ),
+            ListTile(
               leading: const Icon(Icons.category_outlined,
                   size: 20, color: kInkPrimary),
               title: const Text('按分类移动到其他账本'),
@@ -874,6 +880,8 @@ class _LedgerPageState extends State<LedgerPage> {
       await _pickBulkCategory();
     } else if (action == 'movebook') {
       await _pickBulkBook();
+    } else if (action == 'copybook') {
+      await _pickBulkCopyBook();
     } else if (action == 'movecat') {
       await _pickBulkCategoryMove();
     } else if (action == 'cataccount') {
@@ -933,6 +941,76 @@ class _LedgerPageState extends State<LedgerPage> {
     }
   }
 
+  /// 复制选中流水到其他账本（原账本保留）
+  Future<void> _pickBulkCopyBook() async {
+    if (_selectedIds.isEmpty) return;
+    final state = context.read<AppState>();
+    final books = state.books
+        .where((b) => b.id != state.currentBookId)
+        .toList();
+    if (books.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('暂无其他账本')),
+      );
+      return;
+    }
+    final picked = await showModalBottomSheet<Book>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding:
+                  EdgeInsets.fromLTRB(kSpace4, kSpace3, kSpace4, kSpace2),
+              child: Text('复制到账本',
+                  style: TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
+            const Divider(height: 1),
+            for (final b in books)
+              ListTile(
+                leading: const Icon(Icons.menu_book_outlined,
+                    size: 20, color: kInkPrimary),
+                title: Text(b.name),
+                onTap: () => Navigator.of(context).pop(b),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('复制到其他账本'),
+        content: Text(
+            '将复制选中的 ${_selectedIds.length} 笔到「${picked.name}」，原账本流水保留。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('复制'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    for (final id in _selectedIds.toList()) {
+      await state.copyTransactionToBook(id, picked.id);
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已复制 ${_selectedIds.length} 笔到「${picked.name}」')),
+    );
+    _exitSelection();
+  }
   Future<void> _pickBulkCategory() async {
     final categories = [
       ...TxCategories.of(TxType.expense),
