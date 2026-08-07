@@ -734,3 +734,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 82/82；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：卡片标题用「预算对比」避免与首页「本月预算」文本撞名导致 finder 二义性。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-09 05:00 — 迭代 v4.11：周期规则「立即生成本次」+ 版本号 4.11.0 + 最终 release
+
+- 任务内容：
+  - A. 周期规则「立即生成本次」：我的页规则行新增播放按钮（tooltip 立即生成本次）；`AppState.generateRecurringNow(ruleId)` —— 未来规则按今天生成一笔并推进 nextDate（避免到期重复），过期规则走正常补生成。
+  - B. 测试：新增 2 项（未来规则立即生成且补生成不重复、我的页按钮触发生成），84/84 通过。
+  - C. web 冒烟：注入未来每周规则 → 我的页点「立即生成本次」→ 本月支出 ¥1,000 → ¥1,050（+¥50 订阅）、nextDate 8/15 → 8/14；零控制台错误。截图 55-generate-now.png。
+  - D. 版本号 4.11.0+51（aapt 校验 versionName=4.11.0/versionCode=51）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `9D5E0962...93C`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（generateRecurringNow）
+  - `lib/pages/profile_page.dart`（_RecurringRow onGenerate + 播放按钮）
+  - `pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/55-generate-now.png`（新增）
+- commit hash：`b95ac97`；已 push（e7ba9b8..b95ac97 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 84/84；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：规则行副标题不含备注（金额·下次），测试按行标题「每周 · 餐饮」滚动定位。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
