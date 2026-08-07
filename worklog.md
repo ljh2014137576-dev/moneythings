@@ -1401,3 +1401,23 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 141/141；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：弹层第 4 项使既有「按分类修改账户」（第 6 项）移出视口 → 测试补 ensureVisible；「按分类移动到其他账本」同步加固。
 - 下一步：统计页「全部账本」范围切换，或周期规则「提前提醒天数」；上架执行只差 Play 账号。
+## 2026-08-08 14:30 — 迭代 v4.49：周期提醒提前天数 + 版本号 4.49.0 + 最终 release
+
+- 任务内容：
+  - A. `TransactionRepository`：`recurring_remind_lead_v1`（int 天，默认 0）；`AppState.recurringRemindLead` + `setRecurringRemindLead`（保存并重排提醒）。
+  - B. `NotificationService.scheduleRecurringReminders(rules, {leadDays})`：调度日期改为 nextDate - leadDays 当天 09:00（过期则顺延一天）。
+  - C. 我的页提醒区新增「提前提醒：当天/1天/3天/7天」选择 chips。
+  - D. 测试：新增单元测试「周期提醒提前天数持久化」（默认 0 → 3 → 重载仍 3）+ 组件测试「我的页周期提醒提前天数」（点 3天 → lead=3），143/143 通过。
+  - E. web 冒烟：我的页滚动到提醒区 → 点「3天」→ localStorage `recurring_remind_lead_v1=3`；截图 93-remind-lead.png。
+  - F. 版本号 4.49.0+89（aapt 校验 versionName=4.49.0/versionCode=89）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `751489E2...B104`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/transaction_repository.dart`（recurring_remind_lead_v1）
+  - `lib/data/app_state.dart`（recurringRemindLead + setter + 同步传参）
+  - `lib/services/notification_service.dart`（leadDays 调度）
+  - `lib/pages/profile_page.dart`（提前提醒 chips）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/93-remind-lead.png`（新增）
+- commit hash：`edb4ec4`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 143/143；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：无新坑。
+- 下一步：统计页「全部账本」范围切换，或「明细」搜索历史管理；上架执行只差 Play 账号。
