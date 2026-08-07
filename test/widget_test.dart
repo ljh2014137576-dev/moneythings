@@ -829,6 +829,15 @@ void main() {
     // 切到全部时间
     await tester.tap(find.text('本月').last);
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.textContaining('上月流水'),
+      200,
+      scrollable: find.descendant(
+        of: find.byType(LedgerPage),
+        matching: find.byType(Scrollable),
+      ).first,
+    );
+    await tester.pumpAndSettle();
     expect(find.textContaining('上月流水'), findsWidgets);
   });
 
@@ -2764,5 +2773,50 @@ void main() {
     await tester.tap(find.text('查看统计'));
     await tester.pumpAndSettle();
     expect(find.text('预算对比'), findsOneWidget);
+  });
+  testWidgets('明细全部时间显示年份分组', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'yy1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '今年',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'yy2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year - 1, 12, 31),
+      note: '去年',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    // 切到全部时间
+    await tester.tap(find.text('本月').last);
+    await tester.pumpAndSettle();
+    expect(find.text('${now.year} 年'), findsOneWidget);
+    // 滚动到去年部分
+    await tester.scrollUntilVisible(
+      find.text('${now.year - 1} 年'),
+      200,
+      scrollable: find.descendant(
+        of: find.byType(LedgerPage),
+        matching: find.byType(Scrollable),
+      ).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('${now.year - 1} 年'), findsOneWidget);
+    expect(find.textContaining('去年'), findsOneWidget);
   });
 }

@@ -175,6 +175,7 @@ class _LedgerPageState extends State<LedgerPage> {
       visible.sort((a, b) => b.amount.compareTo(a.amount));
     }
     final groups = _groupByDay(visible, byAmount: _sortByAmount);
+    final groupList = groups.entries.toList();
     int sumExpense = 0, sumIncome = 0;
     for (final t in visible) {
       switch (t.type) {
@@ -233,12 +234,16 @@ class _LedgerPageState extends State<LedgerPage> {
                         ),
                       ],
                       const SizedBox(height: kSpace3),
-                      for (final group in groups.entries) ...[
-                        if (group.key != groups.keys.first)
-                          const SizedBox(height: kSpace3),
+                      for (int gi = 0; gi < groupList.length; gi++) ...[
+                        if (_showAll &&
+                            (gi == 0 ||
+                                groupList[gi].key.year !=
+                                    groupList[gi - 1].key.year))
+                          _YearHeader(year: groupList[gi].key.year),
+                        if (gi > 0) const SizedBox(height: kSpace3),
                         _DayGroup(
-                          date: group.key,
-                          items: group.value,
+                          date: groupList[gi].key,
+                          items: groupList[gi].value,
                           onTapItem: _onRowTap,
                           onDismiss: _deleteWithUndo,
                           onLongPressItem: _longPress,
@@ -1466,6 +1471,24 @@ class _AmountSheetState extends State<_AmountSheet> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _YearHeader extends StatelessWidget {
+  const _YearHeader({required this.year});
+
+  final int year;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(kSpace4, kSpace3, kSpace4, kSpace2),
+      child: Text(
+        '$year 年',
+        style: const TextStyle(
+            fontSize: 13, fontWeight: FontWeight.w600, color: kInkSecondary),
       ),
     );
   }
