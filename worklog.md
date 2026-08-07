@@ -1520,3 +1520,18 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 151/151；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：多选后行移出视口 → 测试补 ensureVisible 再点选。
 - 下一步：统计页「全部账本」范围切换，或「首页」今日模式预算显示；上架执行只差 Play 账号。
+## 2026-08-08 21:30 — 迭代 v4.56：周期规则编辑「下次日期 +1期」 + 版本号 4.56.0 + 最终 release
+
+- 任务内容：
+  - A. 周期规则编辑弹层「下次」行新增「＋1期」快捷 chip：按当前频率把 nextDate 推进一期（`RecurringRule.nextAfter`），后续预览同步更新。
+  - B. 测试：新增组件测试「我的页周期规则编辑下次日期 +1期」（打开编辑弹层 → 记录下次文本 → 点 ＋1期 → 下次文本变化），152/152 通过。
+  - C. web 冒烟：注入月规则（下次 8/10）→ 编辑弹层「＋1期」→ 后续预览从「9月10日…」变「10月10日…」（下次推进到 9/10）；截图 100-next-plus1.png。
+  - D. 版本号 4.56.0+96（aapt 校验 versionName=4.56.0/versionCode=96）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `A26875BA...9A64`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/profile_page.dart`（下次行 ＋1期 chip）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/100-next-plus1.png`（新增，截图编号到 100）
+- commit hash：`f56c97b`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 152/152；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：web 语义树未暴露「下次：」独立文本 → 用「后续预览」变化验证推进。
+- 下一步：统计页「全部账本」范围切换，或「周期规则」批量补生成入口；上架执行只差 Play 账号。
