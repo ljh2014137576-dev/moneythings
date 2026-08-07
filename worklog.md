@@ -1070,3 +1070,21 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 112/112；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：PowerShell 双引号 here-string 会把 `$` 插值吞掉，导致 tooltip 字符串丢失日期/金额 → 改用单引号 here-string 修复后重建 APK 并更新 SHA；web 端日期选择器用输入模式（input[type=text] fill "2026/8/1"）避免语义网格点击定位困难。
 - 下一步：周期规则「按月补生成」或统计年度对比增强；上架执行只差 Play 账号。
+## 2026-08-07 19:30 — 迭代 v4.30：周期规则按月补生成（历史流水补齐+去重）+ 版本号 4.30.0 + 最终 release
+
+- 任务内容：
+  - A. `AppState.recurringBackfillInfo(ruleId)`：补生成预览，返回规则锚点 date 到今天应发生但尚无对应流水（同日+同字段签名去重）的期数与起止日期；不适用（停用/非当前账本/未来锚点/无可补）返回 null。
+  - B. `AppState.backfillRecurring(ruleId)`：按月补齐锚点到今天缺失的历史周期流水（已存在同日期同金额自动跳过），推进 nextDate 到今天之后第一期，持久化并返回生成笔数。
+  - C. 周期规则编辑弹层新增「补生成历史流水」按钮：先预览笔数/日期范围 → AlertDialog 确认（取消/补生成）→ 执行后 SnackBar「已补生成 N 笔流水」。
+  - D. 测试：新增 2 项（周期规则按月补生成历史流水（含去重）、我的页周期规则补生成历史流水），114/114 通过。
+  - E. web 冒烟：注入「锚点 3月1日 / nextDate 7月1日」周期规则 → 启动自动生成 7、8 月两期 → 编辑弹层补生成预览「4 笔（3月1日~6月1日）」→ 确认后 SnackBar「已补生成 4 笔流水」→ localStorage 校验 3~6 月 4 笔补齐、nextDate 保持 9月1日；截图 74-backfill-dialog.png。
+  - F. 版本号 4.30.0+70（aapt 校验 versionName=4.30.0/versionCode=70）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.5MB，SHA-256 `809F4A4C...9249`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（_recurringOccSig/_recurringExistingSigs/recurringBackfillInfo/backfillRecurring）
+  - `lib/pages/profile_page.dart`（_RecurringEditSheet._backfill + 「补生成历史流水」按钮）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/74-backfill-dialog.png`（新增）
+- commit hash：`e572dd3`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 114/114；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：shared_preferences_web 在 localStorage 中会把值 JSON 二次编码 → web 冒烟注入周期规则需 `JSON.stringify(JSON.stringify([rule]))`，否则 getString 解析报 CastList 错误；use_build_context_synchronously → 用 `context.mounted` 守卫。
+- 下一步：统计年度对比增强或明细「按分类批量移动账本」；上架执行只差 Play 账号。
