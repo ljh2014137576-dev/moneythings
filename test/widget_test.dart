@@ -2149,6 +2149,11 @@ void main() {
     expect(edited.categoryId, 'food');
     expect(edited.frequency, RecurFrequency.weekly);
     expect(edited.nextDate, DateTime(2026, 9, 8));
+    // id 可覆盖（复制规则用）
+    final copied = r.copyWith(id: 'cw2', note: '房租（副本）');
+    expect(copied.id, 'cw2');
+    expect(copied.note, '房租（副本）');
+    expect(copied.amount, r.amount);
   });
 
   testWidgets('编辑周期规则保存生效', (tester) async {
@@ -3834,5 +3839,47 @@ void main() {
     await tester.pumpAndSettle();
     final tripId = state.books.firstWhere((b) => b.name == '旅行账本').id;
     expect(state.currentBookId, tripId);
+  });
+  testWidgets('我的页周期规则可复制', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addRecurringRule(RecurringRule(
+      id: 'cp1',
+      type: TxType.expense,
+      amount: 5000,
+      categoryId: 'food',
+      accountId: 'wechat',
+      note: '订阅',
+      date: now,
+      nextDate: DateTime(now.year, now.month, now.day + 3),
+      frequency: RecurFrequency.monthly,
+    ));
+    final before = state.recurringRuleCount;
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.textContaining('每月 · 餐饮'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('每月 · 餐饮'));
+    await tester.pumpAndSettle();
+    // 编辑弹层「复制规则」
+    await tester.ensureVisible(find.text('复制规则'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('复制规则'));
+    await tester.pumpAndSettle();
+    expect(state.recurringRuleCount, before + 1);
+    final copied = state.recurringRules.last;
+    expect(copied.id, isNot('cp1'));
+    expect(copied.note, '订阅（副本）');
+    expect(copied.amount, 5000);
+    expect(copied.frequency, RecurFrequency.monthly);
   });
 }

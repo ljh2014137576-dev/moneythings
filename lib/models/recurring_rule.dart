@@ -92,6 +92,7 @@ class RecurringRule {
   }
 
   RecurringRule copyWith({
+    String? id,
     int? amount,
     String? categoryId,
     String? accountId,
@@ -102,7 +103,7 @@ class RecurringRule {
     bool? active,
   }) {
     return RecurringRule(
-      id: id,
+      id: id ?? this.id,
       type: type,
       amount: amount ?? this.amount,
       categoryId: categoryId ?? this.categoryId,

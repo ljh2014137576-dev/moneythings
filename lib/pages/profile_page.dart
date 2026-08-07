@@ -1092,7 +1092,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.39.0',
+            Text('版本 4.40.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -1101,7 +1101,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.39 首页账本汇总\nv4.38 统计自定义范围记忆\nv4.37 首页本周最近流水\nv4.36 首页本周支出分类\nv4.35 周期记账到期提醒\nv4.34 明细按分类批量删除\nv4.33 明细按分类批量修改账户\nv4.32 统计年度收入对比\nv4.31 明细按分类移动到其他账本\nv4.30 周期规则按月补生成\nv4.29 统计自定义范围结余走势\nv4.28 明细批量移动到其他账本\nv4.27 统计页自定义日期范围\nv4.26 我的页数据概况\nv4.25 明细复制到其他账本\nv4.24 首页总资产下钻账户',
+            Text('v4.40 周期规则复制\nv4.39 首页账本汇总\nv4.38 统计自定义范围记忆\nv4.37 首页本周最近流水\nv4.36 首页本周支出分类\nv4.35 周期记账到期提醒\nv4.34 明细按分类批量删除\nv4.33 明细按分类批量修改账户\nv4.32 统计年度收入对比\nv4.31 明细按分类移动到其他账本\nv4.30 周期规则按月补生成\nv4.29 统计自定义范围结余走势\nv4.28 明细批量移动到其他账本\nv4.27 统计页自定义日期范围\nv4.26 我的页数据概况\nv4.25 明细复制到其他账本\nv4.24 首页总资产下钻账户',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),
@@ -1699,6 +1699,22 @@ class _RecurringEditSheetState extends State<_RecurringEditSheet> {
     Navigator.of(context).pop();
     messenger.showSnackBar(SnackBar(content: Text('已补生成 $added 笔流水')));
   }
+  /// 复制周期规则：生成新 id 的同设置副本（备注追加「（副本）」），保存后关闭弹层
+  Future<void> _copyRule(BuildContext context) async {
+    final state = context.read<AppState>();
+    final now = DateTime.now();
+    final copy = widget.initial.copyWith(
+      id: 'rc_copy_${now.microsecondsSinceEpoch}',
+      note: widget.initial.note.isEmpty
+          ? ''
+          : '${widget.initial.note}（副本）',
+    );
+    await state.addRecurringRule(copy);
+    if (!context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.of(context).pop();
+    messenger.showSnackBar(const SnackBar(content: Text('已复制周期规则')));
+  }
 
   Future<void> _pickNextDate() async {
     final picked = await showDatePicker(
@@ -1887,6 +1903,11 @@ class _RecurringEditSheetState extends State<_RecurringEditSheet> {
               TextButton(
                 onPressed: () => _backfill(context),
                 child: const Text('补生成历史流水',
+                    style: TextStyle(fontSize: 13, color: kAccentBlue)),
+              ),              const SizedBox(height: kSpace2),
+              TextButton(
+                onPressed: () => _copyRule(context),
+                child: const Text('复制规则',
                     style: TextStyle(fontSize: 13, color: kAccentBlue)),
               ),
             ],
