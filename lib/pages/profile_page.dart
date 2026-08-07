@@ -358,12 +358,45 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Future<void> _exportRecurringCsv() async {
+    final state = context.read<AppState>();
+    final rules = state.recurringRules;
+    if (rules.isEmpty) return;
+    final csv = CsvExporter.exportRecurringCsv(rules);
+    final now = DateTime.now();
+    final stamp =
+        '${now.year}``';
+    try {
+      final where = await exportCsvFile(
+        csv,
+        '记账本周期规则_$stamp.csv',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('已导出 ${rules.length} 条 → $where')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('导出失败：$e')),
+        );
+      }
+    }
+  }
+
   Widget _buildRecurring(AppState state) {
     final rules = state.recurringRules;
     if (rules.isEmpty) return const SizedBox.shrink();
     return PaperGroup(
       title: '周期记账',
       padding: EdgeInsets.zero,
+      trailing: IconButton(
+        tooltip: '导出周期规则',
+        onPressed: _exportRecurringCsv,
+        icon: const Icon(Icons.ios_share_outlined,
+            size: 20, color: kAccentBlue),
+      ),
       child: Column(
         children: [
           for (int i = 0; i < rules.length; i++) ...[
@@ -956,7 +989,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.17.0',
+            Text('版本 4.18.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -965,7 +998,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.17 CSV 导入自动建账户\nv4.16 明细多选导出选中\nv4.15 周期规则跳过下次\nv4.14 账户页转账统计\nv4.13 统计页年度汇总',
+            Text('v4.18 周期规则 CSV 导出\nv4.17 CSV 导入自动建账户\nv4.16 明细多选导出选中\nv4.15 周期规则跳过下次\nv4.14 账户页转账统计',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),

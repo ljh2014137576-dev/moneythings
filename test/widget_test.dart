@@ -2663,4 +2663,65 @@ void main() {
     await state.importCsv(csv);
     expect(state.accounts.length, before);
   });
+  test('周期规则 CSV 导出内容', () {
+    final rules = [
+      RecurringRule(
+        id: 'r1',
+        type: TxType.expense,
+        amount: 100000,
+        categoryId: 'home',
+        accountId: 'alipay',
+        note: '房租',
+        date: DateTime(2026, 8, 1),
+        nextDate: DateTime(2026, 9, 1),
+        frequency: RecurFrequency.monthly,
+      ),
+      RecurringRule(
+        id: 'r2',
+        type: TxType.income,
+        amount: 500000,
+        categoryId: 'salary',
+        accountId: 'card',
+        note: '工资',
+        date: DateTime(2026, 8, 1),
+        nextDate: DateTime(2026, 9, 1),
+        frequency: RecurFrequency.monthly,
+      ),
+    ];
+    final csv = CsvExporter.exportRecurringCsv(rules);
+    expect(csv.contains('频率,类型,金额(元),分类,账户,下次日期,备注'), isTrue);
+    expect(
+        csv.contains('每月,支出,1000.00,居住,支付宝,2026-09-01,房租'), isTrue);
+    expect(
+        csv.contains('每月,收入,5000.00,工资,银行卡,2026-09-01,工资'), isTrue);
+  });
+
+  testWidgets('我的页周期记账区有导出按钮', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addRecurringRule(RecurringRule(
+      id: 'er1',
+      type: TxType.expense,
+      amount: 100000,
+      categoryId: 'home',
+      accountId: 'alipay',
+      note: '房租',
+      date: DateTime(2026, 8, 1),
+      nextDate: DateTime(2026, 9, 1),
+      frequency: RecurFrequency.monthly,
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byTooltip('导出周期规则'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('导出周期规则'), findsOneWidget);
+  });
 }
