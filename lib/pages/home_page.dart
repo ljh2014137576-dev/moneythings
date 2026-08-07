@@ -122,6 +122,10 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: kSpace4),
             _buildBalanceMini(balanceSeries),
+            if (state.books.length > 1) ...[
+              const SizedBox(height: kSpace4),
+              _buildBookSummaryCard(state),
+            ],
           ],
         ),
       ),
@@ -372,6 +376,27 @@ class _HomePageState extends State<HomePage> {
     final now = DateTime.now();
     return m.year == now.year && m.month == now.month;
   }
+
+  Widget _buildBookSummaryCard(AppState state) {
+    final rows = state.bookMonthSummaries(_month);
+    return PaperGroup(
+      title: '账本汇总',
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          for (int i = 0; i < rows.length; i++) ...[
+            if (i > 0) const Divider(indent: 68),
+            _BookSummaryRow(
+              name: rows[i].book.name,
+              summary: rows[i].summary,
+              current: rows[i].book.id == state.currentBookId,
+              onTap: () => state.setCurrentBook(rows[i].book.id),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 class _MiniStat extends StatelessWidget {
@@ -577,6 +602,69 @@ class _HomeModeTag extends StatelessWidget {
             fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
             color: selected ? kAccentBlue : kInkSecondary,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BookSummaryRow extends StatelessWidget {
+  const _BookSummaryRow({
+    required this.name,
+    required this.summary,
+    required this.current,
+    required this.onTap,
+  });
+
+  final String name;
+  final MonthSummary summary;
+  final bool current;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = AmountText.format;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+            horizontal: kSpace4, vertical: kSpace3),
+        child: Row(
+          children: [
+            Icon(Icons.menu_book_outlined,
+                size: 18,
+                color: current ? kAccentBlue : kInkSecondary),
+            const SizedBox(width: kSpace3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: current ? kAccentBlue : kInkPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '本月支出 ${fmt(summary.expense, showSymbol: false)}'
+                    ' · 收入 ${fmt(summary.income, showSymbol: false)}'
+                    ' · 结余 ${fmt(summary.balance, showSymbol: false)}',
+                    style: const TextStyle(
+                        fontSize: 11, color: kInkSecondary),
+                  ),
+                ],
+              ),
+            ),
+            if (current)
+              const Text('当前',
+                  style: TextStyle(fontSize: 11, color: kAccentBlue))
+            else
+              const Icon(Icons.chevron_right_rounded,
+                  size: 16, color: kInkDisabled),
+          ],
         ),
       ),
     );

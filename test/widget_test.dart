@@ -3756,4 +3756,83 @@ void main() {
     expect(find.textContaining('从 8月1日'), findsOneWidget);
     expect(find.textContaining('至 8月7日'), findsOneWidget);
   });
+  test('账本汇总 bookMonthSummaries', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addBook('旅行账本');
+    final now = DateTime.now();
+    final m = DateTime(now.year, now.month, 5);
+    await state.addTransaction(Transaction(
+      id: 'bs1',
+      type: TxType.expense,
+      amount: 1000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: m,
+      note: '默认',
+    ));
+    final tripId = state.books.firstWhere((b) => b.name == '旅行账本').id;
+    await state.setCurrentBook(tripId);
+    await state.addTransaction(Transaction(
+      id: 'bs2',
+      type: TxType.expense,
+      amount: 2000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: m,
+      note: '旅行',
+    ));
+    final defaultId = state.books.firstWhere((b) => b.name == '默认账本').id;
+    await state.setCurrentBook(defaultId);
+    await state.addTransaction(Transaction(
+      id: 'bs3',
+      type: TxType.income,
+      amount: 5000,
+      categoryId: 'salary',
+      accountId: 'alipay',
+      date: m,
+      note: '工资',
+    ));
+    final rows = state.bookMonthSummaries(m);
+    expect(rows.length, 2);
+    final def = rows.firstWhere((r) => r.book.name == '默认账本');
+    expect(def.summary.expense, 1000);
+    expect(def.summary.income, 5000);
+    final trip = rows.firstWhere((r) => r.book.name == '旅行账本');
+    expect(trip.summary.expense, 2000);
+    expect(trip.summary.income, 0);
+  });
+
+  testWidgets('首页账本汇总切换账本', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addBook('旅行账本');
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'bs4',
+      type: TxType.expense,
+      amount: 1000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: now,
+      note: '默认项',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    // 多账本时首页出现「账本汇总」
+    expect(find.text('账本汇总'), findsOneWidget);
+    expect(find.text('旅行账本'), findsWidgets);
+    // 点击旅行账本行切换当前账本
+    final tripRow = find.text('旅行账本').last;
+    await tester.ensureVisible(tripRow);
+    await tester.pumpAndSettle();
+    await tester.tap(tripRow);
+    await tester.pumpAndSettle();
+    final tripId = state.books.firstWhere((b) => b.name == '旅行账本').id;
+    expect(state.currentBookId, tripId);
+  });
 }

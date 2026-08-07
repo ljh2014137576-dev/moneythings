@@ -1182,6 +1182,26 @@ class AppState extends ChangeNotifier {
     return true;
   }
 
+  /// 各账本某月收支结余（全部账本，不随当前账本变化）
+  List<({Book book, MonthSummary summary})> bookMonthSummaries(
+      DateTime month) {
+    final out = <({Book book, MonthSummary summary})>[];
+    for (final b in _books) {
+      int exp = 0, inc = 0;
+      for (final t in _transactions) {
+        if (t.bookId != b.id) continue;
+        if (t.date.year == month.year && t.date.month == month.month) {
+          if (t.type == TxType.expense) {
+            exp += t.amount;
+          } else if (t.type == TxType.income) {
+            inc += t.amount;
+          }
+        }
+      }
+      out.add((book: b, summary: MonthSummary(expense: exp, income: inc)));
+    }
+    return out;
+  }
   Future<void> setCurrentBook(String id) async {
     if (!_books.any((b) => b.id == id)) return;
     _currentBookId = id;
