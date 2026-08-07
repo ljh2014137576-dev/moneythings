@@ -54,7 +54,7 @@ class _HomePageState extends State<HomePage> {
             MonthSummary(expense: 0, income: 0))
         : state.summaryOf(_month);
     final recent = (_weekly
-            ? state.currentBookTransactions
+            ? state.weekTransactions
             : state.ofMonth(_month))
         .take(6)
         .toList();
@@ -114,7 +114,7 @@ class _HomePageState extends State<HomePage> {
               label: const Text('记一笔'),
             ),
             const SizedBox(height: kSpace6),
-            _buildRecent(recent),
+            _buildRecent(recent, weekly: _weekly),
             const SizedBox(height: kSpace4),
             _buildRanking(
               ranking,
@@ -236,7 +236,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildRecent(List<Transaction> recent) {
+  Widget _buildRecent(List<Transaction> recent, {required bool weekly}) {
     return PaperGroup(
       title: '最近流水',
       padding: EdgeInsets.zero,
@@ -258,7 +258,7 @@ class _HomePageState extends State<HomePage> {
       ),
       child: recent.isEmpty
           ? EmptyState(
-              title: '本月还没有流水',
+              title: weekly ? '本周还没有流水' : '本月还没有流水',
               message: '点击上方「记一笔」开始记录',
               actionLabel: '去记一笔',
               onAction: widget.onAdd,

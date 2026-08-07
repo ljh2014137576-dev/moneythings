@@ -3658,4 +3658,67 @@ void main() {
     await tester.pumpAndSettle();
     expect(state.recurringRemind, isFalse);
   });
+  test('本周流水 weekTransactions', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final monday = today.subtract(Duration(days: now.weekday - 1));
+    await state.addTransaction(Transaction(
+      id: 'wt1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: today,
+      note: '本周项',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'wt2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'shopping',
+      accountId: 'alipay',
+      date: monday.subtract(const Duration(days: 7)),
+      note: '上周项',
+    ));
+    final week = state.weekTransactions;
+    expect(week.length, 1);
+    expect(week.first.note, '本周项');
+  });
+
+  testWidgets('首页本周最近流水过滤', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'hr1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: now,
+      note: '本周项',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'hr2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'shopping',
+      accountId: 'alipay',
+      date: now.subtract(const Duration(days: 20)),
+      note: '上周项',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('本周'));
+    await tester.pumpAndSettle();
+    // 本周模式最近流水只显示本周项
+    expect(find.textContaining('本周项'), findsOneWidget);
+    expect(find.textContaining('上周项'), findsNothing);
+  });
 }

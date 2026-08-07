@@ -860,6 +860,16 @@ class AppState extends ChangeNotifier {
 
   /// 某月分类支出排行（降序）
   /// 本周（周一起）支出分类排行
+  /// 本周（周一起）流水，按日期倒序
+  List<Transaction> get weekTransactions {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final monday = today.subtract(Duration(days: now.weekday - 1));
+    return _bookTx
+        .where((t) => !t.date.isBefore(monday))
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+  }
   List<({TxCategory category, int amount})> weekCategoryRanking() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
