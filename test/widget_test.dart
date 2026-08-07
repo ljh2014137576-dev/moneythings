@@ -4985,4 +4985,61 @@ void main() {
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform, null);
   });
+  testWidgets('明细多选复制选中流水文本', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'ct1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: now,
+      note: '支出一',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'ct2',
+      type: TxType.income,
+      amount: 200,
+      categoryId: 'salary',
+      accountId: 'alipay',
+      date: now,
+      note: '收入一',
+    ));
+    final calls = <MethodCall>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform, (call) async {
+      calls.add(call);
+      return null;
+    });
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.textContaining('支出一'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('多选删除'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.textContaining('支出一'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('支出一'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.textContaining('收入一'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('收入一'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('修改选中'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('复制选中流水（文本）'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('复制选中流水（文本）'));
+    await tester.pumpAndSettle();
+    expect(calls.any((c) => c.method == 'Clipboard.setData'), isTrue);
+    expect(find.text('已复制 2 笔流水文本'), findsOneWidget);
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform, null);
+  });
 }

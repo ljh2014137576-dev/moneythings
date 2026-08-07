@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../data/app_state.dart';
@@ -290,6 +291,41 @@ class _LedgerPageState extends State<LedgerPage> {
       parts.add('收入 ${AmountText.format(inc, showSymbol: false)}');
     }
     return parts.isEmpty ? '支出 ¥0.00' : parts.join(' · ');
+  }
+  /// 复制选中流水为文本（日期/类型/分类/金额/账户/备注）
+  void _copySelectedText() {
+    if (_selectedIds.isEmpty) return;
+    final state = context.read<AppState>();
+    final txs = state.transactions
+        .where((t) => _selectedIds.contains(t.id))
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    if (txs.isEmpty) return;
+    final fmt = DateFormat('M月d日', 'zh_CN');
+    final buf = StringBuffer();
+    for (final t in txs) {
+      final isTransfer = t.type == TxType.transfer;
+      final type = isTransfer
+          ? '转账'
+          : (t.type == TxType.income ? '收入' : '支出');
+      final category = isTransfer
+          ? '转账'
+          : TxCategories.byId(t.categoryId).name;
+      final account = accountById(t.accountId).name;
+      final toAccount = isTransfer && t.transferToAccountId != null
+          ? accountById(t.transferToAccountId!).name
+          : null;
+      buf.writeln(
+          '${fmt.format(t.date)} $type $category '
+          '${AmountText.format(t.amount, showSymbol: false)} '
+          '${isTransfer && toAccount != null ? '$account → $toAccount' : account}'
+          '${t.note.isNotEmpty ? ' ${t.note}' : ''}');
+    }
+    Clipboard.setData(ClipboardData(text: buf.toString().trimRight()));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已复制 ${txs.length} 笔流水文本')),
+    );
+    _exitSelection();
   }
   Widget _buildSelectionBar() {
     return Container(
@@ -917,6 +953,12 @@ class _LedgerPageState extends State<LedgerPage> {
               title: const Text('取消报销标记'),
               onTap: () => Navigator.of(context).pop('unreimburse'),
             ),
+            ListTile(
+              leading: const Icon(Icons.copy_outlined,
+                  size: 20, color: kInkPrimary),
+              title: const Text('复制选中流水（文本）'),
+              onTap: () => Navigator.of(context).pop('copytext'),
+            ),
             ],
           ),
         ),
@@ -939,6 +981,8 @@ class _LedgerPageState extends State<LedgerPage> {
       await _bulkSetReimbursable(true);
     } else if (action == 'unreimburse') {
       await _bulkSetReimbursable(false);
+    } else if (action == 'copytext') {
+      _copySelectedText();
     } else {
       await _pickBulkAccount();
     }
