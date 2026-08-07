@@ -1121,3 +1121,19 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 116/116；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：widget 测试 find.byWidgetPredicate 默认 skipOffstage=true，年度卡片在视口外找不到 → 显式 skipOffstage:false；find.text 内部也要 skipOffstage:false。
 - 下一步：明细「按分类批量改账户/删除」或首页/记一笔细节增强；上架执行只差 Play 账号。
+## 2026-08-07 22:30 — 迭代 v4.33：明细按分类批量修改账户 + 版本号 4.33.0 + 最终 release
+
+- 任务内容：
+  - A. 明细多选「批量修改」弹层新增「按分类修改账户」：选分类 → 选账户 → 确认对话框（显示该分类全部笔数与目标账户）→ 把当前账本中该分类全部流水的账户改为目标账户。
+  - B. 复用 `AppState.bulkUpdateTransactions(ids, accountId:)`：按 `currentBookTransactions` 按 categoryId 收集 ids，改后 SnackBar「已修改 N 笔账户为「账户」」并退出多选；分类/空态提示「该分类暂无流水」。
+  - C. 测试：新增 1 项组件测试「明细按分类批量修改账户」（餐饮 2 笔改到银行卡、购物 1 笔保留微信），117/117 通过。
+  - D. web 冒烟：明细多选全选 18 笔 → 修改选中 → 按分类修改账户 → 餐饮 → 银行卡 → 确认「24 笔」→ localStorage 校验 foodOnCard=24 / foodOnAlipay=0 / 总数 95 不变；截图 77-cat-account.png。
+  - E. 版本号 4.33.0+73（aapt 校验 versionName=4.33.0/versionCode=73）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.5MB，SHA-256 `8069E7EF...DB1F`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`（批量弹层新菜单项 + _pickBulkCategoryAccount + 分发分支）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/77-cat-account.png`（新增）
+- commit hash：`cda7153`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 117/117；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：无新坑（沿用 v4.31 的 LF 行尾处理与 mounted 守卫）。
+- 下一步：明细「按分类批量删除」（带强确认）或首页/记一笔细节增强；上架执行只差 Play 账号。
