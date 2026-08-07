@@ -1612,3 +1612,19 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 158/158（连续 4 次完整套件全绿）；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：完整套件下「周期规则全部补生成」仍偶发失败——浮出 SnackBar 过渡动画与对话框关闭重叠导致瞬时 RenderFlex 溢出（单测/真实使用均正常）→ 用 tester.takeException() 清除瞬时异常后断言，连续 4 次全绿。
 - 下一步：首页今日模式预算显示，或「明细」按月导出；上架执行只差 Play 账号。
+## 2026-08-09 03:30 — 迭代 v4.62：周期规则 CSV 首次日期列 + 版本号 4.62.0 + 最终 release
+
+- 任务内容：
+  - A. 周期规则 CSV 导出新增「首次日期」列（锚点 date）；导入按第 9 列解析（旧格式无此列时回退 nextDate，兼容）。
+  - B. 测试：扩展「周期规则 CSV 导出导入往返」断言 date 往返（2026-08-01），158/158 通过。
+  - C. web 冒烟：注入月供规则 → 我的页周期记账区正常渲染（每月 · 居住 · 下次 9月1日）；CSV 格式由单元测试往返验证；截图 106-recurring-csv.png。
+  - D. 版本号 4.62.0+102（aapt 校验 versionName=4.62.0/versionCode=102）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `15F5E384...FEF6`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/services/csv_exporter.dart`（首次日期列）
+  - `lib/services/csv_importer.dart`（第 9 列解析 + 回退）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/106-recurring-csv.png`（新增）
+- commit hash：`c2acb07`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 158/158；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：无新坑（导入兼容旧格式：缺第 9 列时 date=nextDate）。
+- 下一步：首页今日模式预算显示，或「明细」按月导出；上架执行只差 Play 账号。
