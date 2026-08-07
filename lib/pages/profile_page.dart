@@ -713,6 +713,12 @@ class _ProfilePageState extends State<ProfilePage> {
               title: const Text('设置初始余额'),
               onTap: () => Navigator.of(context).pop('balance'),
             ),
+            ListTile(
+              leading: const Icon(Icons.tune_outlined,
+                  size: 20, color: kInkPrimary),
+              title: const Text('调整余额（修正）'),
+              onTap: () => Navigator.of(context).pop('adjust'),
+            ),
             if (account.isCustom) ...[
               ListTile(
                 leading: const Icon(Icons.drive_file_rename_outline,
@@ -752,6 +758,8 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     } else if (action == 'balance') {
       await _editAccountBalance(account);
+    } else if (action == 'adjust') {
+      await _adjustAccountBalance(account);
     } else if (action == 'rename') {
       await _renameAccount(account);
     } else if (action == 'delete') {
@@ -769,6 +777,82 @@ class _ProfilePageState extends State<ProfilePage> {
           .read<AppState>()
           .setAccountInitialBalance(account.id, cents);
     }
+  }
+
+  /// 调整余额（余额修正）：输入实际余额，自动生成差额修正流水
+  Future<void> _adjustAccountBalance(Account account) async {
+    final state = context.read<AppState>();
+    final current = state.balanceOf(account);
+    final controller =
+        TextEditingController(text: (current / 100).toStringAsFixed(2));
+    final target = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('${account.name} · 调整余额',
+            style: const TextStyle(
+                fontSize: 17, fontWeight: FontWeight.w600)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('当前余额 ${AmountText.format(current, showSymbol: false)}',
+                style: const TextStyle(
+                    fontSize: 13, color: kInkSecondary)),
+            const SizedBox(height: kSpace3),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                  labelText: '实际余额（元）', isDense: true, prefixText: '¥ '),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              final text = controller.text.trim();
+              final parts = text.split('.');
+              final yuan = int.tryParse(parts[0].replaceAll(',', '')) ?? 0;
+              final fenStr = parts.length > 1
+                  ? parts[1].padRight(2, '0').substring(0, 2)
+                  : '00';
+              final fen = int.tryParse(fenStr) ?? 0;
+              Navigator.of(ctx).pop(yuan * 100 + fen);
+            },
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+    if (target == null || !mounted) return;
+    final diff = target - current;
+    if (diff == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('余额已一致，无需调整')),
+      );
+      return;
+    }
+    await state.addTransaction(Transaction(
+      id: 'adj_${DateTime.now().microsecondsSinceEpoch}',
+      type: diff > 0 ? TxType.income : TxType.expense,
+      amount: diff.abs(),
+      categoryId: diff > 0 ? 'other_i' : 'other_e',
+      accountId: account.id,
+      note: '余额修正',
+      date: DateTime.now(),
+    ));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+          content: Text(
+              '已调整余额 ${AmountText.format(diff.abs(), showSymbol: false)}')),
+    );
   }
 
   Widget _buildBook(AppState state) {
@@ -1217,7 +1301,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.58.0',
+            Text('版本 4.59.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -1226,7 +1310,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.58 周期全部补生成\nv4.57 统计全部账本\nv4.56 周期规则下次日期+1期\nv4.55 多选合计金额\nv4.54 账本汇总合计行\nv4.53 明细显示账本名\nv4.52 待报销合计\nv4.51 批量标记可报销\nv4.50 结余走势粒度（3/6/12月）\nv4.49 周期提醒提前天数\nv4.48 明细复制选中到账本\nv4.47 报销标记\nv4.46 明细全部账本\nv4.45 范围每日收入图\nv4.44 常用备注自定义\nv4.43 常用金额自定义\nv4.42 首页今日概览\nv4.41 统计收入占比环图\nv4.40 周期规则复制\nv4.39 首页账本汇总\nv4.38 统计自定义范围记忆\nv4.37 首页本周最近流水\nv4.36 首页本周支出分类\nv4.35 周期记账到期提醒\nv4.34 明细按分类批量删除\nv4.33 明细按分类批量修改账户\nv4.32 统计年度收入对比\nv4.31 明细按分类移动到其他账本\nv4.30 周期规则按月补生成\nv4.29 统计自定义范围结余走势\nv4.28 明细批量移动到其他账本\nv4.27 统计页自定义日期范围\nv4.26 我的页数据概况\nv4.25 明细复制到其他账本\nv4.24 首页总资产下钻账户',
+            Text('v4.59 账户余额修正\nv4.58 周期全部补生成\nv4.57 统计全部账本\nv4.56 周期规则下次日期+1期\nv4.55 多选合计金额\nv4.54 账本汇总合计行\nv4.53 明细显示账本名\nv4.52 待报销合计\nv4.51 批量标记可报销\nv4.50 结余走势粒度（3/6/12月）\nv4.49 周期提醒提前天数\nv4.48 明细复制选中到账本\nv4.47 报销标记\nv4.46 明细全部账本\nv4.45 范围每日收入图\nv4.44 常用备注自定义\nv4.43 常用金额自定义\nv4.42 首页今日概览\nv4.41 统计收入占比环图\nv4.40 周期规则复制\nv4.39 首页账本汇总\nv4.38 统计自定义范围记忆\nv4.37 首页本周最近流水\nv4.36 首页本周支出分类\nv4.35 周期记账到期提醒\nv4.34 明细按分类批量删除\nv4.33 明细按分类批量修改账户\nv4.32 统计年度收入对比\nv4.31 明细按分类移动到其他账本\nv4.30 周期规则按月补生成\nv4.29 统计自定义范围结余走势\nv4.28 明细批量移动到其他账本\nv4.27 统计页自定义日期范围\nv4.26 我的页数据概况\nv4.25 明细复制到其他账本\nv4.24 首页总资产下钻账户',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),

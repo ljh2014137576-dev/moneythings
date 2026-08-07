@@ -3386,7 +3386,11 @@ void main() {
     await tester.scrollUntilVisible(
       find.textContaining('每月 · 餐饮'),
       200,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: find
+          .descendant(
+              of: find.byType(ProfilePage),
+              matching: find.byType(Scrollable))
+          .first,
     );
     await tester.pumpAndSettle();
     await tester.tap(find.textContaining('每月 · 餐饮'));
@@ -3882,7 +3886,11 @@ void main() {
     await tester.scrollUntilVisible(
       find.textContaining('每月 · 餐饮'),
       200,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: find
+          .descendant(
+              of: find.byType(ProfilePage),
+              matching: find.byType(Scrollable))
+          .first,
     );
     await tester.pumpAndSettle();
     await tester.tap(find.textContaining('每月 · 餐饮'));
@@ -4356,7 +4364,11 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('提前提醒：'),
       200,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: find
+          .descendant(
+              of: find.byType(ProfilePage),
+              matching: find.byType(Scrollable))
+          .first,
     );
     await tester.pumpAndSettle();
     expect(state.recurringRemindLead, 0);
@@ -4694,7 +4706,11 @@ void main() {
     await tester.scrollUntilVisible(
       find.textContaining('每月 · 餐饮'),
       200,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: find
+          .descendant(
+              of: find.byType(ProfilePage),
+              matching: find.byType(Scrollable))
+          .first,
     );
     await tester.pumpAndSettle();
     await tester.tap(find.textContaining('每月 · 餐饮'));
@@ -4847,7 +4863,11 @@ void main() {
     await tester.scrollUntilVisible(
       find.byTooltip('全部补生成'),
       200,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: find
+          .descendant(
+              of: find.byType(ProfilePage),
+              matching: find.byType(Scrollable))
+          .first,
     );
     await tester.pumpAndSettle();
     final before = state.transactions.length;
@@ -4858,5 +4878,30 @@ void main() {
     // 两条启用规则各补 7 期（-6 月至本月），停用规则不补
     expect(state.transactions.length, before + 14);
     expect(state.transactions.where((t) => t.note == '停用'), isEmpty);
+  });
+  testWidgets('我的页账户调整余额', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('支付宝'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('支付宝'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('调整余额（修正）'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, '500');
+    await tester.tap(find.text('确定'));
+    await tester.pumpAndSettle();
+    final alipay = state.accounts.firstWhere((a) => a.name == '支付宝');
+    expect(state.balanceOf(alipay), 50000);
+    expect(
+      state.transactions.any((t) => t.note == '余额修正' && t.amount == 50000),
+      isTrue,
+    );
   });
 }
