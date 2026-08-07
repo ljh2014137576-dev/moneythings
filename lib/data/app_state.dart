@@ -891,6 +891,52 @@ class AppState extends ChangeNotifier {
 
   /// 某月分类支出排行（降序）
   /// 本周（周一起）支出分类排行
+  /// 今日收支概览
+  MonthSummary? get todaySummary {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    int exp = 0, inc = 0;
+    for (final t in _bookTx) {
+      if (t.date.year == today.year &&
+          t.date.month == today.month &&
+          t.date.day == today.day) {
+        if (t.type == TxType.expense) {
+          exp += t.amount;
+        } else if (t.type == TxType.income) {
+          inc += t.amount;
+        }
+      }
+    }
+    return MonthSummary(expense: exp, income: inc);
+  }
+
+  /// 今日流水，按日期倒序
+  List<Transaction> get todayTransactions {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return _bookTx
+        .where((t) =>
+            t.date.year == today.year &&
+            t.date.month == today.month &&
+            t.date.day == today.day)
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+  }
+
+  /// 今日支出分类排行
+  List<({TxCategory category, int amount})> todayCategoryRanking() {
+    final map = <String, int>{};
+    for (final t in todayTransactions) {
+      if (t.type == TxType.expense) {
+        map[t.categoryId] = (map[t.categoryId] ?? 0) + t.amount;
+      }
+    }
+    final ranked = map.entries
+        .map((e) => (category: TxCategories.byId(e.key), amount: e.value))
+        .toList()
+      ..sort((a, b) => b.amount.compareTo(a.amount));
+    return ranked;
+  }
   /// 本周（周一起）流水，按日期倒序
   List<Transaction> get weekTransactions {
     final now = DateTime.now();

@@ -38,6 +38,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late DateTime _month;
   bool _weekly = false;
+  bool _today = false;
 
   @override
   void initState() {
@@ -49,18 +50,21 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final summary = _weekly
-        ? (state.weekSummary ??
-            MonthSummary(expense: 0, income: 0))
-        : state.summaryOf(_month);
-    final recent = (_weekly
-            ? state.weekTransactions
-            : state.ofMonth(_month))
+    final summary = _today
+        ? (state.todaySummary ?? MonthSummary(expense: 0, income: 0))
+        : (_weekly
+            ? (state.weekSummary ?? MonthSummary(expense: 0, income: 0))
+            : state.summaryOf(_month));
+    final recent = (_today
+            ? state.todayTransactions
+            : (_weekly ? state.weekTransactions : state.ofMonth(_month)))
         .take(6)
         .toList();
-    final ranking = _weekly
-        ? state.weekCategoryRanking()
-        : state.categoryExpenseRanking(_month);
+    final ranking = _today
+        ? state.todayCategoryRanking()
+        : (_weekly
+            ? state.weekCategoryRanking()
+            : state.categoryExpenseRanking(_month));
     final isCurrentMonth = _isCurrent(_month);
     final budget = isCurrentMonth ? state.monthlyBudget : 0;
     final spent = isCurrentMonth ? state.currentMonthExpense : 0;
@@ -76,7 +80,7 @@ class _HomePageState extends State<HomePage> {
           children: [
             _buildHeader(),
             const SizedBox(height: kSpace2),
-            if (!_weekly) ...[
+            if (!_weekly && !_today) ...[
               MonthSelector(
                 month: _month,
                 onChanged: (m) => setState(() => _month = m),
@@ -86,15 +90,30 @@ class _HomePageState extends State<HomePage> {
             Row(
               children: [
                 _HomeModeTag(
-                  label: '本月',
-                  selected: !_weekly,
-                  onTap: () => setState(() => _weekly = false),
+                  label: '今日',
+                  selected: _today,
+                  onTap: () => setState(() {
+                    _today = true;
+                    _weekly = false;
+                  }),
                 ),
                 const SizedBox(width: kSpace2),
                 _HomeModeTag(
                   label: '本周',
-                  selected: _weekly,
-                  onTap: () => setState(() => _weekly = true),
+                  selected: _weekly && !_today,
+                  onTap: () => setState(() {
+                    _weekly = true;
+                    _today = false;
+                  }),
+                ),
+                const SizedBox(width: kSpace2),
+                _HomeModeTag(
+                  label: '本月',
+                  selected: !_weekly && !_today,
+                  onTap: () => setState(() {
+                    _weekly = false;
+                    _today = false;
+                  }),
                 ),
               ],
             ),
@@ -106,6 +125,7 @@ class _HomePageState extends State<HomePage> {
               isCurrentMonth,
               state.budgetRemaining,
               state.budgetDailyRemaining,
+              title: _today ? '今日支出' : (_weekly ? '本周支出' : '本月支出'),
             ),
             const SizedBox(height: kSpace3),
             FilledButton.icon(
@@ -114,11 +134,13 @@ class _HomePageState extends State<HomePage> {
               label: const Text('记一笔'),
             ),
             const SizedBox(height: kSpace6),
-            _buildRecent(recent, weekly: _weekly),
+            _buildRecent(recent, weekly: _weekly, today: _today),
             const SizedBox(height: kSpace4),
             _buildRanking(
               ranking,
-              title: _weekly ? '本周支出分类' : '本月支出分类',
+              title: _today
+                  ? '今日支出分类'
+                  : (_weekly ? '本周支出分类' : '本月支出分类'),
             ),
             const SizedBox(height: kSpace4),
             _buildBalanceMini(balanceSeries),
@@ -183,13 +205,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildSummary(MonthSummary summary, int budget, int spent,
-      bool isCurrentMonth, int remaining, int daily) {
+      bool isCurrentMonth, int remaining, int daily, {required String title}) {
     return PaperGroup(
       padding: const EdgeInsets.fromLTRB(kSpace4, kSpace5, kSpace4, kSpace4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_weekly ? '本周支出' : '本月支出',
+          Text(title,
               style:
                   const TextStyle(fontSize: 13, color: kInkSecondary)),
           const SizedBox(height: 4),
@@ -240,7 +262,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildRecent(List<Transaction> recent, {required bool weekly}) {
+  Widget _buildRecent(List<Transaction> recent,
+      {required bool weekly, required bool today}) {
     return PaperGroup(
       title: '最近流水',
       padding: EdgeInsets.zero,
@@ -262,7 +285,9 @@ class _HomePageState extends State<HomePage> {
       ),
       child: recent.isEmpty
           ? EmptyState(
-              title: weekly ? '本周还没有流水' : '本月还没有流水',
+              title: today
+                  ? '今日还没有流水'
+                  : (weekly ? '本周还没有流水' : '本月还没有流水'),
               message: '点击上方「记一笔」开始记录',
               actionLabel: '去记一笔',
               onAction: widget.onAdd,

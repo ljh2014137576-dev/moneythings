@@ -3934,4 +3934,83 @@ void main() {
     expect(find.text('收入占比'), findsOneWidget);
     expect(find.text('支出占比'), findsNothing);
   });
+  test('今日概览 todaySummary/流水/排行', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    await state.addTransaction(Transaction(
+      id: 'td1',
+      type: TxType.expense,
+      amount: 500,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: today,
+      note: '今日项',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'td2',
+      type: TxType.income,
+      amount: 2000,
+      categoryId: 'salary',
+      accountId: 'alipay',
+      date: today,
+    ));
+    await state.addTransaction(Transaction(
+      id: 'td3',
+      type: TxType.expense,
+      amount: 9000,
+      categoryId: 'shopping',
+      accountId: 'alipay',
+      date: today.subtract(const Duration(days: 1)),
+      note: '昨日项',
+    ));
+    final s = state.todaySummary!;
+    expect(s.expense, 500);
+    expect(s.income, 2000);
+    final txs = state.todayTransactions;
+    expect(txs.length, 2);
+    expect(txs.any((t) => t.note == '今日项'), isTrue);
+    expect(txs.any((t) => t.note == '昨日项'), isFalse);
+    final ranking = state.todayCategoryRanking();
+    expect(ranking.length, 1);
+    expect(ranking.first.category.name, '餐饮');
+    expect(ranking.first.amount, 500);
+  });
+
+  testWidgets('首页今日概览', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'th1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: now,
+      note: '今日项',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'th2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'shopping',
+      accountId: 'alipay',
+      date: now.subtract(const Duration(days: 1)),
+      note: '昨日项',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('今日'));
+    await tester.pumpAndSettle();
+    expect(find.text('今日支出'), findsOneWidget);
+    expect(find.text('今日支出分类'), findsOneWidget);
+    expect(find.textContaining('今日项'), findsOneWidget);
+    expect(find.textContaining('昨日项'), findsNothing);
+  });
 }

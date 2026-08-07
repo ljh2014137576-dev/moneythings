@@ -1,11 +1,11 @@
 # 交付清单（RELEASE）
 
-> 记账本 v4.41 · 2026-08-07 · 可上架状态
+> 记账本 v4.42 · 2026-08-07 · 可上架状态
 
 ## 安装包
 
 - **Release APK**：`build/app/outputs/flutter-apk/app-release.apk`（54.5 MB）
-- **SHA-256**：`14056C7B166C1CBB791E843A9FD12AD958D0600BC7CE9DD41EC386B5C274E2EF`
+- **SHA-256**：`5DF05BAD1DD964F60C45F136BAB8D4E5277EFA28FFA8B911596BACE18AA34073`
 - **签名**：MoneyThings keystore（`android/upload-keystore.jks`，**不入库，请妥善备份**）
   - 证书：CN=MoneyThings, OU=Dev, O=MoneyThings, L=Shanghai, ST=Shanghai, C=CN
   - SHA-256 digest：`a7e997bb7fd9ebd7dd79f927621b9355995916732c9f589c4e08d9be8854e15a`
@@ -25,7 +25,7 @@
 ## 质量门禁
 
 - `flutter analyze`：0 问题
-- `flutter test`：129/129 通过（v4.41 统计收入占比环图）（含大字体 2.0x 无障碍、JSON 备份恢复、多账本（含明细复制到其他账本）、预算按账本、导入预览等）
+- `flutter test`：131/131 通过（v4.42 首页今日概览）（含大字体 2.0x 无障碍、JSON 备份恢复、多账本（含明细复制到其他账本）、预算按账本、导入预览等）
 - 功能覆盖：首页（含结余走势/总资产下钻）/明细/统计/我的/记一笔（含账户转账/数字键盘/保存撤销）、明细分类筛选/统计下钻/金额区间筛选/账户名搜索/统计柱状图下钻/常用备注/账户月度收支/周期记账（含规则编辑/立即生成本次/跳过下次）/明细多选批量修改/导出选中/批量移动账本/全部时间年份分组/统计页预算对比/自定义账户/统计页年度汇总/账户转账统计/CSV 导入自动建账户/周期规则 CSV 导入/导出、多账本（含明细复制到其他账本）、预算+系统通知、自定义分类、导入导出+JSON 备份、首启引导、图标、release 签名
 
 ## 上架步骤（摘要）
