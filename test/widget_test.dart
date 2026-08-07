@@ -3220,4 +3220,90 @@ void main() {
     expect(
         state.currentBookTransactions.any((t) => t.note == '批量移'), isTrue);
   });
+  test('周期规则按月补生成历史流水（含去重）', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final anchor = DateTime(now.year, now.month - 6, 1);
+    await state.addRecurringRule(RecurringRule(
+      id: 'bf1',
+      type: TxType.expense,
+      amount: 5000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      note: '订阅',
+      date: anchor,
+      nextDate: anchor,
+      frequency: RecurFrequency.monthly,
+    ));
+    // 预置一期已存在流水（-3 个月，同字段）→ 补生成应跳过
+    await state.addTransaction(Transaction(
+      id: 'dup1',
+      type: TxType.expense,
+      amount: 5000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      note: '订阅',
+      date: DateTime(now.year, now.month - 3, 1),
+    ));
+    final info = state.recurringBackfillInfo('bf1');
+    expect(info, isNotNull);
+    // 锚点月起每月 1 日共 7 期，减去已存在的 1 期 → 6
+    expect(info!.count, 6);
+    final added = await state.backfillRecurring('bf1');
+    expect(added, 6);
+    final txs = state.transactions.where((t) => t.note == '订阅').toList();
+    expect(txs.length, 7);
+    expect(state.transactions.where((t) => t.id == 'dup1').length, 1);
+    // nextDate 已推进到今天之后
+    expect(state.recurringRules.first.nextDate.isAfter(today), isTrue);
+    // 再次补生成无新增
+    expect(state.recurringBackfillInfo('bf1'), isNull);
+    expect(await state.backfillRecurring('bf1'), 0);
+  });
+
+  testWidgets('我的页周期规则补生成历史流水', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addRecurringRule(RecurringRule(
+      id: 'bf2',
+      type: TxType.expense,
+      amount: 5000,
+      categoryId: 'food',
+      accountId: 'wechat',
+      note: '补生测试',
+      date: DateTime(now.year, now.month - 2, 1),
+      nextDate: DateTime(now.year, now.month - 2, 1),
+      frequency: RecurFrequency.monthly,
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.textContaining('每月 · 餐饮'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('每月 · 餐饮'));
+    await tester.pumpAndSettle();
+    // 编辑弹层出现「补生成历史流水」
+    await tester.ensureVisible(find.text('补生成历史流水'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('补生成历史流水'));
+    await tester.pumpAndSettle();
+    // 确认对话框（标题与按钮同文案）
+    expect(find.text('补生成历史流水'), findsWidgets);
+    await tester.tap(find.text('补生成'));
+    await tester.pumpAndSettle();
+    // 锚点月起 3 期（-2、-1、本月 1 日）已补生成
+    expect(state.transactions.where((t) => t.note == '补生测试').length, 3);
+  });
 }

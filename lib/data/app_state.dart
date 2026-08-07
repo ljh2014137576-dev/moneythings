@@ -281,6 +281,99 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 单期周期流水签名（同日 + 同字段），用于补生成去重
+  String _recurringOccSig(DateTime d, RecurringRule r) =>
+      '${d.year}-${d.month}-${d.day}|${r.type.name}|${r.amount}|${r.categoryId}|${r.accountId}|${r.transferToAccountId}|${r.note}';
+
+  /// 规则所在账本已存在的周期流水签名集合
+  Set<String> _recurringExistingSigs(RecurringRule r) => {
+        for (final t in _transactions)
+          if (t.bookId == r.bookId)
+            '${t.date.year}-${t.date.month}-${t.date.day}|${t.type.name}|${t.amount}|${t.categoryId}|${t.accountId}|${t.transferToAccountId}|${t.note}',
+      };
+
+  /// 补生成预览：规则锚点 date 到今天的应发生期数（已存在同日期同字段的自动跳过）；
+  /// 不适用（停用/非当前账本/未来锚点/无可补）返回 null
+  ({int count, DateTime first, DateTime last})? recurringBackfillInfo(
+      String ruleId) {
+    final idx = _rules.indexWhere((r) => r.id == ruleId);
+    if (idx < 0) return null;
+    final r = _rules[idx];
+    if (!r.active ||
+        r.bookId != _currentBookId ||
+        r.frequency == RecurFrequency.none) {
+      return null;
+    }
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    if (r.date.isAfter(today)) return null;
+    final existing = _recurringExistingSigs(r);
+    final pending = <DateTime>[];
+    var d = DateTime(r.date.year, r.date.month, r.date.day);
+    int guard = 0;
+    while (!d.isAfter(today) && guard < 1200) {
+      if (!existing.contains(_recurringOccSig(d, r))) pending.add(d);
+      d = RecurringRule.nextAfter(d, r.frequency);
+      guard++;
+    }
+    if (pending.isEmpty) return null;
+    return (
+      count: pending.length,
+      first: pending.first,
+      last: pending.last,
+    );
+  }
+
+  /// 按月补生成：补齐规则锚点 date 到今天缺失的历史周期流水（已存在的不重复），
+  /// 并推进 nextDate 到今天之后的第一期；返回生成笔数
+  Future<int> backfillRecurring(String ruleId) async {
+    final info = recurringBackfillInfo(ruleId);
+    if (info == null) return 0;
+    final idx = _rules.indexWhere((r) => r.id == ruleId);
+    final r = _rules[idx];
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final existing = _recurringExistingSigs(r);
+    final created = <Transaction>[];
+    var d = DateTime(r.date.year, r.date.month, r.date.day);
+    int guard = 0;
+    while (!d.isAfter(today) && guard < 1200) {
+      final sig = _recurringOccSig(d, r);
+      if (!existing.contains(sig)) {
+        created.add(Transaction(
+          id: 'rc_${DateTime.now().microsecondsSinceEpoch}_${created.length}',
+          type: r.type,
+          amount: r.amount,
+          categoryId: r.categoryId,
+          accountId: r.accountId,
+          transferToAccountId: r.transferToAccountId,
+          note: r.note,
+          date: d,
+          bookId: r.bookId,
+        ));
+        existing.add(sig);
+      }
+      d = RecurringRule.nextAfter(d, r.frequency);
+      guard++;
+    }
+    if (created.isEmpty) return 0;
+    // 推进 nextDate 到今天之后的第一期
+    var next = r.nextDate;
+    int ng = 0;
+    while (!next.isAfter(today) && ng < 1200) {
+      next = RecurringRule.nextAfter(next, r.frequency);
+      ng++;
+    }
+    _transactions = [..._transactions, ...created]
+      ..sort((a, b) => b.date.compareTo(a.date));
+    _rules = [
+      for (final x in _rules) x.id == ruleId ? x.copyWith(nextDate: next) : x,
+    ];
+    await _persist();
+    await _repository.saveRecurringRules(_rules);
+    notifyListeners();
+    return created.length;
+  }
   Future<void> addRecurringRule(RecurringRule rule) async {
     _rules = [..._rules, rule];
     await _repository.saveRecurringRules(_rules);

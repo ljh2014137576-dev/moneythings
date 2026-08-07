@@ -1068,7 +1068,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.29.0',
+            Text('版本 4.30.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -1077,7 +1077,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.29 统计自定义范围结余走势\nv4.28 明细批量移动到其他账本\nv4.27 统计页自定义日期范围\nv4.26 我的页数据概况\nv4.25 明细复制到其他账本\nv4.24 首页总资产下钻账户',
+            Text('v4.30 周期规则按月补生成\nv4.29 统计自定义范围结余走势\nv4.28 明细批量移动到其他账本\nv4.27 统计页自定义日期范围\nv4.26 我的页数据概况\nv4.25 明细复制到其他账本\nv4.24 首页总资产下钻账户',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),
@@ -1636,6 +1636,45 @@ class _RecurringEditSheetState extends State<_RecurringEditSheet> {
         .map((d) => fmt.format(d))
         .join('、');
   }
+  /// 补生成历史流水：预览可补期数 → 确认 → 调用 AppState 补齐（已存在的自动跳过）
+  Future<void> _backfill(BuildContext context) async {
+    final state = context.read<AppState>();
+    final info = state.recurringBackfillInfo(widget.initial.id);
+    if (info == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('没有需要补生成的历史流水')),
+      );
+      return;
+    }
+    final fmt = DateFormat('M月d日', 'zh_CN');
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('补生成历史流水'),
+        content: Text(
+          '将按规则设置补生成 ${info.count} 笔历史流水'
+          '（${fmt.format(info.first)} ~ ${fmt.format(info.last)}），'
+          '已存在的同日期同金额流水会自动跳过。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('补生成'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final added = await state.backfillRecurring(widget.initial.id);
+    if (!context.mounted) return;
+    Navigator.of(context).pop();
+    messenger.showSnackBar(SnackBar(content: Text('已补生成 $added 笔流水')));
+  }
 
   Future<void> _pickNextDate() async {
     final picked = await showDatePicker(
@@ -1819,6 +1858,12 @@ class _RecurringEditSheetState extends State<_RecurringEditSheet> {
                 },
                 child: const Text('跳过下次（不生成本次）',
                     style: TextStyle(fontSize: 13, color: kInkSecondary)),
+              ),
+              const SizedBox(height: kSpace2),
+              TextButton(
+                onPressed: () => _backfill(context),
+                child: const Text('补生成历史流水',
+                    style: TextStyle(fontSize: 13, color: kAccentBlue)),
               ),
             ],
           ),
