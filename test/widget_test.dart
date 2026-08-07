@@ -4478,4 +4478,62 @@ void main() {
     await tester.pumpAndSettle();
     expect(state.currentBookTransactions.every((t) => !t.reimbursable), isTrue);
   });
+  test('待报销合计 reimbursableSummary', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'rs1',
+      type: TxType.expense,
+      amount: 500,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: now,
+      reimbursable: true,
+    ));
+    await state.addTransaction(Transaction(
+      id: 'rs2',
+      type: TxType.expense,
+      amount: 300,
+      categoryId: 'shopping',
+      accountId: 'alipay',
+      date: now,
+      reimbursable: true,
+    ));
+    await state.addTransaction(Transaction(
+      id: 'rs3',
+      type: TxType.expense,
+      amount: 9000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: now,
+    ));
+    final s = state.reimbursableSummary;
+    expect(s.total, 800);
+    expect(s.count, 2);
+  });
+
+  testWidgets('我的页显示待报销合计', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'rs5',
+      type: TxType.expense,
+      amount: 500,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: now,
+      reimbursable: true,
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('待报销 5.00'), findsOneWidget);
+  });
 }

@@ -1012,6 +1012,17 @@ class AppState extends ChangeNotifier {
       ..sort((a, b) => b.amount.compareTo(a.amount));
     return ranked;
   }
+  /// 当前账本待报销合计（可报销支出总额/笔数）
+  ({int total, int count}) get reimbursableSummary {
+    int total = 0, count = 0;
+    for (final t in _bookTx) {
+      if (t.reimbursable && t.type == TxType.expense) {
+        total += t.amount;
+        count++;
+      }
+    }
+    return (total: total, count: count);
+  }
   /// 本周（周一起）流水，按日期倒序
   List<Transaction> get weekTransactions {
     final now = DateTime.now();
