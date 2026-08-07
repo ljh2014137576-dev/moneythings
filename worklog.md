@@ -1535,3 +1535,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 152/152；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：web 语义树未暴露「下次：」独立文本 → 用「后续预览」变化验证推进。
 - 下一步：统计页「全部账本」范围切换，或「周期规则」批量补生成入口；上架执行只差 Play 账号。
+## 2026-08-08 22:30 — 迭代 v4.57：统计页当前账本/全部账本范围切换 + 版本号 4.57.0 + 最终 release
+
+- 任务内容：
+  - A. `AppState` 为月度统计方法新增 `{bool allBooks = false}` 参数（默认保持当前账本，向后兼容）：ofMonth/summaryOf/yearSummary/expenseDeltaOf/dailyExpenseSeries/dailyIncomeSeries/weeklyExpenseSeries/categoryExpenseRanking/categoryIncomeRanking/recentBalanceSeries/yearComparison。
+  - B. 统计页顶部新增「账本：当前账本/全部账本」切换（全部账本时聚合所有账本）；月度概览/每日/每周图/占比/排行/年度对比/年度汇总全部联动；自定义范围仍按当前账本。
+  - C. 测试：新增单元测试「统计全部账本聚合」（全部账本 expense=3000/income=5000、排行合计 3000）+ 组件测试「统计页全部账本切换」（切全部账本总支出 ¥10→¥30），154/154 通过。
+  - D. web 冒烟：注入旅行账本 + 33 元 → 统计切「全部账本」→ 总支出 ¥1,000 → ¥1,033；截图 101-stats-all-books.png。
+  - E. 版本号 4.57.0+97（aapt 校验 versionName=4.57.0/versionCode=97）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `BEEFBEB3...66E46`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（11 个月度统计方法加 allBooks 参数）
+  - `lib/pages/stats_page.dart`（_allBooks + 账本切换 + 11 处传参 + yearSummary 卡传参）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/101-stats-all-books.png`（新增）
+- commit hash：`732e6d0`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 154/154；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：切换标签 key 误放在「当前账本」上（点击无效）→ 移到「全部账本」；PS 双引号 \n 字面量再次出现（yearData 处）→ 反引号修复。
+- 下一步：周期规则「批量补生成」，或「首页」今日模式预算显示；上架执行只差 Play 账号。
