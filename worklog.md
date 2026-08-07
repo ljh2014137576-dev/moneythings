@@ -1438,3 +1438,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 145/145；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：首页与统计页在 IndexedStack 中「6月/12月」同名文本 → 标签加 ValueKey 精确定位；首页迷你图轴标签也有「6月」文本 → byKey 规避；统计测试需先加一笔流水（否则空态无图表）。
 - 下一步：统计页「全部账本」范围切换，或「明细」搜索历史管理；上架执行只差 Play 账号。
+## 2026-08-08 16:30 — 迭代 v4.51：明细多选批量标记/取消可报销 + 版本号 4.51.0 + 最终 release
+
+- 任务内容：
+  - A. `AppState.bulkUpdateTransactions` 新增 `reimbursable` 参数（批量标记/取消）。
+  - B. 明细多选「批量修改」弹层新增「标记为可报销」「取消报销标记」（第 8/9 项），调用 `_bulkSetReimbursable(bool)` → SnackBar 提示笔数 → 退出多选。
+  - C. 测试：新增组件测试「明细多选批量标记可报销」（全选 2 笔 → 标记 → 全部 reimbursable → 取消 → 全部 false），146/146 通过。
+  - D. web 冒烟：明细多选全选 18 笔 → 弹层滚到「标记为可报销」→ 点击 → localStorage reimbursable=true 共 18 笔；截图 95-batch-reimburse.png。
+  - E. 版本号 4.51.0+91（aapt 校验 versionName=4.51.0/versionCode=91）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `009CE3E7...2263`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（bulkUpdateTransactions reimbursable）
+  - `lib/pages/ledger_page.dart`（弹层第 8/9 项 + _bulkSetReimbursable + 分发）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/95-batch-reimburse.png`（新增）
+- commit hash：`bc7c72a`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 146/146；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：第二次长按「标一」提示 off-screen（批量操作后重渲染滚动位置变化）→ 补 ensureVisible。
+- 下一步：统计页「全部账本」范围切换，或「明细」按报销标记汇总；上架执行只差 Play 账号。
