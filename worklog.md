@@ -772,3 +772,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 86/86；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：copyWith 内 `this.icon` 触发 lint → 去掉 this.；账户删除前检查全账本流水（有则拦截并提示）。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-09 09:00 — 迭代 v4.13：统计页年度汇总 + 版本号 4.13.0 + 最终 release
+
+- 任务内容：
+  - A. 统计页年度汇总卡：`AppState.yearSummary(year)` 计算当年总支出/总收入/结余/日均支出/笔数/支出最多分类（转账不计）；统计页底部新增「YYYY 年汇总」PaperGroup 展示六项（当年无流水则隐藏）。
+  - B. 测试：新增 2 项（yearSummary 计算含跨年过滤与最多分类、统计页显示年度汇总），88/88 通过。
+  - C. web 冒烟：统计页滚动到底部显示「2026 年汇总 总支出 ¥6,911.00 总收入 ¥79,300.00 结余 ¥72,389.00 日均支出 ¥18.93 全年 95 笔 · 支出最多：居住」；零控制台错误。截图 57-year-summary.png。
+  - D. 版本号 4.13.0+53（aapt 校验 versionName=4.13.0/versionCode=53）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `9654FE58...7658`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（yearSummary）
+  - `lib/pages/stats_page.dart`（_buildYearSummaryCard + _ysCell + 插入列表底部）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/57-year-summary.png`（新增）
+- commit hash：`2ef206a`；已 push（a07744f..2ef206a master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 88/88；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：统计页测试交易在 1 月而默认当月为空 → 改当月交易避免空状态无 Scrollable；web 语义标题不进 innerText → 用整段文本验证。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
