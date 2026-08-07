@@ -1472,3 +1472,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 148/148；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：组件测试「1 笔」与数据概况「流水」cell 同名 → 去掉该断言，仅断言「待报销 5.00」。
 - 下一步：统计页「全部账本」范围切换，或「记一笔」编辑「报销」开关同步；上架执行只差 Play 账号。
+## 2026-08-08 18:30 — 迭代 v4.53：明细全部账本模式显示账本名 + 版本号 4.53.0 + 最终 release
+
+- 任务内容：
+  - A. `TransactionTile` 新增 `bookName` 参数：副标题追加「📚 账本名」。
+  - B. 明细 `_DayGroup` 增加 `bookNames` 映射并传入 tile；切「全部账本」时每行显示所属账本名（当前账本模式不显示）。
+  - C. 测试：新增组件测试「明细全部账本模式显示账本名」（默认当前账本无旅行本 → 全部账本旅行本出现且带账本名），149/149 通过。
+  - D. web 冒烟：注入旅行账本 + 旅行餐费 → 明细切「全部账本」→ 每行显示「📚 默认账本 / 📚 旅行账本」；截图 97-ledger-book-name.png。
+  - E. 版本号 4.53.0+93（aapt 校验 versionName=4.53.0/versionCode=93）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `593C0C8C...B406E`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/widgets/transaction_tile.dart`（bookName 参数 + 副标题）
+  - `lib/pages/ledger_page.dart`（_DayGroup bookNames + 传参）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/97-ledger-book-name.png`（新增）
+- commit hash：`0d47118`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 149/149；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：无新坑（IndexedStack 中账本名文本可能多处 → 测试用 LedgerPage 限定 descendant）。
+- 下一步：统计页「全部账本」范围切换，或「首页」账本汇总总行；上架执行只差 Play 账号。
