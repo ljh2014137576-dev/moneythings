@@ -1191,3 +1191,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 121/121；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：PS 双引号字符串中 `\n` 不是换行转义 → 多行替换需用反引号 `` `n ``，已修复误插的「\n」字面量。
 - 下一步：统计页「自定义范围」记住上次选择，或首页「最近流水」本周过滤；上架执行只差 Play 账号。
+## 2026-08-08 02:30 — 迭代 v4.37：首页本周最近流水过滤 + 版本号 4.37.0 + 最终 release
+
+- 任务内容：
+  - A. `AppState.weekTransactions`：本周（周一起）流水，按日期倒序。
+  - B. 首页「本周/本月」切换：最近流水数据源改用 weekTransactions / ofMonth，修复本周模式下最近流水仍显示全部账本流水的问题；空态文案联动「本周还没有流水 / 本月还没有流水」。
+  - C. 测试：新增单元测试「本周流水 weekTransactions」（上周项不计、按日期倒序）+ 组件测试「首页本周最近流水过滤」（本周项出现、上周项不出现），123/123 通过。
+  - D. web 冒烟：首页切「本周」→ 本周支出 ¥632、本周支出分类、最近流水正常渲染，无控制台错误；截图 81-home-week-recent.png。
+  - E. 版本号 4.37.0+77（aapt 校验 versionName=4.37.0/versionCode=77）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.5MB，SHA-256 `102618D2...422C`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（weekTransactions）
+  - `lib/pages/home_page.dart`（recent 数据源 + 空态文案）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/81-home-week-recent.png`（新增）
+- commit hash：`861a2a9`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 123/123；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：无新坑（沿用既有替换规范）。
+- 下一步：统计页「自定义范围」记住上次选择，或「全部账本」汇总视图；上架执行只差 Play 账号。
