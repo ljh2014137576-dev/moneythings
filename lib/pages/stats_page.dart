@@ -37,6 +37,7 @@ class _StatsPageState extends State<StatsPage> {
   DateTime? _rangeStart;
   DateTime? _rangeEnd;
   bool _rangeIncome = false;
+  bool _allBooks = false;
 
   void _openCategory(TxCategory category) {
     Navigator.of(context).push(
@@ -184,15 +185,16 @@ class _StatsPageState extends State<StatsPage> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final monthTx = state.ofMonth(_month);
-    final summary = state.summaryOf(_month);
-    final ranking = state.categoryExpenseRanking(_month);
-    final incomeRanking = state.categoryIncomeRanking(_month);
-    final balanceSeries = state.recentBalanceSeries(_month, _balanceMonths);
-    final yearData = state.yearComparison(_month.year, income: _yearIncome);
-    final weekSeries = state.weeklyExpenseSeries(_month);
-    final series = state.dailyExpenseSeries(_month);
-    final incomeSeries = state.dailyIncomeSeries(_month);
+    final monthTx = state.ofMonth(_month, allBooks: _allBooks);
+    final summary = state.summaryOf(_month, allBooks: _allBooks);
+    final ranking = state.categoryExpenseRanking(_month, allBooks: _allBooks);
+    final incomeRanking = state.categoryIncomeRanking(_month, allBooks: _allBooks);
+    final balanceSeries = state.recentBalanceSeries(_month, _balanceMonths, allBooks: _allBooks);
+    final yearData =
+        state.yearComparison(_month.year, income: _yearIncome, allBooks: _allBooks);
+    final weekSeries = state.weeklyExpenseSeries(_month, allBooks: _allBooks);
+    final series = state.dailyExpenseSeries(_month, allBooks: _allBooks);
+    final incomeSeries = state.dailyIncomeSeries(_month, allBooks: _allBooks);
     final days = series.length;
 
     final rangeActive =
@@ -249,6 +251,26 @@ class _StatsPageState extends State<StatsPage> {
                 ),
                 const SizedBox(height: kSpace2),
                 _buildRangeToggle(),
+                const SizedBox(height: kSpace2),
+                Row(
+                  children: [
+                    const Text('账本：',
+                        style:
+                            TextStyle(fontSize: 13, color: kInkSecondary)),
+                    _ChartModeTag(
+                      label: '当前账本',
+                      selected: !_allBooks,
+                      onTap: () => setState(() => _allBooks = false),
+                    ),
+                    const SizedBox(width: kSpace2),
+                    _ChartModeTag(
+                      key: const ValueKey('statsAllBooksToggle'),
+                      label: '全部账本',
+                      selected: _allBooks,
+                      onTap: () => setState(() => _allBooks = true),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -331,7 +353,7 @@ class _StatsPageState extends State<StatsPage> {
                       _buildSummaryStrip(
                         summary,
                         monthTx.length,
-                        state.expenseDeltaOf(_month),
+                        state.expenseDeltaOf(_month, allBooks: _allBooks),
                       ),
                       const SizedBox(height: kSpace3),
                       _buildBudgetCard(state, summary),
@@ -380,7 +402,7 @@ class _StatsPageState extends State<StatsPage> {
                         ),
                       ],
                       const SizedBox(height: kSpace4),
-                      _buildYearSummaryCard(state, _month.year),
+                      _buildYearSummaryCard(state, _month.year, allBooks: _allBooks),
                       ],
                     ],
                   ),
@@ -616,8 +638,9 @@ class _StatsPageState extends State<StatsPage> {
       ),
     );
   }
-  Widget _buildYearSummaryCard(AppState state, int year) {
-    final ys = state.yearSummary(year);
+  Widget _buildYearSummaryCard(AppState state, int year,
+      {bool allBooks = false}) {
+    final ys = state.yearSummary(year, allBooks: allBooks);
     if (ys.count == 0) return const SizedBox.shrink();
     return PaperGroup(
       title: '$year 年汇总',

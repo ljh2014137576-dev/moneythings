@@ -858,16 +858,16 @@ class AppState extends ChangeNotifier {
   }
 
   /// 某月（年份+月份）的流水
-  List<Transaction> ofMonth(DateTime month) {
+  List<Transaction> ofMonth(DateTime month, {bool allBooks = false}) {
     final y = month.year, m = month.month;
-    return _bookTx
+    return (allBooks ? _transactions : _bookTx)
         .where((t) => t.date.year == y && t.date.month == m)
         .toList();
   }
 
-  MonthSummary summaryOf(DateTime month) {
+  MonthSummary summaryOf(DateTime month, {bool allBooks = false}) {
     int exp = 0, inc = 0;
-    for (final t in ofMonth(month)) {
+    for (final t in ofMonth(month, allBooks: allBooks)) {
       switch (t.type) {
         case TxType.expense:
           exp += t.amount;
@@ -883,10 +883,10 @@ class AppState extends ChangeNotifier {
   /// 某年汇总：总支出/总收入/结余/日均支出/笔数/支出最多分类
   ({int expense, int income, int dailyExpense,
       int count, String topCategoryName}) yearSummary(
-      int year) {
+      int year, {bool allBooks = false}) {
     int exp = 0, inc = 0, count = 0;
     final catMap = <String, int>{};
-    for (final t in _bookTx) {
+    for (final t in (allBooks ? _transactions : _bookTx)) {
       if (t.date.year != year) continue;
       if (t.type == TxType.expense) {
         exp += t.amount;
@@ -919,17 +919,17 @@ class AppState extends ChangeNotifier {
   }
 
   /// 与上月支出差额（正数=支出增加）
-  int expenseDeltaOf(DateTime month) {
-    final cur = summaryOf(month).expense;
-    final prev = summaryOf(DateTime(month.year, month.month - 1)).expense;
+  int expenseDeltaOf(DateTime month, {bool allBooks = false}) {
+    final cur = summaryOf(month, allBooks: allBooks).expense;
+    final prev = summaryOf(DateTime(month.year, month.month - 1), allBooks: allBooks).expense;
     return cur - prev;
   }
 
   /// 某月每日支出序列（1..daysInMonth）
-  List<int> dailyExpenseSeries(DateTime month) {
+  List<int> dailyExpenseSeries(DateTime month, {bool allBooks = false}) {
     final days = DateTime(month.year, month.month + 1, 0).day;
     final list = List<int>.filled(days, 0);
-    for (final t in ofMonth(month)) {
+    for (final t in ofMonth(month, allBooks: allBooks)) {
       if (t.type == TxType.expense) {
         list[t.date.day - 1] += t.amount;
       }
@@ -939,10 +939,10 @@ class AppState extends ChangeNotifier {
   }
 
   /// 某月每日收入序列（1..daysInMonth）
-  List<int> dailyIncomeSeries(DateTime month) {
+  List<int> dailyIncomeSeries(DateTime month, {bool allBooks = false}) {
     final days = DateTime(month.year, month.month + 1, 0).day;
     final list = List<int>.filled(days, 0);
-    for (final t in ofMonth(month)) {
+    for (final t in ofMonth(month, allBooks: allBooks)) {
       if (t.type == TxType.income) {
         list[t.date.day - 1] += t.amount;
       }
@@ -951,8 +951,8 @@ class AppState extends ChangeNotifier {
   }
 
   /// 某月按周聚合的支出（第 1 周 ~ 第 N 周）
-  List<({String label, int amount})> weeklyExpenseSeries(DateTime month) {
-    final daily = dailyExpenseSeries(month);
+  List<({String label, int amount})> weeklyExpenseSeries(DateTime month, {bool allBooks = false}) {
+    final daily = dailyExpenseSeries(month, allBooks: allBooks);
     final weekCount = (daily.length + 6) ~/ 7;
     final weeks = List<int>.filled(weekCount, 0);
     for (int day = 0; day < daily.length; day++) {
@@ -1051,9 +1051,9 @@ class AppState extends ChangeNotifier {
       ..sort((a, b) => b.amount.compareTo(a.amount));
     return ranked;
   }
-  List<({TxCategory category, int amount})> categoryExpenseRanking(DateTime month) {
+  List<({TxCategory category, int amount})> categoryExpenseRanking(DateTime month, {bool allBooks = false}) {
     final map = <String, int>{};
-    for (final t in ofMonth(month)) {
+    for (final t in ofMonth(month, allBooks: allBooks)) {
       if (t.type == TxType.expense) {
         map[t.categoryId] = (map[t.categoryId] ?? 0) + t.amount;
       }
@@ -1067,9 +1067,9 @@ class AppState extends ChangeNotifier {
 
  
   /// 某月分类收入排行（降序）
-  List<({TxCategory category, int amount})> categoryIncomeRanking(DateTime month) {
+  List<({TxCategory category, int amount})> categoryIncomeRanking(DateTime month, {bool allBooks = false}) {
     final map = <String, int>{};
-    for (final t in ofMonth(month)) {
+    for (final t in ofMonth(month, allBooks: allBooks)) {
       if (t.type == TxType.income) {
         map[t.categoryId] = (map[t.categoryId] ?? 0) + t.amount;
       }
@@ -1109,12 +1109,13 @@ class AppState extends ChangeNotifier {
   List<({DateTime month, int balance})> recentBalanceSeries(
     DateTime endMonth,
 
-    int count,
-  ) {
+    int count, {
+    bool allBooks = false,
+  }) {
     final out = <({DateTime month, int balance})>[];
     for (int i = count - 1; i >= 0; i--) {
       final m = DateTime(endMonth.year, endMonth.month - i);
-      final s = summaryOf(m);
+      final s = summaryOf(m, allBooks: allBooks);
       out.add((month: m, balance: s.balance));
     }
     return out;
@@ -1124,11 +1125,12 @@ class AppState extends ChangeNotifier {
   List<({int month, int thisYear, int lastYear})> yearComparison(
     int year, {
     bool income = false,
+    bool allBooks = false,
   }) {
     final out = <({int month, int thisYear, int lastYear})>[];
     for (int m = 1; m <= 12; m++) {
-      final cur = summaryOf(DateTime(year, m));
-      final prev = summaryOf(DateTime(year - 1, m));
+      final cur = summaryOf(DateTime(year, m), allBooks: allBooks);
+      final prev = summaryOf(DateTime(year - 1, m), allBooks: allBooks);
       out.add((
         month: m,
         thisYear: income ? cur.income : cur.expense,
