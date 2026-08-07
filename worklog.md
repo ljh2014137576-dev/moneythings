@@ -1489,3 +1489,19 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 149/149；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：无新坑（IndexedStack 中账本名文本可能多处 → 测试用 LedgerPage 限定 descendant）。
 - 下一步：统计页「全部账本」范围切换，或「首页」账本汇总总行；上架执行只差 Play 账号。
+## 2026-08-08 19:30 — 迭代 v4.54：首页账本汇总合计行 + 版本号 4.54.0 + 最终 release
+
+- 任务内容：
+  - A. 首页「账本汇总」卡片新增「合计」总行（多账本时）：汇总全部账本本月支出/收入/结余（加粗强调，无切换箭头）。
+  - B. `_BookSummaryRow` 新增 `total` 参数（加粗/图标强调/隐藏 chevron）。
+  - C. 测试：新增组件测试「首页账本汇总合计行」（两账本 10+20=30 本月支出），150/150 通过。
+  - D. web 冒烟：注入旅行账本 + 一笔 66 元 → 首页账本汇总显示「合计 本月支出 1,066.00 · 收入 14,000.00 · 结余 12,934.00」；截图 98-book-summary-total.png。
+  - E. 版本号 4.54.0+94（aapt 校验 versionName=4.54.0/versionCode=94）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `E2DD7110...CC0E`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/home_page.dart`（账本汇总合计行 + _BookSummaryRow.total）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/98-book-summary-total.png`（新增）
+- commit hash：`86fd630`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 150/150；release 构建（连续两次 Gradle 失败为已知 Metaspace 问题，第三次杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：无新坑。
+- 下一步：统计页「全部账本」范围切换，或「首页」今日模式预算显示；上架执行只差 Play 账号。
