@@ -1628,3 +1628,18 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 158/158；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：无新坑（导入兼容旧格式：缺第 9 列时 date=nextDate）。
 - 下一步：首页今日模式预算显示，或「明细」按月导出；上架执行只差 Play 账号。
+## 2026-08-09 04:30 — 迭代 v4.63：明细多选复制选中流水文本 + 版本号 4.63.0 + 最终 release
+
+- 任务内容：
+  - A. 明细多选「批量修改」弹层新增「复制选中流水（文本）」（第 10 项）：按日期倒序生成文本（日期/类型/分类/金额/账户/转入账户/备注）→ Clipboard.setData → SnackBar「已复制 N 笔流水文本」→ 退出多选。
+  - B. 测试：新增组件测试「明细多选复制选中流水文本」（mock 平台通道断言 Clipboard.setData + SnackBar），159/159 通过（连续 2 次全绿）。
+  - C. web 冒烟：明细多选全选 18 笔 → 批量弹层第 10 项「复制选中流水（文本）」可点击；截图 107-copy-selected-text.png。
+  - D. 版本号 4.63.0+103（aapt 校验 versionName=4.63.0/versionCode=103）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `31846838...7FF`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`（复制选中文本菜单项 + _copySelectedText + services 导入）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/107-copy-selected-text.png`（新增）
+- commit hash：`c903d60`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 159/159；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：无新坑。
+- 下一步：首页今日模式预算显示，或「明细」按月导出；上架执行只差 Play 账号。
