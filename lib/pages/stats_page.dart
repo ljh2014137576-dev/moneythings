@@ -1263,14 +1263,14 @@ class _StatsPageState extends State<StatsPage> {
                 ),
               ),
             ),
-              const SizedBox(height: 6),
-              Text(
-                over
-                    ? '已超出预算 ¥'
-                    : '已用 ¥ · 剩余 ¥',
-                style: const TextStyle(
-                    fontSize: 11, color: kInkSecondary),
-              ),
+            const SizedBox(height: 6),
+            Text(
+              over
+                  ? '已超出预算 ¥${AmountText.format(spent - budget, showSymbol: false)}'
+                  : '已用 ¥${AmountText.format(spent, showSymbol: false)} · 剩余 ¥${AmountText.format(budget - spent, showSymbol: false)}',
+              style: const TextStyle(
+                  fontSize: 11, color: kInkSecondary),
+            ),
               ],
             ),
           ),

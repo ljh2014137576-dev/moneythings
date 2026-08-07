@@ -5094,6 +5094,37 @@ void main() {
     await tester.pumpAndSettle();
     expect(state.monthlyBudget, 2000000);
   });
+  testWidgets('统计预算卡显示已用与剩余金额', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'bg2',
+      type: TxType.expense,
+      amount: 3000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 3),
+      note: '预算项',
+    ));
+    await state.setBudget(10000);
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('统计'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('预算对比'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    // 已用/剩余展示实际金额而非占位文案
+    expect(find.textContaining('已用 ¥30.00'), findsOneWidget);
+    expect(find.textContaining('剩余 ¥70.00'), findsOneWidget);
+    expect(find.textContaining('已用 ¥30.00 · 剩余 ¥70.00'), findsOneWidget);
+  });
   testWidgets('明细空态去记一笔', (tester) async {
     SharedPreferences.setMockInitialValues({'onboarded_v1': true});
     final state = AppState();
