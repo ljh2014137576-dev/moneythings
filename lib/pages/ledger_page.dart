@@ -46,6 +46,7 @@ class _LedgerPageState extends State<LedgerPage> {
   String _query = '';
   Timer? _searchDebounce;
   bool _showAll = false;
+  bool _allBooks = false;
   String _accountFilter = 'all';
   String _categoryFilter = 'all';
   int? _amountMin;
@@ -168,9 +169,11 @@ class _LedgerPageState extends State<LedgerPage> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final monthTx = _showAll
-        ? state.currentBookTransactions
-        : state.ofMonth(_month);
+    final monthTx = _allBooks
+        ? state.transactions
+        : (_showAll
+            ? state.currentBookTransactions
+            : state.ofMonth(_month));
     final visible = _visible(monthTx);
     if (_sortByAmount) {
       visible.sort((a, b) => b.amount.compareTo(a.amount));
@@ -520,6 +523,20 @@ class _LedgerPageState extends State<LedgerPage> {
           selected: _showAll,
           onTap: () => setState(() => _showAll = !_showAll),
         ),
+        const SizedBox(width: kSpace3),
+        const Text('账本：',
+            style: TextStyle(fontSize: 13, color: kInkSecondary)),
+        _FilterTag(
+          label: '当前账本',
+          selected: !_allBooks,
+          onTap: () => setState(() => _allBooks = false),
+        ),
+        const SizedBox(width: kSpace2),
+        _FilterTag(
+          label: '全部账本',
+          selected: _allBooks,
+          onTap: () => setState(() => _allBooks = true),
+        ),
       ],
     );
   }
@@ -775,9 +792,11 @@ class _LedgerPageState extends State<LedgerPage> {
 
   void _selectAllVisible() {
     final state = context.read<AppState>();
-    final source = _showAll
-        ? state.currentBookTransactions
-        : state.ofMonth(_month);
+    final source = _allBooks
+        ? state.transactions
+        : (_showAll
+            ? state.currentBookTransactions
+            : state.ofMonth(_month));
     final ids = _visible(source).map((t) => t.id).toSet();
     setState(() => _selectedIds.addAll(ids));
   }
@@ -1557,9 +1576,11 @@ class _LedgerPageState extends State<LedgerPage> {
 
   Future<void> _exportVisible() async {
     final state = context.read<AppState>();
-    final source = _showAll
-        ? state.currentBookTransactions
-        : state.ofMonth(_month);
+    final source = _allBooks
+        ? state.transactions
+        : (_showAll
+            ? state.currentBookTransactions
+            : state.ofMonth(_month));
     final txs = _visible(source);
     if (txs.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
