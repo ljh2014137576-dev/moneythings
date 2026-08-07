@@ -26,6 +26,7 @@ class TransactionRepository {
   static const String _kRecurringRemindKey = 'recurring_remind_v1';
   static const String _kStatsRangeKey = 'stats_range_v1';
   static const String _kQuickAmountsKey = 'custom_quick_amounts_v1';
+  static const String _kQuickNotesKey = 'custom_quick_notes_v1';
   static const String _kLastAccountKey = 'last_account_v1';
   static const String _kRecentSearchesKey = 'recent_searches_v1';
   static const String _kRecurringRulesKey = 'recurring_rules_v1';
@@ -168,6 +169,17 @@ class TransactionRepository {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(
         _kQuickAmountsKey, [for (final a in amounts) '$a']);
+  }
+
+  /// 自定义常用备注
+  Future<List<String>> loadCustomQuickNotes() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_kQuickNotesKey) ?? const [];
+  }
+
+  Future<void> saveCustomQuickNotes(List<String> notes) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_kQuickNotesKey, notes);
   }
 
   Future<String> loadLastAccountId() async {

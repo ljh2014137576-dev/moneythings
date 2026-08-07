@@ -4038,7 +4038,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('记一笔'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('+ 自定义'));
+    await tester.tap(find.text('+ 自定义').first);
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).last, '128');
     await tester.tap(find.text('添加'));
@@ -4049,5 +4049,51 @@ void main() {
     await tester.tap(find.text('+¥128'));
     await tester.pumpAndSettle();
     expect(find.widgetWithText(TextField, '128.00'), findsOneWidget);
+  });
+  test('自定义常用备注增删持久化', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    expect(state.customQuickNotes, isEmpty);
+    await state.addCustomQuickNote('培训');
+    await state.addCustomQuickNote('礼物');
+    await state.addCustomQuickNote('培训'); // 去重
+    expect(state.customQuickNotes, ['培训', '礼物']);
+    final state2 = AppState();
+    await state2.load();
+    expect(state2.customQuickNotes, ['培训', '礼物']);
+    await state2.removeCustomQuickNote('培训');
+    expect(state2.customQuickNotes, ['礼物']);
+  });
+
+  testWidgets('记一笔添加自定义常用备注', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('记一笔'));
+    await tester.pumpAndSettle();
+    // 备注行的「+ 自定义」（金额行也有同名 chip，取最后一个）
+    await tester.scrollUntilVisible(
+      find.text('+ 自定义').last,
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('+ 自定义').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, '培训');
+    await tester.tap(find.text('添加'));
+    await tester.pumpAndSettle();
+    expect(state.customQuickNotes, ['培训']);
+    expect(find.text('培训'), findsWidgets);
+    // 点击自定义备注填入备注框
+    await tester.ensureVisible(find.text('培训'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('培训').last);
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextField, '培训'), findsOneWidget);
   });
 }

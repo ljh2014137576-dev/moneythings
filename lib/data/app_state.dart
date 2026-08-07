@@ -41,6 +41,7 @@ class AppState extends ChangeNotifier {
   DateTime? _statsRangeStart;
   DateTime? _statsRangeEnd;
   List<int> _customQuickAmounts = [];
+  List<String> _customQuickNotes = [];
   String _lastAccountId = 'alipay';
   bool _onboarded = false;
   bool _loaded = false;
@@ -95,6 +96,7 @@ class AppState extends ChangeNotifier {
     _statsRangeStart = statsRange.start;
     _statsRangeEnd = statsRange.end;
     _customQuickAmounts = await _repository.loadCustomQuickAmounts();
+    _customQuickNotes = await _repository.loadCustomQuickNotes();
     _budgetNotify = await _repository.loadBudgetNotify();
     _onboarded = await _repository.loadOnboarded();
     _rules = await _repository.loadRecurringRules();
@@ -533,6 +535,30 @@ class AppState extends ChangeNotifier {
         if (a != yuan) a,
     ];
     await _repository.saveCustomQuickAmounts(_customQuickAmounts);
+    notifyListeners();
+  }
+
+  /// 自定义常用备注（去重，最多 20 条）
+  List<String> get customQuickNotes => List.unmodifiable(_customQuickNotes);
+
+  Future<void> addCustomQuickNote(String note) async {
+    final n = note.trim();
+    if (n.isEmpty) return;
+    if (_customQuickNotes.contains(n)) return;
+    _customQuickNotes = [..._customQuickNotes, n];
+    if (_customQuickNotes.length > 20) {
+      _customQuickNotes = _customQuickNotes.sublist(_customQuickNotes.length - 20);
+    }
+    await _repository.saveCustomQuickNotes(_customQuickNotes);
+    notifyListeners();
+  }
+
+  Future<void> removeCustomQuickNote(String note) async {
+    _customQuickNotes = [
+      for (final n in _customQuickNotes)
+        if (n != note) n,
+    ];
+    await _repository.saveCustomQuickNotes(_customQuickNotes);
     notifyListeners();
   }
 

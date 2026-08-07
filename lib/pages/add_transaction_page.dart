@@ -615,6 +615,48 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     }
   }
 
+  /// 长按删除自定义备注
+  void _removeCustomNote(String note) {
+    context.read<AppState>().removeCustomQuickNote(note);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已删除自定义备注「$note」')),
+    );
+  }
+
+  /// 弹窗添加自定义常用备注
+  Future<void> _addCustomNote() async {
+    final controller = TextEditingController();
+    final note = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('添加常用备注'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 20,
+          decoration: const InputDecoration(
+              labelText: '备注', isDense: true, counterText: ''),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              final v = controller.text.trim();
+              Navigator.of(ctx).pop(v.isEmpty ? null : v);
+            },
+            child: const Text('添加'),
+          ),
+        ],
+      ),
+    );
+    if (note != null && mounted) {
+      await context.read<AppState>().addCustomQuickNote(note);
+    }
+  }
+
   Widget _buildKeypad() {
     const keys = [
       ['1', '2', '3'],
@@ -878,6 +920,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   Widget _buildQuickNoteRow() {
     const presets = ['午餐', '晚餐', '早餐', '地铁', '打车', '超市', '房租', '水电', '话费', '咖啡'];
+    final custom = context.watch<AppState>().customQuickNotes;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -894,6 +937,26 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 },
               ),
             ),
+          for (final n in custom)
+            Padding(
+              padding: const EdgeInsets.only(right: kSpace2),
+              child: _QuickAmountChip(
+                label: n,
+                onTap: () {
+                  _noteController.text = n;
+                  _note = n;
+                  setState(() {});
+                },
+                onLongPress: () => _removeCustomNote(n),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.only(right: kSpace2),
+            child: _QuickAmountChip(
+              label: '+ 自定义',
+              onTap: _addCustomNote,
+            ),
+          ),
         ],
       ),
     );
