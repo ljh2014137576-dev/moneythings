@@ -1139,7 +1139,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.50.0',
+            Text('版本 4.51.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -1148,7 +1148,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.50 结余走势粒度（3/6/12月）\nv4.49 周期提醒提前天数\nv4.48 明细复制选中到账本\nv4.47 报销标记\nv4.46 明细全部账本\nv4.45 范围每日收入图\nv4.44 常用备注自定义\nv4.43 常用金额自定义\nv4.42 首页今日概览\nv4.41 统计收入占比环图\nv4.40 周期规则复制\nv4.39 首页账本汇总\nv4.38 统计自定义范围记忆\nv4.37 首页本周最近流水\nv4.36 首页本周支出分类\nv4.35 周期记账到期提醒\nv4.34 明细按分类批量删除\nv4.33 明细按分类批量修改账户\nv4.32 统计年度收入对比\nv4.31 明细按分类移动到其他账本\nv4.30 周期规则按月补生成\nv4.29 统计自定义范围结余走势\nv4.28 明细批量移动到其他账本\nv4.27 统计页自定义日期范围\nv4.26 我的页数据概况\nv4.25 明细复制到其他账本\nv4.24 首页总资产下钻账户',
+            Text('v4.51 批量标记可报销\nv4.50 结余走势粒度（3/6/12月）\nv4.49 周期提醒提前天数\nv4.48 明细复制选中到账本\nv4.47 报销标记\nv4.46 明细全部账本\nv4.45 范围每日收入图\nv4.44 常用备注自定义\nv4.43 常用金额自定义\nv4.42 首页今日概览\nv4.41 统计收入占比环图\nv4.40 周期规则复制\nv4.39 首页账本汇总\nv4.38 统计自定义范围记忆\nv4.37 首页本周最近流水\nv4.36 首页本周支出分类\nv4.35 周期记账到期提醒\nv4.34 明细按分类批量删除\nv4.33 明细按分类批量修改账户\nv4.32 统计年度收入对比\nv4.31 明细按分类移动到其他账本\nv4.30 周期规则按月补生成\nv4.29 统计自定义范围结余走势\nv4.28 明细批量移动到其他账本\nv4.27 统计页自定义日期范围\nv4.26 我的页数据概况\nv4.25 明细复制到其他账本\nv4.24 首页总资产下钻账户',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),

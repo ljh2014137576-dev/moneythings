@@ -4420,4 +4420,62 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('结余走势（近 3 月）'), findsOneWidget);
   });
+  testWidgets('明细多选批量标记可报销', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'rb1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: now,
+      note: '标一',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'rb2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'shopping',
+      accountId: 'alipay',
+      date: now,
+      note: '标二',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.textContaining('标一'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('多选删除'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('全选'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('修改选中'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('标记为可报销'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('标记为可报销'));
+    await tester.pumpAndSettle();
+    expect(state.currentBookTransactions.every((t) => t.reimbursable), isTrue);
+    // 取消标记
+    await tester.ensureVisible(find.textContaining('标一'));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.textContaining('标一'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('多选删除'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('全选'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('修改选中'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('取消报销标记'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('取消报销标记'));
+    await tester.pumpAndSettle();
+    expect(state.currentBookTransactions.every((t) => !t.reimbursable), isTrue);
+  });
 }

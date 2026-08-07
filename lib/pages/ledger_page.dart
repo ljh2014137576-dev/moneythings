@@ -870,6 +870,18 @@ class _LedgerPageState extends State<LedgerPage> {
               title: const Text('按分类删除'),
               onTap: () => Navigator.of(context).pop('catdelete'),
             ),
+            ListTile(
+              leading: const Icon(Icons.receipt_long_outlined,
+                  size: 20, color: kInkPrimary),
+              title: const Text('标记为可报销'),
+              onTap: () => Navigator.of(context).pop('reimburse'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.receipt_long_outlined,
+                  size: 20, color: kInkSecondary),
+              title: const Text('取消报销标记'),
+              onTap: () => Navigator.of(context).pop('unreimburse'),
+            ),
             ],
           ),
         ),
@@ -888,6 +900,10 @@ class _LedgerPageState extends State<LedgerPage> {
       await _pickBulkCategoryAccount();
     } else if (action == 'catdelete') {
       await _pickBulkCategoryDelete();
+    } else if (action == 'reimburse') {
+      await _bulkSetReimbursable(true);
+    } else if (action == 'unreimburse') {
+      await _bulkSetReimbursable(false);
     } else {
       await _pickBulkAccount();
     }
@@ -1410,6 +1426,21 @@ class _LedgerPageState extends State<LedgerPage> {
           ),
         ),
       );
+    _exitSelection();
+  }
+  /// 批量标记/取消可报销
+  Future<void> _bulkSetReimbursable(bool value) async {
+    if (_selectedIds.isEmpty) return;
+    await context
+        .read<AppState>()
+        .bulkUpdateTransactions(_selectedIds.toList(), reimbursable: value);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+          content: Text(value
+              ? '已标记 ${_selectedIds.length} 笔可报销'
+              : '已取消 ${_selectedIds.length} 笔报销标记')),
+    );
     _exitSelection();
   }
   Future<void> _pickBulkAccount() async {

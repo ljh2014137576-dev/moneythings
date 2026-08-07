@@ -175,6 +175,7 @@ class AppState extends ChangeNotifier {
     List<String> ids, {
     String? categoryId,
     String? accountId,
+    bool? reimbursable,
   }) async {
     if (ids.isEmpty) return;
     final idSet = ids.toSet();
@@ -184,6 +185,7 @@ class AppState extends ChangeNotifier {
             ? t.copyWith(
                 categoryId: categoryId ?? t.categoryId,
                 accountId: accountId ?? t.accountId,
+                reimbursable: reimbursable ?? t.reimbursable,
               )
             : t,
     ];
