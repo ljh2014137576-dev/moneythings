@@ -1052,3 +1052,21 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 112/112；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：`use_build_context_synchronously` lint → await 后补 `mounted` 检查。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+## 2026-08-07 18:30 — 迭代 v4.29：统计页自定义范围「结余走势」联动图 + 版本号 4.29.0 + 最终 release
+
+- 任务内容：
+  - A. `AppState.rangeDailyNetSeries(start, end)`：自定义范围逐日收入-支出累计结余序列（时间升序，转账不计），返回 `({DateTime date, int net})`。
+  - B. 统计页范围模式新增「结余走势（范围）」卡片（`_buildRangeBalanceChart`，LineChart 曲线 + kAccentBlue 蓝色细线 + 极淡蓝面积填充，负值自动落入零轴下方，触控 tooltip 显示日期与结余金额），位于范围汇总之后、每日支出柱状图之前，与所选日期范围联动。
+  - C. `_compact` 轴标签支持负数（-3246.9 → -3.2k），修复范围走势负值轴显示。
+  - D. 测试：扩展「日期范围汇总与序列」（断言逐日累计结余 [-1000,-1000,-3000,-3000,2000]）与「统计页自定义日期范围」（断言出现「结余走势（范围）」），112/112 通过。
+  - E. web 冒烟：统计→自定义→8月1日~8月7日，汇总/结余走势（范围）/每日支出均渲染，轴标签 -3.2k 正常；截图 73-range-balance.png。
+  - F. 版本号 4.29.0+69（aapt 校验 versionName=4.29.0/versionCode=69）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.5MB，SHA-256 `4B13B27A...C3B1`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（rangeDailyNetSeries）
+  - `lib/pages/stats_page.dart`（_buildRangeBalanceChart + 范围分支接入 + _compact 负数支持）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/73-range-balance.png`（新增）
+- commit hash：`cef35c1`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 112/112；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：PowerShell 双引号 here-string 会把 `$` 插值吞掉，导致 tooltip 字符串丢失日期/金额 → 改用单引号 here-string 修复后重建 APK 并更新 SHA；web 端日期选择器用输入模式（input[type=text] fill "2026/8/1"）避免语义网格点击定位困难。
+- 下一步：周期规则「按月补生成」或统计年度对比增强；上架执行只差 Play 账号。
