@@ -2469,4 +2469,73 @@ void main() {
     expect(find.text('总支出'), findsOneWidget);
     expect(find.textContaining('全年 1 笔'), findsOneWidget);
   });
+  test('账户月度转账统计', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'tf1',
+      type: TxType.transfer,
+      amount: 5000,
+      categoryId: 'transfer',
+      accountId: 'alipay',
+      transferToAccountId: 'wechat',
+      date: DateTime(now.year, now.month, 3),
+    ));
+    await state.addTransaction(Transaction(
+      id: 'tf2',
+      type: TxType.transfer,
+      amount: 3000,
+      categoryId: 'transfer',
+      accountId: 'wechat',
+      transferToAccountId: 'alipay',
+      date: DateTime(now.year, now.month, 5),
+    ));
+    await state.addTransaction(Transaction(
+      id: 'tf3',
+      type: TxType.transfer,
+      amount: 2000,
+      categoryId: 'transfer',
+      accountId: 'alipay',
+      transferToAccountId: 'wechat',
+      date: DateTime(now.year, now.month - 1, 3),
+    ));
+    final alipay = state.monthlyTransferSummaryOfAccount(
+        'alipay', DateTime(now.year, now.month));
+    expect(alipay.outAmount, 5000);
+    expect(alipay.outCount, 1);
+    expect(alipay.inAmount, 3000);
+    expect(alipay.inCount, 1);
+    final wechat = state.monthlyTransferSummaryOfAccount(
+        'wechat', DateTime(now.year, now.month));
+    expect(wechat.outAmount, 3000);
+    expect(wechat.inAmount, 5000);
+  });
+
+  testWidgets('账户菜单显示本月转账统计', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'tfw1',
+      type: TxType.transfer,
+      amount: 5000,
+      categoryId: 'transfer',
+      accountId: 'alipay',
+      transferToAccountId: 'wechat',
+      date: DateTime(now.year, now.month, 3),
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('支付宝'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('本月转账：转出 50.00'), findsOneWidget);
+    expect(find.textContaining('转入 0.00'), findsOneWidget);
+  });
 }

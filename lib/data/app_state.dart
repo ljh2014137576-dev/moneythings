@@ -708,6 +708,33 @@ Future<CsvImportResult> importCsv(String csv) async {
     return (expense: exp, income: inc, count: count);
   }
 
+  /// 某账户某月转出/转入统计（仅当前账本）
+  ({int outAmount, int outCount, int inAmount, int inCount})
+      monthlyTransferSummaryOfAccount(String accountId, DateTime month) {
+    int outA = 0, outC = 0, inA = 0, inC = 0;
+    for (final t in _bookTx) {
+      if (t.type != TxType.transfer ||
+          t.date.year != month.year ||
+          t.date.month != month.month) {
+        continue;
+      }
+      if (t.accountId == accountId) {
+        outA += t.amount;
+        outC++;
+      }
+      if (t.transferToAccountId == accountId) {
+        inA += t.amount;
+        inC++;
+      }
+    }
+    return (
+      outAmount: outA,
+      outCount: outC,
+      inAmount: inA,
+      inCount: inC,
+    );
+  }
+
   int get totalAssets {
     int sum = 0;
     for (final a in _accounts) {

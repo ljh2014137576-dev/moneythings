@@ -486,6 +486,10 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _accountMenu(Account account) async {
+    final ts = context
+        .read<AppState>()
+        .monthlyTransferSummaryOfAccount(account.id, DateTime.now());
+    final hasTransfer = ts.outCount > 0 || ts.inCount > 0;
     final action = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
@@ -500,6 +504,17 @@ class _ProfilePageState extends State<ProfilePage> {
                   style: const TextStyle(
                       fontSize: 16, fontWeight: FontWeight.w600)),
             ),
+            if (hasTransfer)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    kSpace4, 0, kSpace4, kSpace2),
+                child: Text(
+                  '本月转账：转出 ${AmountText.format(ts.outAmount, showSymbol: false)} · ${ts.outCount} 笔 '
+                  '　转入 ${AmountText.format(ts.inAmount, showSymbol: false)} · ${ts.inCount} 笔',
+                  style: const TextStyle(
+                      fontSize: 12, color: kInkSecondary),
+                ),
+              ),
             const Divider(height: 1),
             ListTile(
               leading: const Icon(Icons.receipt_long_outlined,
@@ -940,7 +955,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.13.0',
+            Text('版本 4.14.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -949,7 +964,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.13 统计页年度汇总\nv4.12 自定义账户（增删改·图标）\nv4.11 周期规则立即生成本次\nv4.10 统计页预算对比\nv4.9 明细多选批量修改',
+            Text('v4.14 账户页转账统计\nv4.13 统计页年度汇总\nv4.12 自定义账户（增删改·图标）\nv4.11 周期规则立即生成本次\nv4.10 统计页预算对比',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),
