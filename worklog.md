@@ -751,3 +751,24 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 84/84；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：规则行副标题不含备注（金额·下次），测试按行标题「每周 · 餐饮」滚动定位。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-09 07:00 — 迭代 v4.12：自定义账户 + 版本号 4.12.0 + 最终 release
+
+- 任务内容：
+  - A. 自定义账户：`Account` 加 isCustom/iconKey + `Account.custom()` + 自定义注册表（setCustom/accountById/accountIdByName 支持自定义）；AppState addAccount/renameAccount/removeAccount（有流水的账户禁止删除），load 时同步注册表。
+  - B. 我的页账户区「+」新增账户（名称 + 40 图标选择器，复用 kCategoryIconChoices）；自定义账户菜单含「重命名 / 删除账户」（删除二次确认 + 有流水拦截提示）。
+  - C. CSV 导入账户名映射支持自定义账户（accountIdByName 注册表查找）。
+  - D. 测试：新增 2 项（账户增删改与名称映射/有流水禁删、我的页新增账户 UI），86/86 通过。
+  - E. web 冒烟：新增「招商卡」（名称+图标）→ 持久化 + 显示 + 菜单含重命名/删除账户 + 月度收支；零控制台错误。截图 56-custom-account.png。
+  - F. 版本号 4.12.0+52（aapt 校验 versionName=4.12.0/versionCode=52）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `25A42857...0D73`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/models/account.dart`（isCustom/iconKey/custom()/注册表/accountIdByName）
+  - `lib/data/app_state.dart`（addAccount/renameAccount/removeAccount/_syncAccounts）
+  - `lib/pages/profile_page.dart`（账户区「+」、_AccountEditSheet、账户菜单重命名/删除）
+  - `lib/services/csv_importer.dart`（账户名映射走注册表）
+  - `pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/56-custom-account.png`（新增）
+- commit hash：`c24f454`；已 push（2694427..c24f454 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 86/86；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：copyWith 内 `this.icon` 触发 lint → 去掉 this.；账户删除前检查全账本流水（有则拦截并提示）。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
