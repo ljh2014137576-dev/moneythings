@@ -787,18 +787,19 @@ class _LedgerPageState extends State<LedgerPage> {
     final action = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                  kSpace4, kSpace3, kSpace4, kSpace2),
-              child: Text('批量修改 ${_selectedIds.length} 笔',
-                  style: TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600)),
-            ),
-            const Divider(height: 1),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                    kSpace4, kSpace3, kSpace4, kSpace2),
+                child: Text('批量修改 ${_selectedIds.length} 笔',
+                    style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600)),
+              ),
+              const Divider(height: 1),
             ListTile(
               leading: const Icon(Icons.sell_outlined,
                   size: 20, color: kInkPrimary),
@@ -827,8 +828,14 @@ class _LedgerPageState extends State<LedgerPage> {
                   size: 20, color: kInkPrimary),
               title: const Text('按分类修改账户'),
               onTap: () => Navigator.of(context).pop('cataccount'),
+            ),            ListTile(
+              leading: const Icon(Icons.delete_outline_rounded,
+                  size: 20, color: kDanger),
+              title: const Text('按分类删除'),
+              onTap: () => Navigator.of(context).pop('catdelete'),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -841,6 +848,8 @@ class _LedgerPageState extends State<LedgerPage> {
       await _pickBulkCategoryMove();
     } else if (action == 'cataccount') {
       await _pickBulkCategoryAccount();
+    } else if (action == 'catdelete') {
+      await _pickBulkCategoryDelete();
     } else {
       await _pickBulkAccount();
     }
@@ -1192,6 +1201,107 @@ class _LedgerPageState extends State<LedgerPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('已修改 ${ids.length} 笔账户为「${account.name}」')),
     );
+    _exitSelection();
+  }
+  /// 按分类批量删除：选分类 → 强确认 → 删除该分类全部流水（可撤销）
+  Future<void> _pickBulkCategoryDelete() async {
+    final state = context.read<AppState>();
+    final categories = [
+      ...TxCategories.of(TxType.expense),
+      ...TxCategories.of(TxType.income),
+    ];
+    final category = await showModalBottomSheet<TxCategory>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(kSpace4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('选择分类',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+              const SizedBox(height: kSpace3),
+              Wrap(
+                spacing: kSpace2,
+                runSpacing: kSpace2,
+                children: [
+                  for (final c in categories)
+                    InkWell(
+                      onTap: () => Navigator.of(context).pop(c),
+                      borderRadius: BorderRadius.circular(kRadiusTable),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: kSpace3, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0F1EF),
+                          borderRadius: BorderRadius.circular(kRadiusTable),
+                        ),
+                        child: Text(c.name,
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w500)),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (category == null || !mounted) return;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('按分类删除？',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+        content: Text('将删除当前账本中「${category.name}」分类的全部流水，无法恢复。',
+            style: const TextStyle(fontSize: 14, color: kInkSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: kDanger),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    final txs = state.currentBookTransactions
+        .where((t) => t.categoryId == category.id)
+        .toList();
+    if (txs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('该分类暂无流水')),
+      );
+      return;
+    }
+    for (final t in txs) {
+      await state.deleteTransaction(t.id);
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('已删除 ${txs.length} 笔「${category.name}」流水'),
+          action: SnackBarAction(
+            label: '撤销',
+            textColor: kAccentBlue,
+            onPressed: () {
+              for (final t in txs) {
+                state.addTransaction(t);
+              }
+            },
+          ),
+        ),
+      );
     _exitSelection();
   }
   Future<void> _pickBulkAccount() async {

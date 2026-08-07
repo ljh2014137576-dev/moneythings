@@ -3514,4 +3514,70 @@ void main() {
     expect(state.currentBookTransactions
         .firstWhere((t) => t.note == '购物一').accountId, 'wechat');
   });
+  testWidgets('明细按分类批量删除（含撤销）', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'cdl1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '餐一',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'cdl2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '餐二',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'cdl3',
+      type: TxType.expense,
+      amount: 300,
+      categoryId: 'shopping',
+      accountId: 'wechat',
+      date: DateTime(now.year, now.month, now.day),
+      note: '购物一',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.textContaining('餐一'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('多选删除'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('全选'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('修改选中'));
+    await tester.pumpAndSettle();
+    expect(find.text('按分类删除'), findsOneWidget);
+    await tester.ensureVisible(find.text('按分类删除'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('按分类删除'));
+    await tester.pumpAndSettle();
+    // 分类选择（弹层在最后，取 .last）
+    await tester.tap(find.text('餐饮').last);
+    await tester.pumpAndSettle();
+    // 强确认对话框
+    expect(find.textContaining('「餐饮」分类的全部流水'), findsOneWidget);
+    await tester.tap(find.text('删除'));
+    await tester.pumpAndSettle();
+    // 餐饮 2 笔已删除，购物保留
+    expect(state.currentBookTransactions.any((t) => t.note == '餐一'), isFalse);
+    expect(state.currentBookTransactions.any((t) => t.note == '餐二'), isFalse);
+    expect(state.currentBookTransactions.any((t) => t.note == '购物一'), isTrue);
+    // 撤销恢复
+    await tester.tap(find.text('撤销'));
+    await tester.pumpAndSettle();
+    expect(state.currentBookTransactions.where((t) => t.categoryId == 'food').length, 2);
+  });
 }
