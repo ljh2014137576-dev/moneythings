@@ -1386,3 +1386,18 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 140/140；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：web 记一笔页滚动不响应拖拽 → 用大滚轮滚动到可报销开关再点击；「报」徽标未在语义树单独暴露（合并进行文本），不影响功能（有组件测试覆盖逻辑）。
 - 下一步：统计页「全部账本」范围切换，或周期规则「提前提醒天数」；上架执行只差 Play 账号。
+## 2026-08-08 13:30 — 迭代 v4.48：明细多选复制选中到其他账本 + 版本号 4.48.0 + 最终 release
+
+- 任务内容：
+  - A. 明细多选「批量修改」弹层新增「复制选中到其他账本」（第 4 项）：选目标账本 → 确认对话框（显示笔数，说明原账本保留）→ 逐笔 `copyTransactionToBook` → SnackBar「已复制 N 笔到「账本」」→ 退出多选。
+  - B. 测试：新增组件测试「明细多选复制选中到其他账本」（2 笔复制后原账本保留、目标账本 +2）；加固既有「按分类移动到其他账本/按分类修改账户」测试（弹层项增多后需 ensureVisible），141/141 通过。
+  - C. web 冒烟：明细多选全选 18 笔 → 复制选中到其他账本 → 旅行账本 → 确认「复制选中的 18 笔」→ localStorage default=95 / trip=18 / 总数 113；截图 92-batch-copy-book.png。
+  - D. 版本号 4.48.0+88（aapt 校验 versionName=4.48.0/versionCode=88）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `8EF36123...26F8`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`（弹层第 4 项 + _pickBulkCopyBook + 分发）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/92-batch-copy-book.png`（新增）
+- commit hash：`73844ad`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 141/141；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：弹层第 4 项使既有「按分类修改账户」（第 6 项）移出视口 → 测试补 ensureVisible；「按分类移动到其他账本」同步加固。
+- 下一步：统计页「全部账本」范围切换，或周期规则「提前提醒天数」；上架执行只差 Play 账号。
