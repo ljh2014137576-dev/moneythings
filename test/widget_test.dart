@@ -2698,11 +2698,11 @@ void main() {
       ),
     ];
     final csv = CsvExporter.exportRecurringCsv(rules);
-    expect(csv.contains('频率,类型,金额(元),分类,账户,下次日期,备注'), isTrue);
+    expect(csv.contains('频率,类型,金额(元),分类,账户,下次日期,备注,转入账户'), isTrue);
     expect(
-        csv.contains('每月,支出,1000.00,居住,支付宝,2026-09-01,房租'), isTrue);
+        csv.contains('每月,支出,1000.00,居住,支付宝,2026-09-01,房租,'), isTrue);
     expect(
-        csv.contains('每月,收入,5000.00,工资,银行卡,2026-09-01,工资'), isTrue);
+        csv.contains('每月,收入,5000.00,工资,银行卡,2026-09-01,工资,'), isTrue);
   });
 
   testWidgets('我的页周期记账区有导出按钮', (tester) async {
@@ -2818,5 +2818,76 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('${now.year - 1} 年'), findsOneWidget);
     expect(find.textContaining('去年'), findsOneWidget);
+  });
+  test('周期规则 CSV 导出导入往返', () {
+    final rules = [
+      RecurringRule(
+        id: 'r1',
+        type: TxType.expense,
+        amount: 100000,
+        categoryId: 'home',
+        accountId: 'alipay',
+        note: '房租',
+        date: DateTime(2026, 8, 1),
+        nextDate: DateTime(2026, 9, 1),
+        frequency: RecurFrequency.monthly,
+      ),
+      RecurringRule(
+        id: 'r2',
+        type: TxType.transfer,
+        amount: 50000,
+        categoryId: 'transfer',
+        accountId: 'alipay',
+        transferToAccountId: 'wechat',
+        note: '定存',
+        date: DateTime(2026, 8, 1),
+        nextDate: DateTime(2026, 9, 1),
+        frequency: RecurFrequency.weekly,
+      ),
+    ];
+    final csv = CsvExporter.exportRecurringCsv(rules);
+    expect(csv.contains('每周,转账,500.00,转账,支付宝,2026-09-01,定存,微信'), isTrue);
+    final parsed = CsvImporter.parseRecurringCsv(csv);
+    expect(parsed.length, 2);
+    final back = parsed.first;
+    expect(back.frequency, RecurFrequency.monthly);
+    expect(back.amount, 100000);
+    expect(back.categoryId, 'home');
+    expect(back.accountId, 'alipay');
+    expect(back.note, '房租');
+    final transfer = parsed.last;
+    expect(transfer.type, TxType.transfer);
+    expect(transfer.transferToAccountId, 'wechat');
+  });
+
+  test('导入周期规则 CSV 去重', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    const csv = '频率,类型,金额(元),分类,账户,下次日期,备注,转入账户\n'
+        '每月,支出,1000.00,居住,支付宝,2026-09-01,房租,\n'
+        '每月,支出,1000.00,居住,支付宝,2026-09-01,房租,\n'
+        '每年,支出,500.00,餐饮,微信,2026-09-01,订阅,\n';
+    final added = await state.importRecurringCsv(csv);
+    expect(added, 2); // 重复跳过
+    expect(state.recurringRules.length, 2);
+  });
+
+  testWidgets('我的页有导入周期规则入口', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('导入周期规则 (CSV)'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('导入周期规则 (CSV)'), findsOneWidget);
   });
 }

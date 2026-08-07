@@ -47,16 +47,20 @@ class CsvExporter {
   /// 周期规则清单 CSV（Excel 可直接打开）
   static String exportRecurringCsv(List<RecurringRule> rules) {
     final buf = StringBuffer('\\uFEFF');
-    buf.writeln('频率,类型,金额(元),分类,账户,下次日期,备注');
+    buf.writeln('频率,类型,金额(元),分类,账户,下次日期,备注,转入账户');
     for (final r in rules) {
       final category = TxCategories.byId(r.categoryId).name;
       final account = accountById(r.accountId).name;
+      final toAccount = r.transferToAccountId == null
+          ? ''
+          : accountById(r.transferToAccountId!).name;
       final d = r.nextDate;
       final next =
           '${d.year}-${_p2(d.month)}-${_p2(d.day)}';
       final amount = (r.amount / 100).toStringAsFixed(2);
       buf.writeln('${r.frequency.label},${r.type.label},$amount,'
-          '${_escape(category)},${_escape(account)},$next,${_escape(r.note)}');
+          '${_escape(category)},${_escape(account)},$next,'
+          '${_escape(r.note)},${_escape(toAccount)}');
     }
     return buf.toString();
   }

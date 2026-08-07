@@ -3,6 +3,7 @@ library;
 
 import '../models/account.dart';
 import '../models/transaction.dart';
+import '../models/recurring_rule.dart';
 
 class CsvImportResult {
   const CsvImportResult({
@@ -172,6 +173,78 @@ class CsvImporter {
     }
     out.add(buf.toString());
     return out;
+  }
+
+  /// 解析周期规则 CSV（与 CsvExporter.exportRecurringCsv 对应）
+  static List<RecurringRule> parseRecurringCsv(String content) {
+    final lines = content
+        .replaceFirst('\\uFEFF', '')
+        .split(RegExp(r'\r?\n'))
+        .where((l) => l.trim().isNotEmpty && !l.trim().startsWith('#'))
+        .toList();
+    if (lines.isEmpty) return const [];
+    final first = _parseRow(lines.first);
+    final hasHeader =
+        first.any((c) => c.contains('频率')) ||
+        first.any((c) => c.contains('类型'));
+    final out = <RecurringRule>[];
+    for (int i = hasHeader ? 1 : 0; i < lines.length; i++) {
+      final cols = _parseRow(lines[i]);
+      if (cols.length < 4) continue;
+      try {
+        final freq = switch (cols[0].trim()) {
+          '每周' => RecurFrequency.weekly,
+          '每年' => RecurFrequency.yearly,
+          _ => RecurFrequency.monthly,
+        };
+        final type = switch (cols[1].trim()) {
+          '收入' => TxType.income,
+          '转账' => TxType.transfer,
+          _ => TxType.expense,
+        };
+        final amountYuan = double.tryParse(cols[2].trim());
+        if (amountYuan == null || amountYuan < 0) continue;
+        final categoryName = cols.length > 3 ? cols[3].trim() : '';
+        final accountName = cols.length > 4 ? cols[4].trim() : '';
+        final nextDate = _parseRecurringDate(
+            cols.length > 5 ? cols[5].trim() : '');
+        final note = cols.length > 6 ? cols[6].trim() : '';
+        final toAccountName = cols.length > 7 ? cols[7].trim() : '';
+        final accountId =
+            accountIdByName(accountName) ?? kDefaultAccounts.first.id;
+        final toAccountId = type == TxType.transfer && toAccountName.isNotEmpty
+            ? accountIdByName(toAccountName)
+            : null;
+        final categoryId = type == TxType.transfer
+            ? 'transfer'
+            : _categoryIdByName(categoryName, type);
+        out.add(RecurringRule(
+          id: 'rc_imp_${DateTime.now().microsecondsSinceEpoch}_$i',
+          type: type,
+          amount: (amountYuan * 100).round(),
+          categoryId: categoryId,
+          accountId: accountId,
+          transferToAccountId: toAccountId,
+          note: note,
+          date: nextDate,
+          nextDate: nextDate,
+          frequency: freq,
+        ));
+      } catch (_) {}
+    }
+    return out;
+  }
+
+  static DateTime _parseRecurringDate(String s) {
+    final m = RegExp(r'^(\d{4})-(\d{1,2})-(\d{1,2})$').firstMatch(s.trim());
+    if (m != null) {
+      return DateTime(
+        int.parse(m.group(1)!),
+        int.parse(m.group(2)!),
+        int.parse(m.group(3)!),
+      );
+    }
+    return DateTime.now();
   }
 
   static DateTime _parseDate(String s) {

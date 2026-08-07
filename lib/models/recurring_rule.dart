@@ -98,6 +98,7 @@ class RecurringRule {
     String? note,
     DateTime? nextDate,
     RecurFrequency? frequency,
+    String? bookId,
     bool? active,
   }) {
     return RecurringRule(
@@ -111,7 +112,7 @@ class RecurringRule {
       date: date,
       nextDate: nextDate ?? this.nextDate,
       frequency: frequency ?? this.frequency,
-      bookId: bookId,
+      bookId: bookId ?? this.bookId,
       active: active ?? this.active,
     );
   }

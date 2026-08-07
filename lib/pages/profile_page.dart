@@ -232,6 +232,44 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Future<void> _importRecurringCsv() async {
+    final pasted = await showDialog<String>(
+      context: context,
+      builder: (context) => const _CsvImportDialog(),
+    );
+    if (pasted == null || pasted.trim().isEmpty || !mounted) return;
+    final rules = CsvImporter.parseRecurringCsv(pasted);
+    if (!mounted) return;
+    final ok = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认导入',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+        content: Text(
+          '将导入 ${rules.length} 条周期规则（重复自动跳过）。',
+          style: const TextStyle(fontSize: 14, color: kInkSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('cancel'),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop('ok'),
+            child: const Text('导入'),
+          ),
+        ],
+      ),
+    );
+    if (ok != 'ok' || !mounted) return;
+    final added =
+        await context.read<AppState>().importRecurringCsv(pasted);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已导入 $added 条周期规则')),
+    );
+  }
+
   Future<void> _exportCsv() async {
     final state = context.read<AppState>();
     final scope = await showModalBottomSheet<String>(
@@ -956,6 +994,12 @@ class _ProfilePageState extends State<ProfilePage> {
             onTap: _importCsv,
           ),
           _DataRow(
+            icon: Icons.repeat_rounded,
+            label: '导入周期规则 (CSV)',
+            color: kInkPrimary,
+            onTap: _importRecurringCsv,
+          ),
+          _DataRow(
             icon: Icons.ios_share_outlined,
             label: '导出数据 (CSV)',
             color: kInkPrimary,
@@ -989,7 +1033,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.21.0',
+            Text('版本 4.22.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -998,7 +1042,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.21 明细全部时间年份分组\nv4.20 首页结余走势下钻统计\nv4.19 记一笔数字键盘\nv4.18 周期规则 CSV 导出\nv4.17 CSV 导入自动建账户',
+            Text('v4.22 周期规则 CSV 导入\nv4.21 明细全部时间年份分组\nv4.20 首页结余走势下钻统计\nv4.19 记一笔数字键盘\nv4.18 周期规则 CSV 导出',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),

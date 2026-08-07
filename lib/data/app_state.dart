@@ -269,6 +269,29 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 导入周期规则 CSV（按 频率+金额+备注 去重），返回新增数量
+  Future<int> importRecurringCsv(String csv) async {
+    final rules = CsvImporter.parseRecurringCsv(csv);
+    if (rules.isEmpty) return 0;
+    final existing = {
+      for (final r in _rules)
+        '${r.frequency.name}|${r.amount}|${r.note.trim()}',
+    };
+    var added = 0;
+    for (final r in rules) {
+      final fp = '${r.frequency.name}|${r.amount}|${r.note.trim()}';
+      if (existing.contains(fp)) continue;
+      _rules = [..._rules, r.copyWith(bookId: _currentBookId)];
+      existing.add(fp);
+      added++;
+    }
+    if (added > 0) {
+      await _repository.saveRecurringRules(_rules);
+      notifyListeners();
+    }
+    return added;
+  }
+
   Future<void> setBudget(int cents) async {
     _bookBudgets = {..._bookBudgets, _currentBookId: cents};
     await _repository.saveBookBudgets(_bookBudgets);
