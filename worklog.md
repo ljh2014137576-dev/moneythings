@@ -1088,3 +1088,19 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 114/114；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：shared_preferences_web 在 localStorage 中会把值 JSON 二次编码 → web 冒烟注入周期规则需 `JSON.stringify(JSON.stringify([rule]))`，否则 getString 解析报 CastList 错误；use_build_context_synchronously → 用 `context.mounted` 守卫。
 - 下一步：统计年度对比增强或明细「按分类批量移动账本」；上架执行只差 Play 账号。
+## 2026-08-07 20:30 — 迭代 v4.31：明细按分类批量移动到其他账本 + 版本号 4.31.0 + 最终 release
+
+- 任务内容：
+  - A. 明细多选「批量修改」弹层新增「按分类移动到其他账本」：选分类 → 选目标账本 → 确认对话框（显示该分类全部笔数与目标账本）→ 把当前账本中该分类全部流水移动到目标账本。
+  - B. 复用 `AppState.moveTransactionsToBook(ids, bookId)`：按 `currentBookTransactions` 按 categoryId 收集 ids，移动后 SnackBar「已移动 N 笔到「账本」」并退出多选；分类/账本空态提示「该分类暂无流水」「暂无其他账本」。
+  - C. 测试：新增 1 项组件测试「明细按分类批量移动到其他账本」（餐饮 2 笔移动、购物 1 笔保留），115/115 通过。
+  - D. web 冒烟：注入「旅行账本」→ 明细多选全选 18 笔 → 修改选中 → 按分类移动到其他账本 → 餐饮 → 旅行账本 → 确认「24 笔」→ SnackBar「已移动 24 笔到「旅行账本」」→ localStorage 校验 foodDefault=0 / foodTrip=24 / shoppingDefault=16 / 总数 95 不变；截图 75-move-cat-dialog.png。
+  - E. 版本号 4.31.0+71（aapt 校验 versionName=4.31.0/versionCode=71）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.5MB，SHA-256 `65AB2388...6834`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`（批量弹层新菜单项 + _pickBulkCategoryMove + 分发分支）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/75-move-cat-dialog.png`（新增）
+- commit hash：`f93abdb`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 115/115；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：ledger_page.dart 为 LF 行尾，PS 多行替换时 here-string 需先归一化 LF 再匹配，否则注入 CRLF 导致结构错乱（已修复）；use_build_context_synchronously → 用 `mounted`（State）守卫 ScaffoldMessenger。
+- 下一步：统计年度对比增强或「按分类批量改账户/删除」；上架执行只差 Play 账号。
