@@ -3447,4 +3447,71 @@ void main() {
       findsWidgets,
     );
   });
+  testWidgets('明细按分类批量修改账户', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'cac1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '餐一',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'cac2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '餐二',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'cac3',
+      type: TxType.expense,
+      amount: 300,
+      categoryId: 'shopping',
+      accountId: 'wechat',
+      date: DateTime(now.year, now.month, now.day),
+      note: '购物一',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.textContaining('餐一'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('多选删除'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('全选'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('修改选中'));
+    await tester.pumpAndSettle();
+    expect(find.text('按分类修改账户'), findsOneWidget);
+    await tester.tap(find.text('按分类修改账户'));
+    await tester.pumpAndSettle();
+    // 分类选择（弹层在最后，取 .last）
+    await tester.tap(find.text('餐饮').last);
+    await tester.pumpAndSettle();
+    // 账户选择
+    await tester.tap(find.text('银行卡').last);
+    await tester.pumpAndSettle();
+    // 确认对话框：餐饮分类 2 笔改到银行卡
+    expect(find.textContaining('2 笔流水改到「银行卡」'), findsOneWidget);
+    await tester.tap(find.text('修改'));
+    await tester.pumpAndSettle();
+    // 餐饮 2 笔账户已改为银行卡，购物分类保留微信
+    final foodTx = state.currentBookTransactions
+        .where((t) => t.categoryId == 'food')
+        .toList();
+    expect(foodTx.length, 2);
+    expect(foodTx.every((t) => t.accountId == 'card'), isTrue);
+    expect(state.currentBookTransactions
+        .firstWhere((t) => t.note == '购物一').accountId, 'wechat');
+  });
 }

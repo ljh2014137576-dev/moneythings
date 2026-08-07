@@ -822,6 +822,11 @@ class _LedgerPageState extends State<LedgerPage> {
                   size: 20, color: kInkPrimary),
               title: const Text('按分类移动到其他账本'),
               onTap: () => Navigator.of(context).pop('movecat'),
+            ),            ListTile(
+              leading: const Icon(Icons.swap_horiz_outlined,
+                  size: 20, color: kInkPrimary),
+              title: const Text('按分类修改账户'),
+              onTap: () => Navigator.of(context).pop('cataccount'),
             ),
           ],
         ),
@@ -834,6 +839,8 @@ class _LedgerPageState extends State<LedgerPage> {
       await _pickBulkBook();
     } else if (action == 'movecat') {
       await _pickBulkCategoryMove();
+    } else if (action == 'cataccount') {
+      await _pickBulkCategoryAccount();
     } else {
       await _pickBulkAccount();
     }
@@ -1058,6 +1065,132 @@ class _LedgerPageState extends State<LedgerPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('已移动 ${ids.length} 笔到「${book.name}」')),
+    );
+    _exitSelection();
+  }
+  /// 按分类批量修改账户：选分类 → 选账户 → 确认后把该分类全部流水改到目标账户
+  Future<void> _pickBulkCategoryAccount() async {
+    final state = context.read<AppState>();
+    final categories = [
+      ...TxCategories.of(TxType.expense),
+      ...TxCategories.of(TxType.income),
+    ];
+    final category = await showModalBottomSheet<TxCategory>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(kSpace4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('选择分类',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+              const SizedBox(height: kSpace3),
+              Wrap(
+                spacing: kSpace2,
+                runSpacing: kSpace2,
+                children: [
+                  for (final c in categories)
+                    InkWell(
+                      onTap: () => Navigator.of(context).pop(c),
+                      borderRadius: BorderRadius.circular(kRadiusTable),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: kSpace3, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0F1EF),
+                          borderRadius: BorderRadius.circular(kRadiusTable),
+                        ),
+                        child: Text(c.name,
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w500)),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (category == null || !mounted) return;
+
+    final ids = state.currentBookTransactions
+        .where((t) => t.categoryId == category.id)
+        .map((t) => t.id)
+        .toList();
+    if (ids.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('该分类暂无流水')),
+      );
+      return;
+    }
+
+    final account = await showModalBottomSheet<Account>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(kSpace4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('选择账户',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+              const SizedBox(height: kSpace3),
+              Wrap(
+                spacing: kSpace2,
+                runSpacing: kSpace2,
+                children: [
+                  for (final a in kDefaultAccounts)
+                    InkWell(
+                      onTap: () => Navigator.of(context).pop(a),
+                      borderRadius: BorderRadius.circular(kRadiusTable),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: kSpace3, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0F1EF),
+                          borderRadius: BorderRadius.circular(kRadiusTable),
+                        ),
+                        child: Text(a.name,
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w500)),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (account == null || !mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('按分类修改账户'),
+        content: Text(
+            '将把「${category.name}」分类全部 ${ids.length} 笔流水改到「${account.name}」，确认？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('修改'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await state.bulkUpdateTransactions(ids, accountId: account.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已修改 ${ids.length} 笔账户为「${account.name}」')),
     );
     _exitSelection();
   }
