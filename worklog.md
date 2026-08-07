@@ -965,3 +965,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 104/104；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：SnackBar 块行号替换漏闭合 `);` → 补上；`createdRuleId!` 触发不必要的非空断言 lint → 去掉 `!`。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-10 09:00 — 迭代 v4.24：首页总资产下钻账户 + 版本号 4.24.0 + 最终 release
+
+- 任务内容：
+  - A. 首页总资产点击下钻：HomePage 新增 onGoProfile 回调；HomeShell 接线切到「我的」tab；结余走势卡尾部「总资产 ¥X」文本包 InkWell 可点。
+  - B. 测试：新增 1 项（点总资产 → 我的页账户区出现），105/105 通过。
+  - C. web 冒烟：首页滚动到结余走势 → 点「总资产」→ 切到我的页（账户区显示）；零控制台错误。截图 68-assets-profile.png。
+  - D. 版本号 4.24.0+64（aapt 校验 versionName=4.24.0/versionCode=64）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `153628D0...9229`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/home_page.dart`（onGoProfile + 总资产 InkWell）
+  - `lib/main.dart`（HomeShell 接线 onGoProfile → tab 3）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/68-assets-profile.png`（新增）
+- commit hash：`bfd8e25`；已 push（bfa1d55..bfd8e25 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 105/105；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：测试直接构造 HomePage 缺 onGoProfile → 补参数。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
