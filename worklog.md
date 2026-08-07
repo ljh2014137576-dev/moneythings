@@ -1364,3 +1364,25 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 136/136；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：独立切换行增加头部高度 → 流水 tile 移出缓存区，`明细按账户筛选` 等测试找不到 tile（默认 finder 跳过 offstage）→ 并入时间行同排（零高度增量）解决。
 - 下一步：统计页「全部账本」范围切换，或首页「本周/今日」小结复制；上架执行只差 Play 账号。
+## 2026-08-08 12:30 — 迭代 v4.47：报销标记 + 版本号 4.47.0 + 最终 release
+
+- 任务内容：
+  - A. `Transaction` 新增 `reimbursable`（默认 false，兼容旧数据）：copyWith/toJson/fromJson。
+  - B. 记一笔：支出类型显示「这笔可报销」开关（编辑/复制时回填），保存写入标记。
+  - C. 明细：流水行显示「报」徽标；筛选行新增「报销：全部/可报销」切换（_visible 过滤）。
+  - D. CSV：导出新增「报销」列（是/否），导入按第 9 列解析。
+  - E. 测试：新增 4 项（报销标记模型与 JSON 往返、记一笔可报销开关保存、明细报销筛选、CSV 报销列往返），140/140 通过。
+  - F. web 冒烟：记一笔 88 元 + 可报销 → 保存 → localStorage reimbursable=true；明细「报销：可报销」筛选 → 共 1 笔 ¥88；截图 91-reimbursable.png。
+  - G. 版本号 4.47.0+87（aapt 校验 versionName=4.47.0/versionCode=87）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.6MB，SHA-256 `1EDD91A6...1F`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/models/transaction.dart`（reimbursable 字段）
+  - `lib/pages/add_transaction_page.dart`（可报销开关）
+  - `lib/pages/ledger_page.dart`（报销筛选）
+  - `lib/widgets/transaction_tile.dart`（报徽标）
+  - `lib/services/csv_exporter.dart` / `csv_importer.dart`（报销列）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/91-reimbursable.png`（新增）
+- commit hash：`5864bc3`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 140/140；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：web 记一笔页滚动不响应拖拽 → 用大滚轮滚动到可报销开关再点击；「报」徽标未在语义树单独暴露（合并进行文本），不影响功能（有组件测试覆盖逻辑）。
+- 下一步：统计页「全部账本」范围切换，或周期规则「提前提醒天数」；上架执行只差 Play 账号。
