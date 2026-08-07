@@ -908,3 +908,22 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 99/99；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：web 上「查看统计」与「查看完整统计」文本子串重叠 → 语义节点过滤排除「查看完整」；入口在折叠区外 → 先滚动到可见。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-10 03:00 — 迭代 v4.21：明细全部时间按年份分组 + 版本号 4.21.0 + 最终 release
+
+- 任务内容：
+  - A. 明细全部时间按年份分组：`全部时间` 模式下，日分组按年份插入「YYYY 年」标题（_YearHeader）；月份视图不受影响。
+  - B. 测试：新增 1 项（跨年流水显示两个年份标题），并更新既有「明细全部时间视图」测试（年份标题使上月流水下移 → 加滚动）；100/100 通过。
+  - C. web 冒烟：注入 2025-12-31 流水 → 明细全部时间滚动到底 → 「2026 年」「2025 年」标题齐全、去年流水可见；零控制台错误。截图 65-year-group.png。
+  - D. 版本号 4.21.0+61（aapt 校验 versionName=4.21.0/versionCode=61）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `52086BD0...D7E`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`（groupList + 循环插年份标题 + _YearHeader）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/65-year-group.png`（新增）
+- commit hash：`f8a5707`；已 push（a7cc7ad..f8a5707 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 100/100；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：
+  1. collection-for 内不能写 `final group = ...` 语句 → 改为内联 `groupList[gi]` 表达式。
+  2. 明细页 `find.byType(Scrollable).last` 命中横向筛选行 → 改用 `find.descendant(of: LedgerPage, matching: Scrollable).first`（纵向 ListView）。
+  3. 年份标题把既有测试的「上月流水」挤出视口 → 测试加 scrollUntilVisible。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
