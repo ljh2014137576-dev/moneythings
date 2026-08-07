@@ -1227,3 +1227,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 125/125；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：无新坑。
 - 下一步：「全部账本」汇总视图，或明细「金额区间/日期范围」组合记忆；上架执行只差 Play 账号。
+## 2026-08-08 04:30 — 迭代 v4.39：首页账本汇总卡片 + 版本号 4.39.0 + 最终 release
+
+- 任务内容：
+  - A. `AppState.bookMonthSummaries(month)`：各账本某月收支结余（全部账本，不随当前账本变化）。
+  - B. 首页新增「账本汇总」卡片（多账本时显示，页尾）：每行账本名 + 本月支出/收入/结余；当前账本高亮 + 「当前」标记；点击行切换到该账本（setCurrentBook）。
+  - C. 测试：新增单元测试「账本汇总 bookMonthSummaries」（2 账本收支独立）+ 组件测试「首页账本汇总切换账本」（点击旅行账本 → currentBookId 切换），127/127 通过。
+  - D. web 冒烟：注入「旅行账本」→ 首页底部出现账本汇总（默认账本 支1000/收14000/结13000 · 当前；旅行账本 0）→ 滚动到卡片点击旅行账本 → header 变「旅行账本」、本月支出 0、localStorage current_book_v1=trip；截图 83-book-summary.png。
+  - E. 版本号 4.39.0+79（aapt 校验 versionName=4.39.0/versionCode=79）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.5MB，SHA-256 `14E1C319...3096`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（bookMonthSummaries）
+  - `lib/pages/home_page.dart`（账本汇总卡片 + _BookSummaryRow）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/83-book-summary.png`（新增）
+- commit hash：`2aa4c66`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 127/127；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：多行插入定位到错误类（LastIndexOf 命中 _HomeModeTag 的闭合）→ 改为锚定 `class _MiniStat` 前的类闭合精确插入；`addTransaction` 强制当前账本 bookId → 单元测试先 setCurrentBook 再添加。
+- 下一步：统计/明细「全部账本」范围切换，或周期规则「复制」；上架执行只差 Play 账号。
