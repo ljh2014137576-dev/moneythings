@@ -2597,4 +2597,42 @@ void main() {
     await tester.pumpAndSettle();
     expect(state.recurringRules.first.nextDate, DateTime(2026, 9, 8));
   });
+  testWidgets('明细多选导出选中项', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'ex1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '导出甲',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'ex2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'food',
+      accountId: 'wechat',
+      date: DateTime(now.year, now.month, now.day),
+      note: '导出乙',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.textContaining('导出甲'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('多选删除'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('全选'));
+    await tester.pumpAndSettle();
+    expect(find.text('已选 2 项'), findsOneWidget);
+    // 多选栏出现「导出选中」入口（导出流程复用 CsvExporter/exportCsvFile，文件写入由真机/浏览器验证）
+    expect(find.byTooltip('导出选中'), findsOneWidget);
+  });
 }

@@ -277,6 +277,12 @@ class _LedgerPageState extends State<LedgerPage> {
                 style: TextStyle(fontSize: 13, color: kAccentBlue)),
           ),
           IconButton(
+            tooltip: '导出选中',
+            onPressed: _exportSelected,
+            icon: const Icon(Icons.ios_share_outlined,
+                size: 20, color: kAccentBlue),
+          ),
+          IconButton(
             tooltip: '修改选中',
             onPressed: _editSelected,
             icon: const Icon(Icons.edit_outlined,
@@ -1024,6 +1030,40 @@ class _LedgerPageState extends State<LedgerPage> {
         },
       ),
     );
+  }
+
+  Future<void> _exportSelected() async {
+    if (_selectedIds.isEmpty) return;
+    final state = context.read<AppState>();
+    final txs = state.currentBookTransactions
+        .where((t) => _selectedIds.contains(t.id))
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    final now = DateTime.now();
+    final stamp = '${now.year}``';
+    final csv = CsvExporter.exportCsv(
+      txs,
+      bookNames: {for (final b in state.books) b.id: b.name},
+      metaLines: ['导出时间：$stamp', '范围：选中 ${txs.length} 笔'],
+    );
+    try {
+      final where = await exportCsvFile(
+        csv,
+        '记账本流水_选中_$stamp.csv',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('已导出 ${txs.length} 条 → $where')),
+        );
+        _exitSelection();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('导出失败：$e')),
+        );
+      }
+    }
   }
 
   Future<void> _exportVisible() async {
