@@ -2245,4 +2245,34 @@ void main() {
     expect(state.transactions.every((t) => t.categoryId == 'food'), isTrue);
     expect(find.text('已选 0 项'), findsNothing);
   });
+  testWidgets('统计页显示预算对比', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'bg1',
+      type: TxType.expense,
+      amount: 68000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '支出',
+    ));
+    await state.setBudget(100000); // 1000 元
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('统计'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('预算对比'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('预算对比'), findsOneWidget);
+    expect(find.textContaining('已用 68%'), findsOneWidget);
+    expect(find.textContaining('剩余'), findsOneWidget);
+  });
 }

@@ -16,6 +16,7 @@ import '../widgets/amount_text.dart';
 import '../widgets/category_ranking.dart';
 import '../widgets/month_selector.dart';
 import '../widgets/paper_group.dart';
+import '../widgets/budget_dialog.dart';
 
 class StatsPage extends StatefulWidget {
   const StatsPage({super.key});
@@ -248,6 +249,8 @@ class _StatsPageState extends State<StatsPage> {
                         monthTx.length,
                         state.expenseDeltaOf(_month),
                       ),
+                      const SizedBox(height: kSpace3),
+                      _buildBudgetCard(state, summary),
                       const SizedBox(height: kSpace3),
                       _buildBalanceChart(balanceSeries),
                       const SizedBox(height: kSpace3),
@@ -696,6 +699,91 @@ class _StatsPageState extends State<StatsPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildBudgetCard(AppState state, MonthSummary summary) {
+    final budget = state.monthlyBudget;
+    final spent = summary.expense;
+    final now = DateTime.now();
+    final isCurrent =
+        _month.year == now.year && _month.month == now.month;
+    if (!isCurrent) return const SizedBox.shrink();
+    final ratio = budget <= 0 ? 0.0 : (spent / budget).clamp(0.0, 1.0);
+    final over = budget > 0 && spent > budget;
+    return PaperGroup(
+      title: '预算对比',
+      padding: const EdgeInsets.all(kSpace4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (budget <= 0)
+            InkWell(
+              onTap: () async {
+                final v = await showBudgetDialog(context, budget);
+                if (v != null && mounted) {
+                  await context.read<AppState>().setBudget(v);
+                }
+              },
+              child: const Row(
+                children: [
+                  Text('设置每月预算',
+                      style:
+                          TextStyle(fontSize: 13, color: kAccentBlue)),
+                  SizedBox(width: 2),
+                  Icon(Icons.chevron_right_rounded,
+                      size: 16, color: kAccentBlue),
+                ],
+              ),
+            )
+          else ...[
+            Row(
+              children: [
+                Text(
+                  '预算 ${AmountText.format(budget, showSymbol: false)}',
+                  style: const TextStyle(
+                      fontSize: 12, color: kInkSecondary),
+                ),
+                const Spacer(),
+                Text(
+                  '已用 ${(ratio * 100).round()}%',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: over ? kDanger : kAccentBlue,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(2),
+              child: SizedBox(
+                height: 4,
+                child: Stack(
+                  children: [
+                    Container(color: kDividerSubtle),
+                    FractionallySizedBox(
+                      widthFactor: ratio,
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                          color: over ? kDanger : kInkPrimary),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              over
+                  ? '已超出预算 ¥'
+                  : '已用 ¥ · 剩余 ¥',
+              style: const TextStyle(
+                  fontSize: 11, color: kInkSecondary),
+            ),
+          ],
+        ],
       ),
     );
   }
