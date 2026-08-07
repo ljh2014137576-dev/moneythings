@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moneythings_goal/data/app_state.dart';
 import 'package:moneythings_goal/data/transaction_repository.dart';
@@ -4871,6 +4872,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     final before = state.transactions.length;
+    await tester.ensureVisible(find.byTooltip('全部补生成'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('全部补生成'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('补生成'));
@@ -4903,5 +4906,40 @@ void main() {
       state.transactions.any((t) => t.note == '余额修正' && t.amount == 50000),
       isTrue,
     );
+  });
+  testWidgets('统计自定义范围复制小结', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addTransaction(Transaction(
+      id: 'cp1',
+      type: TxType.expense,
+      amount: 1200,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(2026, 8, 5),
+      note: '范围项',
+    ));
+    await state.setStatsRange(
+        mode: true,
+        start: DateTime(2026, 8, 1),
+        end: DateTime(2026, 8, 7, 23, 59, 59));
+    final calls = <MethodCall>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform, (call) async {
+      calls.add(call);
+      return null;
+    });
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('统计'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('复制'));
+    await tester.pumpAndSettle();
+    expect(calls.any((c) => c.method == 'Clipboard.setData'), isTrue);
+    expect(find.text('已复制范围小结'), findsOneWidget);
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform, null);
   });
 }

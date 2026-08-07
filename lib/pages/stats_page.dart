@@ -3,6 +3,7 @@ library;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -421,9 +422,23 @@ class _StatsPageState extends State<StatsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('${fmt.format(start)} ~ ${fmt.format(end)} 汇总',
-              style: const TextStyle(
-                  fontSize: 13, color: kInkSecondary)),
+          Row(
+            children: [
+              Text('${fmt.format(start)} ~ ${fmt.format(end)} 汇总',
+                  style: const TextStyle(
+                      fontSize: 13, color: kInkSecondary)),
+              const Spacer(),
+              InkWell(
+                onTap: () => _copyRangeSummary(s, start, end),
+                borderRadius: BorderRadius.circular(kRadiusTable),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Text('复制',
+                      style: TextStyle(fontSize: 12, color: kAccentBlue)),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 4),
           AmountText(s.expense, size: 36, weight: FontWeight.w700),
           const SizedBox(height: kSpace3),
@@ -440,6 +455,22 @@ class _StatsPageState extends State<StatsPage> {
     );
   }
 
+  /// 复制范围小结文本到剪贴板
+  void _copyRangeSummary(
+      ({int expense, int income, int count, int dailyExpense}) s,
+      DateTime start, DateTime end) {
+    final text = '${start.year}年${start.month}月${start.day}日 ~ '
+        '${end.year}年${end.month}月${end.day}日 收支小结\n'
+        '支出 ${AmountText.format(s.expense, showSymbol: false)}\n'
+        '收入 ${AmountText.format(s.income, showSymbol: false)}\n'
+        '结余 ${AmountText.format(s.income - s.expense, showSymbol: false)}\n'
+        '笔数 ${s.count} 笔\n'
+        '日均支出 ${AmountText.format(s.dailyExpense, showSymbol: false)}';
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('已复制范围小结')),
+    );
+  }
   Widget _buildRangeBarChart(List<int> series, {bool income = false}) {
     final maxV = series.fold<int>(0, (m, e) => e > m ? e : m);
     final niceMax = _niceMax(maxV / 100.0);
