@@ -5094,4 +5094,21 @@ void main() {
     await tester.pumpAndSettle();
     expect(state.monthlyBudget, 2000000);
   });
+  testWidgets('明细空态去记一笔', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    expect(find.text('本月还没有流水'), findsOneWidget);
+    await tester.ensureVisible(find.text('去记一笔'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('去记一笔'));
+    await tester.pumpAndSettle();
+    // 记一笔页面已打开（标题「记一笔」）
+    expect(find.text('记一笔'), findsOneWidget);
+  });
 }

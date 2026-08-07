@@ -223,7 +223,16 @@ class _LedgerPageState extends State<LedgerPage> {
                             message: _query.isNotEmpty
                                 ? '换个关键词或清除搜索试试'
                                 : '回到首页点击「记一笔」开始记录',
-                            onAction: null,
+                            actionLabel: _query.isNotEmpty ? '清除搜索' : '去记一笔',
+                            onAction: _query.isNotEmpty
+                                ? () => setState(() {
+                                      _searchController.clear();
+                                      _query = '';
+                                    })
+                                : () => Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                        builder: (_) =>
+                                            const AddTransactionPage())),
                           ),
                         ),
                       ],
