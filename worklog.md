@@ -1208,3 +1208,22 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 123/123；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：无新坑（沿用既有替换规范）。
 - 下一步：统计页「自定义范围」记住上次选择，或「全部账本」汇总视图；上架执行只差 Play 账号。
+## 2026-08-08 03:30 — 迭代 v4.38：统计自定义范围记忆 + 版本号 4.38.0 + 最终 release
+
+- 任务内容：
+  - A. `TransactionRepository`：新增 `stats_range_v1` 持久化（mode + start/end ISO 日期），loadStatsRange/saveStatsRange。
+  - B. `AppState`：新增 statsRangeMode/Start/End + setStatsRange（加载/保存/notify）；JSON 备份恢复含 statsRange 字段。
+  - C. 统计页：initState 恢复上次自定义范围；切换「本月/自定义」与起止日期选择时实时写入记忆，重启后自动恢复。
+  - D. 测试：新增 2 项（统计自定义范围记忆持久化、统计页恢复上次自定义范围），125/125 通过。
+  - E. web 冒烟：统计页设 8月1日~8月7日 → 刷新页面 → 统计页自动回到自定义范围并渲染「从 8月1日 / 至 8月7日」+ 范围汇总/结余走势；截图 82-stats-range-memory.png。
+  - F. 版本号 4.38.0+78（aapt 校验 versionName=4.38.0/versionCode=78）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.5MB，SHA-256 `D95F2233...0606`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/transaction_repository.dart`（stats_range_v1）
+  - `lib/data/app_state.dart`（statsRange + setStatsRange + JSON 字段）
+  - `lib/pages/stats_page.dart`（initState 恢复 + 切换/选日期持久化）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/82-stats-range-memory.png`（新增）
+- commit hash：`7f7cecb`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 125/125；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：无新坑。
+- 下一步：「全部账本」汇总视图，或明细「金额区间/日期范围」组合记忆；上架执行只差 Play 账号。
