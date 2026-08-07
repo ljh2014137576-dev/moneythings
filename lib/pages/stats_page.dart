@@ -32,6 +32,7 @@ class _StatsPageState extends State<StatsPage> {
   bool _weekly = false;
   bool _incomeChart = false;
   int _balanceMonths = 12;
+  bool _yearIncome = false;
   bool _rangeMode = false;
   DateTime? _rangeStart;
   DateTime? _rangeEnd;
@@ -182,7 +183,7 @@ class _StatsPageState extends State<StatsPage> {
     final ranking = state.categoryExpenseRanking(_month);
     final incomeRanking = state.categoryIncomeRanking(_month);
     final balanceSeries = state.recentBalanceSeries(_month, _balanceMonths);
-    final yearData = state.yearComparison(_month.year);
+    final yearData = state.yearComparison(_month.year, income: _yearIncome);
     final weekSeries = state.weeklyExpenseSeries(_month);
     final series = state.dailyExpenseSeries(_month);
     final incomeSeries = state.dailyIncomeSeries(_month);
@@ -779,7 +780,23 @@ class _StatsPageState extends State<StatsPage> {
     final niceMax = _niceMax(maxV / 100.0);
     final curYear = _month.year;
     return PaperGroup(
-      title: '年度对比（$curYear vs ${curYear - 1}）',
+      title: '年度${_yearIncome ? '收入' : '支出'}对比（$curYear vs ${curYear - 1}）',
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ChartModeTag(
+            label: '支出',
+            selected: !_yearIncome,
+            onTap: () => setState(() => _yearIncome = false),
+          ),
+          const SizedBox(width: 6),
+          _ChartModeTag(
+            label: '收入',
+            selected: _yearIncome,
+            onTap: () => setState(() => _yearIncome = true),
+          ),
+        ],
+      ),
       padding: const EdgeInsets.fromLTRB(kSpace3, kSpace2, kSpace3, kSpace4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -893,15 +893,20 @@ class AppState extends ChangeNotifier {
     return out;
   }
 
-  /// 指定年逐月支出，与上一年对比（1..12 月）
+  /// 指定年逐月收支，与上一年对比（1..12 月；income=true 时为收入）
   List<({int month, int thisYear, int lastYear})> yearComparison(
-    int year,
-  ) {
+    int year, {
+    bool income = false,
+  }) {
     final out = <({int month, int thisYear, int lastYear})>[];
     for (int m = 1; m <= 12; m++) {
-      final cur = summaryOf(DateTime(year, m)).expense;
-      final prev = summaryOf(DateTime(year - 1, m)).expense;
-      out.add((month: m, thisYear: cur, lastYear: prev));
+      final cur = summaryOf(DateTime(year, m));
+      final prev = summaryOf(DateTime(year - 1, m));
+      out.add((
+        month: m,
+        thisYear: income ? cur.income : cur.expense,
+        lastYear: income ? prev.income : prev.expense,
+      ));
     }
     return out;
   }

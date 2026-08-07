@@ -19,6 +19,7 @@ import 'package:moneythings_goal/services/csv_exporter.dart';
 import 'package:moneythings_goal/services/csv_importer.dart';
 import 'package:moneythings_goal/widgets/amount_text.dart';
 import 'package:moneythings_goal/widgets/transaction_tile.dart';
+import 'package:moneythings_goal/widgets/paper_group.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -1232,6 +1233,28 @@ void main() {
     expect(cmp[2].thisYear, 5000);
     expect(cmp[2].lastYear, 3000);
     expect(cmp[0].thisYear, 0);
+    // 收入对比：2026 年 3 月收入 9000，2025 年 3 月收入 4000
+    await state.addTransaction(Transaction(
+      id: 'y3',
+      type: TxType.income,
+      amount: 9000,
+      categoryId: 'salary',
+      accountId: 'alipay',
+      date: DateTime(2026, 3, 12),
+    ));
+    await state.addTransaction(Transaction(
+      id: 'y4',
+      type: TxType.income,
+      amount: 4000,
+      categoryId: 'salary',
+      accountId: 'alipay',
+      date: DateTime(2025, 3, 16),
+    ));
+    final inc = state.yearComparison(2026, income: true);
+    expect(inc[2].thisYear, 9000);
+    expect(inc[2].lastYear, 4000);
+    // 支出对比不受收入影响
+    expect(state.yearComparison(2026)[2].thisYear, 5000);
   });
 
   test('本月小结文本 monthSummaryText', () async {
@@ -3372,5 +3395,56 @@ void main() {
     final bookId = state.books.firstWhere((b) => b.name == '旅行账本').id;
     await state.setCurrentBook(bookId);
     expect(state.currentBookTransactions.length, 2);
+  });
+  testWidgets('统计页年度支出/收入对比切换', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'wy1',
+      type: TxType.expense,
+      amount: 1000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 3),
+    ));
+    await state.addTransaction(Transaction(
+      id: 'wy2',
+      type: TxType.income,
+      amount: 2000,
+      categoryId: 'salary',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 5),
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('统计'));
+    await tester.pumpAndSettle();
+    // 年度对比卡片存在（默认支出；卡片可能在视口外，需 skipOffstage）
+    final yearCard = find.byWidgetPredicate(
+        (w) => w is PaperGroup && w.title != null && w.title!.startsWith('年度'),
+        skipOffstage: false);
+    expect(yearCard, findsWidgets);
+    // 卡片内「收入」切换
+    final incomeTag = find.descendant(
+        of: yearCard.first,
+        matching: find.text('收入', skipOffstage: false),
+        skipOffstage: false);
+    expect(incomeTag, findsOneWidget);
+    await tester.ensureVisible(incomeTag);
+    await tester.pumpAndSettle();
+    await tester.tap(incomeTag);
+    await tester.pumpAndSettle();
+    // 标题变为「年度收入对比」
+    expect(
+      find.byWidgetPredicate((w) =>
+          w is PaperGroup &&
+          w.title != null &&
+          w.title!.startsWith('年度收入对比'),
+          skipOffstage: false),
+      findsWidgets,
+    );
   });
 }
