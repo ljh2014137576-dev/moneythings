@@ -1244,3 +1244,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 127/127；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：多行插入定位到错误类（LastIndexOf 命中 _HomeModeTag 的闭合）→ 改为锚定 `class _MiniStat` 前的类闭合精确插入；`addTransaction` 强制当前账本 bookId → 单元测试先 setCurrentBook 再添加。
 - 下一步：统计/明细「全部账本」范围切换，或周期规则「复制」；上架执行只差 Play 账号。
+## 2026-08-08 05:30 — 迭代 v4.40：周期规则一键复制 + 版本号 4.40.0 + 最终 release
+
+- 任务内容：
+  - A. `RecurringRule.copyWith` 新增 `id` 参数（默认保留原 id），供复制规则生成新 id。
+  - B. 周期规则编辑弹层新增「复制规则」：以当前规则设置生成新 id 副本（备注追加「（副本）」），`addRecurringRule` 保存，SnackBar「已复制周期规则」，关闭弹层。
+  - C. 测试：扩展「周期规则 copyWith 支持编辑字段」（id 覆盖 + 备注副本）；新增组件测试「我的页周期规则可复制」（复制后规则数 +1、新 id、备注「订阅（副本）」、金额/频率不变），128/128 通过。
+  - D. web 冒烟：注入「订阅」月规则 → 我的 → 周期记账 → 编辑弹层「复制规则」→ 点击后 localStorage 规则数 1→2（新 id rc_copy_...，备注「订阅（副本）」），数据概况「2 条 周期规则」；截图 84-recurring-copy.png。
+  - E. 版本号 4.40.0+80（aapt 校验 versionName=4.40.0/versionCode=80）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.5MB，SHA-256 `C28410AA...2647`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/models/recurring_rule.dart`（copyWith id 参数）
+  - `lib/pages/profile_page.dart`（编辑弹层「复制规则」按钮 + _copyRule）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/84-recurring-copy.png`（新增）
+- commit hash：`d863fcc`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 128/128；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：无新坑。
+- 下一步：统计/明细「全部账本」范围切换，或「记一笔」今日快捷；上架执行只差 Play 账号。
