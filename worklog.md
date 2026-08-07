@@ -806,3 +806,23 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 90/90；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：相邻字符串拼接漏闭合引号（同 v4.5 教训）→ 补 `'`。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-09 13:00 — 迭代 v4.15：周期规则「跳过下次」+ 版本号 4.15.0 + 最终 release
+
+- 任务内容：
+  - A. 周期规则「跳过下次」：`AppState.skipNextOccurrence(ruleId)` 把 nextDate 推进一期且不生成流水；周期编辑弹层底部新增「跳过下次（不生成本次）」按钮。
+  - B. 测试：新增 2 项（跳过推进不生成、编辑弹层触发），92/92 通过。
+  - C. web 冒烟：注入月租规则（nextDate 9/1）→ 编辑弹层点「跳过下次」→ 流水数不变（95）、nextDate 9/1 → 10/1；零控制台错误。截图 59-skip-next.png。
+  - D. 版本号 4.15.0+55（aapt 校验 versionName=4.15.0/versionCode=55）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `B401240D...68E4`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（skipNextOccurrence）
+  - `lib/pages/profile_page.dart`（_RecurringEditSheet onSkip + 跳过按钮）
+  - `pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/59-skip-next.png`（新增）
+- commit hash：`b907a36`；已 push（239f98e..b907a36 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 92/92；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：
+  1. `Replace` 全量替换把跳过按钮同时插进账户编辑弹层（onSkip 未定义）→ 还原后用「widget.onSave(widget.initial.copyWith(」锚点精确插入周期弹层。
+  2. 行删除时误用 Get-Content/Set-Content（PS ANSI）弄乱中文 → git checkout 还原后全程用 ReadAllText/WriteAllText（UTF-8 无 BOM）。
+  3. IndexOf("),") 误中字符串内 '保存'), 的 '),' → 改为逐行定位 FilledButton 闭合行。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
