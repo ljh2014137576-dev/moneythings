@@ -1313,3 +1313,21 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 133/133；release 构建（连续两次 Gradle 失败为已知 Metaspace 问题，第三次杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：SharedPreferences 无 getIntList/setIntList → 改 StringList 存取；插入方法时误复制 _addAmount 重复定义 → 去重修复；await 后 context.mounted → 改 mounted（State）。
 - 下一步：统计/明细「全部账本」范围切换，或「记一笔」常用备注自定义；上架执行只差 Play 账号。
+## 2026-08-08 09:30 — 迭代 v4.44：记一笔常用备注自定义 + 版本号 4.44.0 + 最终 release
+
+- 任务内容：
+  - A. `TransactionRepository`：`custom_quick_notes_v1`（StringList）；`AppState.customQuickNotes` + `addCustomQuickNote`（去重，最多 20 条）/`removeCustomQuickNote`。
+  - B. 记一笔常用备注行：固定预设 + 自定义备注 chips（点击填入备注，**长按删除**）+ 「+ 自定义」弹窗添加（输入 → 添加）。
+  - C. 测试：新增单元测试「自定义常用备注增删持久化」（去重/重载/删除）+ 组件测试「记一笔添加自定义常用备注」（添加「培训」→ chip → 填入备注框）；修正 v4.43 金额测试（两处「+ 自定义」需 .first），135/135 通过。
+  - D. web 冒烟：注入自定义备注「培训」→ 记一笔备注行出现「培训」chip（预设与 + 自定义 之间）；截图 88-quick-note-custom.png。
+  - E. 版本号 4.44.0+84（aapt 校验 versionName=4.44.0/versionCode=84）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.6MB，SHA-256 `A1BF4625...22DF`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/transaction_repository.dart`（custom_quick_notes_v1）
+  - `lib/data/app_state.dart`（customQuickNotes + 增删）
+  - `lib/pages/add_transaction_page.dart`（备注行自定义 + 弹窗 + 长按删除）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/88-quick-note-custom.png`（新增）
+- commit hash：`4b5c776`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 135/135；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：新增备注行「+ 自定义」与金额行同名 → 旧金额测试需 .first；web 注入 StringList 需单层 JSON（`["培训"]`），双层会导致 getStringList 解析崩溃（TypeError String is not List）→ 已用单层注入验证。
+- 下一步：统计/明细「全部账本」范围切换，或首页「本周/今日」小结复制；上架执行只差 Play 账号。
