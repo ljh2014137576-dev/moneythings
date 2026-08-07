@@ -9,6 +9,7 @@ import '../data/app_state.dart';
 import '../models/account.dart';
 import '../models/transaction.dart';
 import '../models/recurring_rule.dart';
+import '../models/category_icons.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_colors.dart';
 import '../widgets/amount_text.dart';
@@ -397,6 +398,12 @@ class _ProfilePageState extends State<ProfilePage> {
     return PaperGroup(
       title: '账户',
       padding: EdgeInsets.zero,
+      trailing: IconButton(
+        tooltip: '新增账户',
+        onPressed: _addAccount,
+        icon: const Icon(Icons.add_rounded,
+            size: 20, color: kAccentBlue),
+      ),
       child: Column(
         children: [
           for (int i = 0; i < accounts.length; i++) ...[
@@ -412,6 +419,70 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
     );
+  }
+
+  Future<void> _addAccount() async {
+    final result = await showModalBottomSheet<(String, String)>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => _AccountEditSheet(
+        initialName: '',
+        initialIcon: kCategoryIconChoices.first.$1,
+      ),
+    );
+    if (result != null && mounted) {
+      await context
+          .read<AppState>()
+          .addAccount(name: result.$1, iconKey: result.$2);
+    }
+  }
+
+  Future<void> _renameAccount(Account account) async {
+    final result = await showModalBottomSheet<(String, String)>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => _AccountEditSheet(
+        initialName: account.name,
+        initialIcon: account.iconKey ?? kCategoryIconChoices.first.$1,
+      ),
+    );
+    if (result != null && mounted) {
+      await context.read<AppState>().renameAccount(
+        account.id, result.$1,
+        iconKey: result.$2,
+      );
+    }
+  }
+
+  Future<void> _deleteAccount(Account account) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除账户？',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+        content: const Text('删除后该账户将不再显示，已有流水的账户无法删除。',
+            style: TextStyle(fontSize: 14, color: kInkSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: kDanger),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final removed =
+        await context.read<AppState>().removeAccount(account.id);
+    if (!removed && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('该账户已有流水，无法删除')),
+      );
+    }
   }
 
   Future<void> _accountMenu(Account account) async {
@@ -442,6 +513,21 @@ class _ProfilePageState extends State<ProfilePage> {
               title: const Text('设置初始余额'),
               onTap: () => Navigator.of(context).pop('balance'),
             ),
+            if (account.isCustom) ...[
+              ListTile(
+                leading: const Icon(Icons.drive_file_rename_outline,
+                    size: 20, color: kInkPrimary),
+                title: const Text('重命名'),
+                onTap: () => Navigator.of(context).pop('rename'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline_rounded,
+                    size: 20, color: kDanger),
+                title: const Text('删除账户',
+                    style: TextStyle(color: kDanger)),
+                onTap: () => Navigator.of(context).pop('delete'),
+              ),
+            ],
           ],
         ),
       ),
@@ -466,6 +552,10 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     } else if (action == 'balance') {
       await _editAccountBalance(account);
+    } else if (action == 'rename') {
+      await _renameAccount(account);
+    } else if (action == 'delete') {
+      await _deleteAccount(account);
     }
   }
 
@@ -850,7 +940,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.11.0',
+            Text('版本 4.12.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -859,7 +949,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.11 周期规则立即生成本次\nv4.10 统计页预算对比\nv4.9 明细多选批量修改\nv4.8 金额区间预设 · 周期后续预览\nv4.7 周期规则编辑',
+            Text('v4.12 自定义账户（增删改·图标）\nv4.11 周期规则立即生成本次\nv4.10 统计页预算对比\nv4.9 明细多选批量修改\nv4.8 金额区间预设 · 周期后续预览',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),
@@ -1585,6 +1675,121 @@ class _RecurringEditSheetState extends State<_RecurringEditSheet> {
                     nextDate: _nextDate,
                   ));
                   Navigator.of(context).pop();
+                },
+                child: const Text('保存'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountEditSheet extends StatefulWidget {
+  const _AccountEditSheet({
+    required this.initialName,
+    required this.initialIcon,
+  });
+
+  final String initialName;
+  final String initialIcon;
+
+  @override
+  State<_AccountEditSheet> createState() => _AccountEditSheetState();
+}
+
+class _AccountEditSheetState extends State<_AccountEditSheet> {
+  late final TextEditingController _nameCtrl;
+  late String _iconKey;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameCtrl = TextEditingController(text: widget.initialName);
+    _iconKey = widget.initialIcon;
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: kSpace4,
+          right: kSpace4,
+          top: kSpace4,
+          bottom: MediaQuery.of(context).viewInsets.bottom + kSpace4,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                widget.initialName.isEmpty ? '新增账户' : '重命名账户',
+                style: const TextStyle(
+                    fontSize: 17, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: kSpace3),
+              TextField(
+                controller: _nameCtrl,
+                autofocus: true,
+                maxLength: 12,
+                decoration: const InputDecoration(
+                    labelText: '账户名称', counterText: '', isDense: true),
+              ),
+              const SizedBox(height: kSpace3),
+              const Text('图标',
+                  style: TextStyle(fontSize: 12, color: kInkSecondary)),
+              const SizedBox(height: kSpace2),
+              Wrap(
+                spacing: kSpace2,
+                runSpacing: kSpace2,
+                children: [
+                  for (final c in kCategoryIconChoices)
+                    InkWell(
+                      onTap: () => setState(() => _iconKey = c.$1),
+                      borderRadius: BorderRadius.circular(kRadiusTable),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: _iconKey == c.$1
+                              ? kAccentSoft
+                              : const Color(0xFFF0F1EF),
+                          borderRadius: BorderRadius.circular(kRadiusTable),
+                          border: _iconKey == c.$1
+                              ? Border.all(color: kAccentBlue, width: 1.5)
+                              : null,
+                        ),
+                        child: Icon(
+                          c.$2,
+                          size: 20,
+                          color: _iconKey == c.$1
+                              ? kAccentBlue
+                              : kInkPrimary,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: kSpace4),
+              FilledButton(
+                onPressed: () {
+                  final name = _nameCtrl.text.trim();
+                  if (name.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('请输入账户名称')),
+                    );
+                    return;
+                  }
+                  Navigator.of(context).pop((name, _iconKey));
                 },
                 child: const Text('保存'),
               ),

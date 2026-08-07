@@ -188,10 +188,7 @@ class CsvImporter {
   }
 
   static String _accountIdByName(String name) {
-    for (final a in kDefaultAccounts) {
-      if (a.name == name) return a.id;
-    }
-    return kDefaultAccounts.first.id;
+    return accountIdByName(name) ?? kDefaultAccounts.first.id;
   }
 
   static String _fingerprint(Transaction t) {

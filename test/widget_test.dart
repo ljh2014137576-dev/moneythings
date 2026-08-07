@@ -2339,4 +2339,56 @@ void main() {
     expect(state.transactions.any((t) => t.note == '订阅'), isTrue);
     expect(state.transactions.first.date, today);
   });
+  test('自定义账户增删改与名称映射', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final before = state.accounts.length;
+    await state.addAccount(name: '招商卡', iconKey: 'card_gift');
+    expect(state.accounts.length, before + 1);
+    final added = state.accounts.last;
+    expect(added.isCustom, isTrue);
+    expect(accountById(added.id).name, '招商卡');
+    expect(accountIdByName('招商卡'), added.id);
+    // 重命名
+    await state.renameAccount(added.id, '招行卡', iconKey: 'laptop');
+    expect(state.accounts.last.name, '招行卡');
+    expect(accountIdByName('招行卡'), added.id);
+    // 有流水禁止删除
+    await state.addTransaction(Transaction(
+      id: 'at1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: added.id,
+      date: DateTime(2026, 8, 1),
+    ));
+    expect(await state.removeAccount(added.id), isFalse);
+    // 无流水可删除
+    await state.deleteTransaction('at1');
+    expect(await state.removeAccount(added.id), isTrue);
+    expect(state.accounts.length, before);
+    expect(accountIdByName('招行卡'), isNull);
+  });
+
+  testWidgets('我的页新增自定义账户', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('新增账户'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.widgetWithText(TextField, '账户名称'), '招商卡');
+    await tester.ensureVisible(find.text('保存'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+    expect(state.accounts.any((a) => a.name == '招商卡'), isTrue);
+    expect(find.text('招商卡'), findsOneWidget);
+  });
 }

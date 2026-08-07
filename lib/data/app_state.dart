@@ -74,6 +74,7 @@ class AppState extends ChangeNotifier {
     _bookBudgets = await _repository.loadBookBudgets();
     _customCategories = await _repository.loadCustomCategories();
     _accounts = await _repository.loadAccounts();
+    _syncAccounts();
     _books = await _repository.loadBooks();
     _currentBookId = await _repository.loadCurrentBookId();
     _lastAccountId = await _repository.loadLastAccountId();
@@ -688,6 +689,57 @@ Future<CsvImportResult> importCsv(String csv) async {
     ];
     await _repository.saveAccounts(_accounts);
     notifyListeners();
+  }
+
+  void _syncAccounts() {
+    Account.setCustom(
+      [for (final a in _accounts) if (a.isCustom) a],
+    );
+  }
+
+  Future<void> addAccount({
+    required String name,
+    required String iconKey,
+  }) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+    final account = Account.custom(
+      id: 'a_${DateTime.now().microsecondsSinceEpoch}',
+      name: trimmed,
+      iconKey: iconKey,
+    );
+    _accounts = [..._accounts, account];
+    _syncAccounts();
+    await _repository.saveAccounts(_accounts);
+    notifyListeners();
+  }
+
+  Future<void> renameAccount(
+    String id, String name, {
+    String? iconKey,
+  }) async {
+    _accounts = [
+      for (final a in _accounts)
+        if (a.id == id)
+            a.copyWith(name: name.trim(), iconKey: iconKey) else a,
+    ];
+    _syncAccounts();
+    await _repository.saveAccounts(_accounts);
+    notifyListeners();
+  }
+
+  /// 删除账户（仅自定义；有流水的账户禁止删除）
+  Future<bool> removeAccount(String id) async {
+    final hasTx = _transactions.any((t) => t.accountId == id);
+    if (hasTx) return false;
+    _accounts = [
+      for (final a in _accounts)
+        if (a.id != id) a,
+    ];
+    _syncAccounts();
+    await _repository.saveAccounts(_accounts);
+    notifyListeners();
+    return true;
   }
 
   Future<void> setCurrentBook(String id) async {
