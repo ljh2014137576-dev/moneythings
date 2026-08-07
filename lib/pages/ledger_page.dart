@@ -270,6 +270,27 @@ class _LedgerPageState extends State<LedgerPage> {
     );
   }
 
+  /// 选中流水合计（支出/收入）
+  String _selectedSummary() {
+    final state = context.read<AppState>();
+    int exp = 0, inc = 0;
+    for (final t in state.transactions) {
+      if (!_selectedIds.contains(t.id)) continue;
+      if (t.type == TxType.expense) {
+        exp += t.amount;
+      } else if (t.type == TxType.income) {
+        inc += t.amount;
+      }
+    }
+    final parts = <String>[];
+    if (exp > 0) {
+      parts.add('支出 ${AmountText.format(exp, showSymbol: false)}');
+    }
+    if (inc > 0) {
+      parts.add('收入 ${AmountText.format(inc, showSymbol: false)}');
+    }
+    return parts.isEmpty ? '支出 ¥0.00' : parts.join(' · ');
+  }
   Widget _buildSelectionBar() {
     return Container(
       color: kPaperSurface,
@@ -283,9 +304,20 @@ class _LedgerPageState extends State<LedgerPage> {
                 size: 20, color: kInkPrimary),
           ),
           Expanded(
-            child: Text('已选 ${_selectedIds.length} 项',
-                style: const TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.w600)),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('已选 ${_selectedIds.length} 项',
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w600)),
+                Text(
+                  _selectedSummary(),
+                  style: const TextStyle(
+                      fontSize: 11, color: kInkSecondary),
+                ),
+              ],
+            ),
           ),
           TextButton(
             onPressed: _selectAllVisible,

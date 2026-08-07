@@ -4628,4 +4628,46 @@ void main() {
       findsOneWidget,
     );
   });
+  testWidgets('明细多选合计金额', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'sm1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: now,
+      note: '支出一',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'sm2',
+      type: TxType.income,
+      amount: 200,
+      categoryId: 'salary',
+      accountId: 'alipay',
+      date: now,
+      note: '收入一',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.textContaining('支出一'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('多选删除'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.textContaining('支出一'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('支出一'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.textContaining('收入一'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('收入一'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('支出 1.00 · 收入 2.00'), findsOneWidget);
+  });
 }
