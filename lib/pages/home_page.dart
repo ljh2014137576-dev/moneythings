@@ -434,6 +434,19 @@ class _HomePageState extends State<HomePage> {
               onTap: () => state.setCurrentBook(rows[i].book.id),
             ),
           ],
+          if (rows.length > 1) ...[
+            const Divider(indent: 68),
+            _BookSummaryRow(
+              name: '合计',
+              summary: MonthSummary(
+                expense: rows.fold(0, (s, r) => s + r.summary.expense),
+                income: rows.fold(0, (s, r) => s + r.summary.income),
+              ),
+              current: false,
+              onTap: () {},
+              total: true,
+            ),
+          ],
         ],
       ),
     );
@@ -656,12 +669,14 @@ class _BookSummaryRow extends StatelessWidget {
     required this.summary,
     required this.current,
     required this.onTap,
+    this.total = false,
   });
 
   final String name;
   final MonthSummary summary;
   final bool current;
   final VoidCallback onTap;
+  final bool total;
 
   @override
   Widget build(BuildContext context) {
@@ -675,7 +690,7 @@ class _BookSummaryRow extends StatelessWidget {
           children: [
             Icon(Icons.menu_book_outlined,
                 size: 18,
-                color: current ? kAccentBlue : kInkSecondary),
+                color: total ? kInkPrimary : (current ? kAccentBlue : kInkSecondary)),
             const SizedBox(width: kSpace3),
             Expanded(
               child: Column(
@@ -685,8 +700,8 @@ class _BookSummaryRow extends StatelessWidget {
                     name,
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: current ? kAccentBlue : kInkPrimary,
+                      fontWeight: total ? FontWeight.w700 : FontWeight.w600,
+                      color: total ? kInkPrimary : (current ? kAccentBlue : kInkPrimary),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -703,7 +718,7 @@ class _BookSummaryRow extends StatelessWidget {
             if (current)
               const Text('当前',
                   style: TextStyle(fontSize: 11, color: kAccentBlue))
-            else
+            else if (!total)
               const Icon(Icons.chevron_right_rounded,
                   size: 16, color: kInkDisabled),
           ],

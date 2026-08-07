@@ -4586,4 +4586,46 @@ void main() {
       findsWidgets,
     );
   });
+  testWidgets('首页账本汇总合计行', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addBook('旅行账本');
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'tt1',
+      type: TxType.expense,
+      amount: 1000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: now,
+      note: '默认',
+    ));
+    final tripId = state.books.firstWhere((b) => b.name == '旅行账本').id;
+    await state.setCurrentBook(tripId);
+    await state.addTransaction(Transaction(
+      id: 'tt2',
+      type: TxType.expense,
+      amount: 2000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: now,
+      note: '旅行',
+    ));
+    await state.setCurrentBook(state.books.first.id);
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    final home = find.byType(HomePage);
+    final totalRow = find.descendant(of: home, matching: find.text('合计'));
+    await tester.ensureVisible(totalRow);
+    await tester.pumpAndSettle();
+    expect(totalRow, findsOneWidget);
+    // 合计行汇总两账本本月支出 30.00
+    expect(
+      find.descendant(
+          of: home, matching: find.textContaining('本月支出 30.00')),
+      findsOneWidget,
+    );
+  });
 }
