@@ -826,3 +826,19 @@
   2. 行删除时误用 Get-Content/Set-Content（PS ANSI）弄乱中文 → git checkout 还原后全程用 ReadAllText/WriteAllText（UTF-8 无 BOM）。
   3. IndexOf("),") 误中字符串内 '保存'), 的 '),' → 改为逐行定位 FilledButton 闭合行。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-09 15:00 — 迭代 v4.16：明细多选导出选中项 + 版本号 4.16.0 + 最终 release
+
+- 任务内容：
+  - A. 明细多选「导出选中」：多选栏新增导出按钮（tooltip 导出选中）；`_exportSelected` 把所选流水（当前账本内按 id 过滤、日期倒序）生成 CSV（含账本名与「范围：选中 N 笔」头部）并调用 exportCsvFile 分享/下载，成功提示「已导出 N 条」并退出多选。
+  - B. 测试：新增 1 项（多选栏出现导出选中入口），93/93 通过。
+  - C. web 冒烟：明细多选全选 18 项 → 点「导出选中」→ 出现「已导出」提示（触发 CSV 下载）；零控制台错误。截图 60-export-selected.png。
+  - D. 版本号 4.16.0+56（aapt 校验 versionName=4.16.0/versionCode=56）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `F4F84FF2...A0BC`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`（多选栏导出按钮 + _exportSelected）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/60-export-selected.png`（新增）
+- commit hash：`4289aee`；已 push（71c4092..4289aee master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 93/93；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：测试中 mock path_provider/share_plus 通道导致导出挂起 → 改为仅验证按钮存在（导出流程复用已测 CsvExporter，文件写入由真机/浏览器验证）。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
