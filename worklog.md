@@ -1104,3 +1104,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 115/115；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：ledger_page.dart 为 LF 行尾，PS 多行替换时 here-string 需先归一化 LF 再匹配，否则注入 CRLF 导致结构错乱（已修复）；use_build_context_synchronously → 用 `mounted`（State）守卫 ScaffoldMessenger。
 - 下一步：统计年度对比增强或「按分类批量改账户/删除」；上架执行只差 Play 账号。
+## 2026-08-07 21:30 — 迭代 v4.32：统计年度对比支出/收入切换 + 版本号 4.32.0 + 最终 release
+
+- 任务内容：
+  - A. `AppState.yearComparison(year, {income})`：新增 income 参数，income=true 时返回逐月收入与上一年对比（默认仍为支出，向后兼容）。
+  - B. 统计页年度对比卡片新增「支出/收入」切换（复用 _ChartModeTag，样式与每日图一致）；标题随模式变化「年度支出对比 / 年度收入对比」；数据源 `yearComparison(_month.year, income: _yearIncome)`。
+  - C. 测试：扩展「年度对比 yearComparison」（收入 2026-3=9000 / 2025-3=4000，支出不受影响）；新增组件测试「统计页年度支出/收入对比切换」（切到收入后标题变为「年度收入对比」），116/116 通过。
+  - D. web 冒烟：统计页滚动到年度卡片 → 点「收入」→ 标题变「年度收入对比（2026 vs 2025）」、纵轴 8.0w（对应年收入 ¥79,300）；截图 76-year-income.png。
+  - E. 版本号 4.32.0+72（aapt 校验 versionName=4.32.0/versionCode=72）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.5MB，SHA-256 `60B4756B...AA6A`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（yearComparison income 参数）
+  - `lib/pages/stats_page.dart`（_yearIncome + 年度卡片支出/收入切换 + 动态标题）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/76-year-income.png`（新增）
+- commit hash：`931bd13`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 116/116；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：widget 测试 find.byWidgetPredicate 默认 skipOffstage=true，年度卡片在视口外找不到 → 显式 skipOffstage:false；find.text 内部也要 skipOffstage:false。
+- 下一步：明细「按分类批量改账户/删除」或首页/记一笔细节增强；上架执行只差 Play 账号。
