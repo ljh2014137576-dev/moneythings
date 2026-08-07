@@ -1137,3 +1137,19 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 117/117；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：无新坑（沿用 v4.31 的 LF 行尾处理与 mounted 守卫）。
 - 下一步：明细「按分类批量删除」（带强确认）或首页/记一笔细节增强；上架执行只差 Play 账号。
+## 2026-08-07 23:30 — 迭代 v4.34：明细按分类批量删除（可撤销）+ 版本号 4.34.0 + 最终 release
+
+- 任务内容：
+  - A. 明细多选「批量修改」弹层新增「按分类删除」（第 5 项）：选分类 → 强确认对话框（红色删除按钮，「将删除当前账本中「分类」分类的全部流水，无法恢复。」）→ 删除该分类全部流水 → SnackBar「已删除 N 笔」+「撤销」（重新加回全部）。
+  - B. 批量修改弹层改为 SingleChildScrollView 包裹，避免 5 项在窄屏/小窗口溢出（测试 800x600 下暴露 RenderFlex overflow 42px）。
+  - C. 测试：新增 1 项组件测试「明细按分类批量删除（含撤销）」（餐饮 2 笔删除、购物 1 笔保留、撤销恢复 2 笔），118/118 通过。
+  - D. web 冒烟：明细多选全选 → 修改选中 → 按分类删除 → 餐饮 → 确认 → localStorage 校验 food=0 / shopping=16 / 总数 71（95-24）→ 点「撤销」→ food=24 / 总数 95 恢复；截图 78-cat-delete.png。
+  - E. 版本号 4.34.0+74（aapt 校验 versionName=4.34.0/versionCode=74）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.5MB，SHA-256 `3E4B5EA7...0C44`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`（批量弹层第 5 项 + _pickBulkCategoryDelete + 分发分支 + 弹层可滚动）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/78-cat-delete.png`（新增）
+- commit hash：`a5094cf`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 118/118；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：批量弹层加第 5 项后小窗口 RenderFlex overflow → 弹层内容包 SingleChildScrollView；新测试点击第 5 项需 ensureVisible。
+- 下一步：周期记账「到期提醒通知」或首页细节增强；上架执行只差 Play 账号。
