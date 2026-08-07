@@ -1552,3 +1552,18 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 154/154；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：切换标签 key 误放在「当前账本」上（点击无效）→ 移到「全部账本」；PS 双引号 \n 字面量再次出现（yearData 处）→ 反引号修复。
 - 下一步：周期规则「批量补生成」，或「首页」今日模式预算显示；上架执行只差 Play 账号。
+## 2026-08-08 23:30 — 迭代 v4.58：周期规则全部补生成 + 版本号 4.58.0 + 最终 release
+
+- 任务内容：
+  - A. 周期记账区头部新增「全部补生成」按钮（导出按钮旁）：确认对话框 → 逐条 `backfillRecurring` 补齐所有启用规则的过期历史流水（已存在的自动跳过）→ SnackBar「已补生成 N 笔」。
+  - B. 测试：新增组件测试「我的页周期规则全部补生成」（2 启用 + 1 停用 → 补 14 笔、停用不补），155/155 通过。
+  - C. web 冒烟：注入「月供」规则（锚点 2025-12，下次 2026-05）→ 全部补生成 → 月供流水 9 笔（4 自动 + 5 补齐）、总数 104；截图 102-batch-backfill.png。
+  - D. 版本号 4.58.0+98（aapt 校验 versionName=4.58.0/versionCode=98）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `B73328BF...00B50`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/profile_page.dart`（全部补生成按钮 + _backfillAllRecurring）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/102-batch-backfill.png`（新增）
+- commit hash：`61622e0`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 155/155；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：addRecurringRule 后不会自动生成到期流水（仅 load 时）→ 测试断言按「全部 7 期补齐」修正；web 滚动定位周期区需精确滚动。
+- 下一步：首页今日模式预算显示，或「明细」按月份导出；上架执行只差 Play 账号。
