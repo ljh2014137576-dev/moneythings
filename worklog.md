@@ -892,3 +892,19 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 98/98；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：`find.bySemanticsLabel('删除一位')` 匹配不到（语义扁平化）→ 改用 `find.text('⌫')`。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-10 01:00 — 迭代 v4.20：首页结余走势下钻统计 + 版本号 4.20.0 + 最终 release
+
+- 任务内容：
+  - A. 首页结余走势下钻：图表区域包 InkWell（onTap: onGoStats，切到统计 tab）；标题尾部新增「查看统计 ›」入口（与总资产并排）。
+  - B. 测试：新增 1 项（点查看统计 → 统计页出现预算对比卡），99/99 通过。
+  - C. web 冒烟：首页滚动到结余走势 → 点「查看统计」→ 切到统计页（预算对比出现）；零控制台错误。截图 64-home-stats.png。
+  - D. 版本号 4.20.0+60（aapt 校验 versionName=4.20.0/versionCode=60）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `D8F20CD5...BB93`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/home_page.dart`（结余走势 InkWell + 查看统计入口）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/64-home-stats.png`（新增）
+- commit hash：`38ffea1`；已 push（fb429da..38ffea1 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 99/99；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：web 上「查看统计」与「查看完整统计」文本子串重叠 → 语义节点过滤排除「查看完整」；入口在折叠区外 → 先滚动到可见。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
