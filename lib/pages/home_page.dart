@@ -39,6 +39,7 @@ class _HomePageState extends State<HomePage> {
   late DateTime _month;
   bool _weekly = false;
   bool _today = false;
+  int _homeBalanceMonths = 6;
 
   @override
   void initState() {
@@ -68,7 +69,8 @@ class _HomePageState extends State<HomePage> {
     final isCurrentMonth = _isCurrent(_month);
     final budget = isCurrentMonth ? state.monthlyBudget : 0;
     final spent = isCurrentMonth ? state.currentMonthExpense : 0;
-    final balanceSeries = state.recentBalanceSeries(DateTime.now(), 6);
+    final balanceSeries =
+        state.recentBalanceSeries(DateTime.now(), _homeBalanceMonths);
 
     return SafeArea(
       bottom: false,
@@ -337,11 +339,25 @@ class _HomePageState extends State<HomePage> {
     final maxAbs = series.fold<int>(
         0, (m, e) => e.balance.abs() > m ? e.balance.abs() : m);
     return PaperGroup(
-      title: '结余走势',
+      title: '结余走势（近 $_homeBalanceMonths 月）',
       padding: const EdgeInsets.all(kSpace4),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          _HomeModeTag(
+            key: const ValueKey('homeBalance6'),
+            label: '6月',
+            selected: _homeBalanceMonths == 6,
+            onTap: () => setState(() => _homeBalanceMonths = 6),
+          ),
+          const SizedBox(width: 6),
+          _HomeModeTag(
+            key: const ValueKey('homeBalance12'),
+            label: '12月',
+            selected: _homeBalanceMonths == 12,
+            onTap: () => setState(() => _homeBalanceMonths = 12),
+          ),
+          const SizedBox(width: kSpace2),
           InkWell(
             onTap: widget.onGoProfile,
             borderRadius: BorderRadius.circular(kRadiusTable),
@@ -595,6 +611,7 @@ class _MiniBar extends StatelessWidget {
 
 class _HomeModeTag extends StatelessWidget {
   const _HomeModeTag({
+    super.key,
     required this.label,
     required this.selected,
     required this.onTap,

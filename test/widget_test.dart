@@ -535,7 +535,7 @@ void main() {
     await tester.pumpWidget(MoneyApp(state: state));
     await tester.pumpAndSettle();
 
-    expect(find.text('结余走势'), findsOneWidget);
+    expect(find.textContaining('结余走势'), findsWidgets);
     expect(find.textContaining('剩余 ¥1,000.00'), findsOneWidget);
     expect(find.textContaining('日均'), findsOneWidget);
   });
@@ -4363,5 +4363,61 @@ void main() {
     await tester.tap(find.text('3天'));
     await tester.pumpAndSettle();
     expect(state.recurringRemindLead, 3);
+  });
+  testWidgets('首页结余走势 6/12 月切换', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    final homePage = find.byType(HomePage);
+    final homeTitle = find.descendant(
+        of: homePage, matching: find.text('结余走势（近 6 月）'));
+    await tester.ensureVisible(homeTitle);
+    await tester.pumpAndSettle();
+    expect(homeTitle, findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('homeBalance12')));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+          of: homePage, matching: find.text('结余走势（近 12 月）')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('homeBalance6')));
+    await tester.pumpAndSettle();
+    expect(homeTitle, findsOneWidget);
+  });
+
+  testWidgets('统计结余走势近 3 月切换', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'b3m1',
+      type: TxType.expense,
+      amount: 1000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 3),
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('统计'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('结余走势（近 12 月）'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    final tag3 = find.byKey(const ValueKey('statsBalance3'));
+    await tester.ensureVisible(tag3);
+    await tester.pumpAndSettle();
+    await tester.tap(tag3);
+    await tester.pumpAndSettle();
+    expect(find.text('结余走势（近 3 月）'), findsOneWidget);
   });
 }

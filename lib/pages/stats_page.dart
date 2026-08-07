@@ -976,6 +976,13 @@ class _StatsPageState extends State<StatsPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _ChartModeTag(
+            key: const ValueKey('statsBalance3'),
+            label: '3月',
+            selected: _balanceMonths == 3,
+            onTap: () => setState(() => _balanceMonths = 3),
+          ),
+          const SizedBox(width: 6),
+          _ChartModeTag(
             label: '6月',
             selected: _balanceMonths == 6,
             onTap: () => setState(() => _balanceMonths = 6),
