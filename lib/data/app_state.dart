@@ -42,6 +42,7 @@ class AppState extends ChangeNotifier {
   DateTime? _statsRangeEnd;
   List<int> _customQuickAmounts = [];
   List<String> _customQuickNotes = [];
+  int _recurringRemindLead = 0;
   String _lastAccountId = 'alipay';
   bool _onboarded = false;
   bool _loaded = false;
@@ -97,6 +98,7 @@ class AppState extends ChangeNotifier {
     _statsRangeEnd = statsRange.end;
     _customQuickAmounts = await _repository.loadCustomQuickAmounts();
     _customQuickNotes = await _repository.loadCustomQuickNotes();
+    _recurringRemindLead = await _repository.loadRecurringRemindLead();
     _budgetNotify = await _repository.loadBudgetNotify();
     _onboarded = await _repository.loadOnboarded();
     _rules = await _repository.loadRecurringRules();
@@ -491,11 +493,22 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 周期提醒提前天数（0=当天）
+  int get recurringRemindLead => _recurringRemindLead;
+
+  Future<void> setRecurringRemindLead(int days) async {
+    _recurringRemindLead = days < 0 ? 0 : days;
+    await _repository.saveRecurringRemindLead(_recurringRemindLead);
+    await _syncRecurringNotifications();
+    notifyListeners();
+  }
+
   /// 同步周期记账到期提醒（规则增删改/开关后调用）
   Future<void> _syncRecurringNotifications() async {
     if (!_loaded) return;
     if (_recurringRemind) {
-      await NotificationService.instance.scheduleRecurringReminders(_rules);
+      await NotificationService.instance.scheduleRecurringReminders(
+          _rules, leadDays: _recurringRemindLead);
     } else {
       await NotificationService.instance.cancelRecurringReminders();
     }

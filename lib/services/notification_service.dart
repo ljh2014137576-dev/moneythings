@@ -99,9 +99,10 @@ class NotificationService {
 
   final Set<int> _recurringIds = {};
 
-  /// 周期记账到期提醒：为每个启用规则在其 nextDate 当天 09:00 调度通知；
+  /// 周期记账到期提醒：为每个启用规则在 nextDate（可提前 leadDays 天）09:00 调度通知；
   /// 先取消旧调度（规则增删/开关后调用方负责重新调度）
-  Future<void> scheduleRecurringReminders(List<RecurringRule> rules) async {
+  Future<void> scheduleRecurringReminders(List<RecurringRule> rules,
+      {int leadDays = 0}) async {
     if (kIsWeb || !_inited) return;
     for (final id in _recurringIds) {
       await _plugin.cancel(id: id);
@@ -110,7 +111,7 @@ class NotificationService {
     const details = AndroidNotificationDetails(
       'recurring',
       '周期记账提醒',
-      channelDescription: '周期规则到期当天提醒',
+      channelDescription: '周期规则到期（可提前）提醒',
       importance: Importance.defaultImportance,
       priority: Priority.defaultPriority,
     );
@@ -118,7 +119,7 @@ class NotificationService {
     for (final r in rules) {
       if (!r.active) continue;
       final id = r.id.hashCode & 0x7fffffff;
-      final d = r.nextDate;
+      final d = r.nextDate.subtract(Duration(days: leadDays));
       var scheduled = tz.TZDateTime(tz.local, d.year, d.month, d.day, 9, 0);
       if (!scheduled.isAfter(now)) {
         scheduled = scheduled.add(const Duration(days: 1));

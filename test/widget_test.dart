@@ -4333,4 +4333,35 @@ void main() {
     await state.setCurrentBook(tripId);
     expect(state.currentBookTransactions.length, 2);
   });
+  test('周期提醒提前天数持久化', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    expect(state.recurringRemindLead, 0);
+    await state.setRecurringRemindLead(3);
+    expect(state.recurringRemindLead, 3);
+    final state2 = AppState();
+    await state2.load();
+    expect(state2.recurringRemindLead, 3);
+  });
+
+  testWidgets('我的页周期提醒提前天数', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('提前提醒：'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    expect(state.recurringRemindLead, 0);
+    await tester.tap(find.text('3天'));
+    await tester.pumpAndSettle();
+    expect(state.recurringRemindLead, 3);
+  });
 }

@@ -27,6 +27,7 @@ class TransactionRepository {
   static const String _kStatsRangeKey = 'stats_range_v1';
   static const String _kQuickAmountsKey = 'custom_quick_amounts_v1';
   static const String _kQuickNotesKey = 'custom_quick_notes_v1';
+  static const String _kRecurringLeadKey = 'recurring_remind_lead_v1';
   static const String _kLastAccountKey = 'last_account_v1';
   static const String _kRecentSearchesKey = 'recent_searches_v1';
   static const String _kRecurringRulesKey = 'recurring_rules_v1';
@@ -169,6 +170,17 @@ class TransactionRepository {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(
         _kQuickAmountsKey, [for (final a in amounts) '$a']);
+  }
+
+  /// 周期提醒提前天数（0=当天）
+  Future<int> loadRecurringRemindLead() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_kRecurringLeadKey) ?? 0;
+  }
+
+  Future<void> saveRecurringRemindLead(int days) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_kRecurringLeadKey, days);
   }
 
   /// 自定义常用备注
