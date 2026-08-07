@@ -1505,3 +1505,18 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 150/150；release 构建（连续两次 Gradle 失败为已知 Metaspace 问题，第三次杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：无新坑。
 - 下一步：统计页「全部账本」范围切换，或「首页」今日模式预算显示；上架执行只差 Play 账号。
+## 2026-08-08 20:30 — 迭代 v4.55：明细多选合计金额 + 版本号 4.55.0 + 最终 release
+
+- 任务内容：
+  - A. 明细多选栏新增选中合计：`_selectedSummary()` 计算选中流水支出/收入总额，栏内显示「已选 N 项」+「支出 ¥X · 收入 ¥Y」。
+  - B. 测试：新增组件测试「明细多选合计金额」（选 1 笔支出 100 + 1 笔收入 200 → 支出 1.00 · 收入 2.00），151/151 通过。
+  - C. web 冒烟：明细多选全选 18 笔 → 多选栏显示「已选 18 项 · 支出 1,000.00 · 收入 14,000.00」；截图 99-select-total.png。
+  - D. 版本号 4.55.0+95（aapt 校验 versionName=4.55.0/versionCode=95）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `2BCEE2E6...CE985`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`（多选栏合计 + _selectedSummary）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/99-select-total.png`（新增）
+- commit hash：`9d64671`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 151/151；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：多选后行移出视口 → 测试补 ensureVisible 再点选。
+- 下一步：统计页「全部账本」范围切换，或「首页」今日模式预算显示；上架执行只差 Play 账号。
