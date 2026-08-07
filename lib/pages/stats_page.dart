@@ -36,6 +36,7 @@ class _StatsPageState extends State<StatsPage> {
   bool _rangeMode = false;
   DateTime? _rangeStart;
   DateTime? _rangeEnd;
+  bool _rangeIncome = false;
 
   void _openCategory(TxCategory category) {
     Navigator.of(context).push(
@@ -212,6 +213,9 @@ class _StatsPageState extends State<StatsPage> {
     final rangeNet = rangeActive
         ? state.rangeDailyNetSeries(_rangeStart!, _rangeEnd!)
         : const <({DateTime date, int net})>[];
+    final rangeIncomeSeries = rangeActive
+        ? state.rangeDailyIncomeSeries(_rangeStart!, _rangeEnd!)
+        : const <int>[];
 
     // 默认选中支出最高的一天
     if (_selectedDay < 0 || _selectedDay >= days) {
@@ -280,7 +284,27 @@ class _StatsPageState extends State<StatsPage> {
                         const SizedBox(height: kSpace3),
                         _buildRangeBalanceChart(rangeNet),
                         const SizedBox(height: kSpace3),
-                        _buildRangeBarChart(rangeSeries),
+                        Row(
+                          children: [
+                            _ChartModeTag(
+                              label: '支出',
+                              selected: !_rangeIncome,
+                              onTap: () => setState(() => _rangeIncome = false),
+                            ),
+                            const SizedBox(width: kSpace2),
+                            _ChartModeTag(
+                              key: const ValueKey('rangeIncomeToggle'),
+                              label: '收入',
+                              selected: _rangeIncome,
+                              onTap: () => setState(() => _rangeIncome = true),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: kSpace3),
+                        _buildRangeBarChart(
+                          _rangeIncome ? rangeIncomeSeries : rangeSeries,
+                          income: _rangeIncome,
+                        ),
                         const SizedBox(height: kSpace4),
                         PaperGroup(
                           title: '支出分类排行',
@@ -394,11 +418,11 @@ class _StatsPageState extends State<StatsPage> {
     );
   }
 
-  Widget _buildRangeBarChart(List<int> series) {
+  Widget _buildRangeBarChart(List<int> series, {bool income = false}) {
     final maxV = series.fold<int>(0, (m, e) => e > m ? e : m);
     final niceMax = _niceMax(maxV / 100.0);
     return PaperGroup(
-      title: '每日支出',
+      title: income ? '每日收入' : '每日支出',
       padding: const EdgeInsets.fromLTRB(kSpace3, kSpace2, kSpace3, kSpace4),
       child: SizedBox(
         height: 200,

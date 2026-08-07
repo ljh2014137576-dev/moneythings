@@ -3187,6 +3187,9 @@ void main() {
     final nets = state.rangeDailyNetSeries(DateTime(2026, 8, 1), DateTime(2026, 8, 5));
     // 逐日累计结余：8/1 -10、8/2 -10、8/3 -30、8/4 -30、8/5 +20（转账不计）
     expect([for (final e in nets) e.net], [-1000, -1000, -3000, -3000, 2000]);
+    final incomeSeries = state.rangeDailyIncomeSeries(
+        DateTime(2026, 8, 1), DateTime(2026, 8, 5));
+    expect(incomeSeries, [0, 0, 0, 0, 5000]);
     final ranking = state.rangeCategoryRanking(DateTime(2026, 8, 1), DateTime(2026, 8, 5));
     expect(ranking.first.category.name, '居住');
   });
@@ -3227,6 +3230,16 @@ void main() {
     expect(find.text('收入'), findsOneWidget);
     // 范围结余走势出现
     expect(find.text('结余走势（范围）'), findsOneWidget);
+    // 范围每日支出 → 切收入 → 每日收入（图表在视口外，先滚动到切换钮）
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('rangeIncomeToggle')),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('rangeIncomeToggle')));
+    await tester.pumpAndSettle();
+    expect(find.text('每日收入'), findsOneWidget);
     expect(find.textContaining('范围支出'), findsNothing);
   });
   test('批量移动流水到其他账本', () async {

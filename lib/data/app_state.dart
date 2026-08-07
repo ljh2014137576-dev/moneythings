@@ -789,6 +789,18 @@ class AppState extends ChangeNotifier {
     return list;
   }
 
+  /// 日期范围每日收入序列
+  List<int> rangeDailyIncomeSeries(DateTime start, DateTime end) {
+    final days = end.difference(start).inDays + 1;
+    final list = List<int>.filled(days, 0);
+    for (final t in inRange(start, end)) {
+      if (t.type == TxType.income) {
+        final idx = t.date.difference(start).inDays;
+        if (idx >= 0 && idx < days) list[idx] += t.amount;
+      }
+    }
+    return list;
+  }
   /// 日期范围每日累计结余序列（收入-支出逐日累计，时间升序）
   List<({DateTime date, int net})> rangeDailyNetSeries(
       DateTime start, DateTime end) {
