@@ -3100,6 +3100,9 @@ void main() {
     expect(s.count, 3); // 转账不计
     final series = state.rangeDailySeries(DateTime(2026, 8, 1), DateTime(2026, 8, 5));
     expect(series, [1000, 0, 2000, 0, 0]);
+    final nets = state.rangeDailyNetSeries(DateTime(2026, 8, 1), DateTime(2026, 8, 5));
+    // 逐日累计结余：8/1 -10、8/2 -10、8/3 -30、8/4 -30、8/5 +20（转账不计）
+    expect([for (final e in nets) e.net], [-1000, -1000, -3000, -3000, 2000]);
     final ranking = state.rangeCategoryRanking(DateTime(2026, 8, 1), DateTime(2026, 8, 5));
     expect(ranking.first.category.name, '居住');
   });
@@ -3138,6 +3141,8 @@ void main() {
     // 范围汇总出现
     expect(find.textContaining('汇总'), findsWidgets);
     expect(find.text('收入'), findsOneWidget);
+    // 范围结余走势出现
+    expect(find.text('结余走势（范围）'), findsOneWidget);
     expect(find.textContaining('范围支出'), findsNothing);
   });
   test('批量移动流水到其他账本', () async {

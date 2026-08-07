@@ -203,6 +203,9 @@ class _StatsPageState extends State<StatsPage> {
     final rangeSeries = rangeActive
         ? state.rangeDailySeries(_rangeStart!, _rangeEnd!)
         : const <int>[];
+    final rangeNet = rangeActive
+        ? state.rangeDailyNetSeries(_rangeStart!, _rangeEnd!)
+        : const <({DateTime date, int net})>[];
 
     // 默认选中支出最高的一天
     if (_selectedDay < 0 || _selectedDay >= days) {
@@ -268,6 +271,8 @@ class _StatsPageState extends State<StatsPage> {
                       if (rangeActive) ...[
                         _buildRangeSummaryStrip(
                             rangeSummary!, _rangeStart!, _rangeEnd!),
+                        const SizedBox(height: kSpace3),
+                        _buildRangeBalanceChart(rangeNet),
                         const SizedBox(height: kSpace3),
                         _buildRangeBarChart(rangeSeries),
                         const SizedBox(height: kSpace4),
@@ -462,6 +467,120 @@ class _StatsPageState extends State<StatsPage> {
     );
   }
 
+  Widget _buildRangeBalanceChart(List<({DateTime date, int net})> series) {
+    final data = [
+      for (int i = 0; i < series.length; i++)
+        FlSpot(i.toDouble(), series[i].net / 100.0),
+    ];
+    double maxV = 0, minV = 0;
+    for (final d in data) {
+      if (d.y > maxV) maxV = d.y;
+      if (d.y < minV) minV = d.y;
+    }
+    final pad = (maxV - minV) * 0.18 + 10;
+    final fmt = DateFormat('M月d日', 'zh_CN');
+    return PaperGroup(
+      title: '结余走势（范围）',
+      padding: const EdgeInsets.fromLTRB(kSpace3, kSpace2, kSpace3, kSpace4),
+      child: SizedBox(
+        height: 170,
+        child: LineChart(
+          LineChartData(
+            minY: minV - pad,
+            maxY: maxV + pad,
+            lineBarsData: [
+              LineChartBarData(
+                spots: data,
+                isCurved: true,
+                curveSmoothness: 0.3,
+                color: kAccentBlue,
+                barWidth: 2,
+                isStrokeCapRound: true,
+                dotData: const FlDotData(show: false),
+                belowBarData: BarAreaData(
+                  show: true,
+                  color: kAccentBlue.withValues(alpha: 0.08),
+                ),
+              ),
+            ],
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: false,
+              horizontalInterval:
+                  ((maxV - minV) / 4).abs().clamp(1, double.infinity),
+              getDrawingHorizontalLine: (value) =>
+                  FlLine(color: kDividerSubtle, strokeWidth: 1),
+            ),
+            borderData: FlBorderData(show: false),
+            titlesData: FlTitlesData(
+              topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false)),
+              rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false)),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 42,
+                  getTitlesWidget: (value, meta) {
+                    if (value == 0) return const SizedBox.shrink();
+                    return Text(
+                      _compact(value),
+                      style:
+                          const TextStyle(fontSize: 10, color: kInkDisabled),
+                    );
+                  },
+                ),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 24,
+                  interval: 1,
+                  getTitlesWidget: (value, meta) {
+                    final i = value.toInt();
+                    if (i < 0 || i >= data.length) {
+                      return const SizedBox.shrink();
+                    }
+                    final show = data.length > 31
+                        ? i % 7 == 0 || i == data.length - 1
+                        : i % 2 == 0 || i == data.length - 1;
+                    if (!show) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        fmt.format(series[i].date),
+                        style: const TextStyle(
+                            fontSize: 10, color: kInkDisabled),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            lineTouchData: LineTouchData(
+              touchTooltipData: LineTouchTooltipData(
+                getTooltipColor: (_) => kInkPrimary,
+                getTooltipItems: (touchedSpots) => [
+                  for (final s in touchedSpots)
+                    if (s.spotIndex >= 0 && s.spotIndex < series.length)
+                      LineTooltipItem(
+                        '${DateFormat('yyyy年M月d日', 'zh_CN').format(series[s.spotIndex].date)}\n'
+                        '结余 ${AmountText.format(series[s.spotIndex].net)}',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          height: 1.4,
+                        ),
+                      ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
   Widget _buildYearSummaryCard(AppState state, int year) {
     final ys = state.yearSummary(year);
     if (ys.count == 0) return const SizedBox.shrink();
@@ -1385,15 +1504,17 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   static String _compact(double yuan) {
-    if (yuan >= 10000) {
-      final w = yuan / 10000;
-      return '${w.toStringAsFixed(w >= 10 ? 0 : 1)}w';
+    final sign = yuan < 0 ? '-' : '';
+    final v = yuan.abs();
+    if (v >= 10000) {
+      final w = v / 10000;
+      return '$sign${w.toStringAsFixed(w >= 10 ? 0 : 1)}w';
     }
-    if (yuan >= 1000) {
-      return '${(yuan / 1000).toStringAsFixed(1)}k';
+    if (v >= 1000) {
+      return '$sign${(v / 1000).toStringAsFixed(1)}k';
     }
-    if (yuan >= 100) return '${yuan.round()}';
-    return yuan.toStringAsFixed(yuan == yuan.roundToDouble() ? 0 : 1);
+    if (v >= 100) return '$sign${v.round()}';
+    return '$sign${v.toStringAsFixed(v == v.roundToDouble() ? 0 : 1)}';
   }
 }
 

@@ -1068,7 +1068,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.28.0',
+            Text('版本 4.29.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -1077,7 +1077,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.28 明细批量移动到其他账本\nv4.27 统计页自定义日期范围\nv4.26 我的页数据概况\nv4.25 明细复制到其他账本\nv4.24 首页总资产下钻账户',
+            Text('v4.29 统计自定义范围结余走势\nv4.28 明细批量移动到其他账本\nv4.27 统计页自定义日期范围\nv4.26 我的页数据概况\nv4.25 明细复制到其他账本\nv4.24 首页总资产下钻账户',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),

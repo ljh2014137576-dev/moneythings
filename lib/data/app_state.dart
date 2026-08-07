@@ -582,6 +582,29 @@ class AppState extends ChangeNotifier {
     return list;
   }
 
+  /// 日期范围每日累计结余序列（收入-支出逐日累计，时间升序）
+  List<({DateTime date, int net})> rangeDailyNetSeries(
+      DateTime start, DateTime end) {
+    final days = end.difference(start).inDays + 1;
+    final dayNets = List<int>.filled(days, 0);
+    for (final t in inRange(start, end)) {
+      final idx = t.date.difference(start).inDays;
+      if (idx < 0 || idx >= days) continue;
+      if (t.type == TxType.expense) {
+        dayNets[idx] -= t.amount;
+      } else if (t.type == TxType.income) {
+        dayNets[idx] += t.amount;
+      }
+    }
+    final out = <({DateTime date, int net})>[];
+    int cum = 0;
+    for (int i = 0; i < days; i++) {
+      cum += dayNets[i];
+      out.add((date: start.add(Duration(days: i)), net: cum));
+    }
+    return out;
+  }
+
   /// 日期范围分类排行（支出/收入）
   List<({TxCategory category, int amount})> rangeCategoryRanking(
       DateTime start, DateTime end, {
