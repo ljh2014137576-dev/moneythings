@@ -949,3 +949,19 @@
   1. `r'\r?\n'` 正则被 PowerShell 转义成 `r'\\r?\\n'`（匹配字面 `\n` 而非换行）→ 解析恒 0 条 → 修正为单反斜杠。
   2. 调试 print 插入/删除时行错位弄坏 catch 与 hasHeader → 逐行核对修复。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-10 07:00 — 迭代 v4.23：记一笔保存撤销 + 版本号 4.23.0 + 最终 release
+
+- 任务内容：
+  - A. 记一笔保存后可撤销：保存成功 SnackBar 改为自定义内容行（「已保存 ¥X」+ 撤销 + 继续记一笔，新记账显示撤销，编辑模式不显示）；撤销删除刚保存的流水，若本次同时创建了周期规则则一并删除。
+  - B. 测试：新增 1 项（保存 12 元 → 撤销 → 流水归零；断言 SnackBar 双操作存在），104/104 通过。
+  - C. web 冒烟：键盘输入 ¥30 → 保存 → SnackBar 含「撤销」「继续记一笔」→ 点撤销 → 本月支出回到 1,050（¥30 已删）；零控制台错误。
+  - D. 版本号 4.23.0+63（aapt 校验 versionName=4.23.0/versionCode=63）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `46837B78...2F1A`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/add_transaction_page.dart`（SnackBar 内容行 + createdRuleId 跟踪 + 撤销/继续双操作）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/67-save-undo.png`（新增）
+- commit hash：`fa4c5ee`；已 push（d3b1418..fa4c5ee master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 104/104；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：SnackBar 块行号替换漏闭合 `);` → 补上；`createdRuleId!` 触发不必要的非空断言 lint → 去掉 `!`。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
