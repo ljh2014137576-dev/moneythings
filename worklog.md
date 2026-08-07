@@ -982,3 +982,21 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 105/105；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：测试直接构造 HomePage 缺 onGoProfile → 补参数。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-10 11:00 — 迭代 v4.25：明细复制到其他账本 + 版本号 4.25.0 + 最终 release
+
+- 任务内容：
+  - A. 明细长按「复制到其他账本」：`AppState.copyTransactionToBook(txId, bookId)`（新 id 保留日期/分类/账户/备注/转账目标，写目标账本）；长按菜单新增「复制到其他账本」→ 账本选择弹层（排除当前账本）→ 复制并提示。
+  - B. 测试：新增 2 项（复制流水到其他账本、明细长按菜单+账本选择全流程），107/107 通过。
+  - C. web 冒烟：注入「旅行账本」→ 明细长按 → 复制到其他账本 → 选旅行账本 → localStorage 旅行账本出现 1 笔；零控制台错误。截图 69-copy-book.png。
+  - D. 版本号 4.25.0+65（aapt 校验 versionName=4.25.0/versionCode=65）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.0MB，SHA-256 `37472DBC...5843`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/models/transaction.dart`（copyWith 补 id 参数）
+  - `lib/data/app_state.dart`（copyTransactionToBook）
+  - `lib/pages/ledger_page.dart`（长按菜单项 + _copyToBook 账本选择 + import Book）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/69-copy-book.png`（新增）
+- commit hash：`19d9672`；已 push（3237474..19d9672 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 107/107；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：Transaction.copyWith 缺 id 参数 → 补；ledger 缺 Book import → 补。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
