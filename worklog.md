@@ -1421,3 +1421,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 143/143；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：无新坑。
 - 下一步：统计页「全部账本」范围切换，或「明细」搜索历史管理；上架执行只差 Play 账号。
+## 2026-08-08 15:30 — 迭代 v4.50：结余走势粒度增强（首页 6/12月 + 统计 3/6/12月）+ 版本号 4.50.0 + 最终 release
+
+- 任务内容：
+  - A. 首页「结余走势」迷你图新增 6月/12月 切换（`_homeBalanceMonths`，标题「结余走势（近 N 月）」），与统计页保持一致。
+  - B. 统计「结余走势」新增「近 3 月」选项（原 6月/12月 → 3月/6月/12月）。
+  - C. 测试：新增组件测试「首页结余走势 6/12 月切换」「统计结余走势近 3 月切换」（标签加 Key 定位，规避轴标签同名文本），修正既有「首页显示预算剩余」断言为 textContaining，145/145 通过。
+  - D. web 冒烟：首页滚到结余走势（近 6 月 + 6月/12月 标签）→ 点 12月 → 「结余走势（近 12 月）」；统计 3月 由组件测试覆盖；截图 94-balance-granularity.png。
+  - E. 版本号 4.50.0+90（aapt 校验 versionName=4.50.0/versionCode=90）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `B98B18FC...8D2`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/home_page.dart`（结余走势 6/12 切换 + _HomeModeTag key）
+  - `lib/pages/stats_page.dart`（近 3 月 + statsBalance3 key）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/94-balance-granularity.png`（新增）
+- commit hash：`2c0e1d4`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 145/145；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：首页与统计页在 IndexedStack 中「6月/12月」同名文本 → 标签加 ValueKey 精确定位；首页迷你图轴标签也有「6月」文本 → byKey 规避；统计测试需先加一笔流水（否则空态无图表）。
+- 下一步：统计页「全部账本」范围切换，或「明细」搜索历史管理；上架执行只差 Play 账号。
