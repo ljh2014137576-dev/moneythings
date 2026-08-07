@@ -532,17 +532,37 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   }
 
   Widget _buildQuickAmountRow() {
-    return Row(
-      children: [
-        for (final v in const [10, 50, 100, 500])
+    final custom = context.watch<AppState>().customQuickAmounts;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final v in const [10, 50, 100, 500])
+            Padding(
+              padding: const EdgeInsets.only(right: kSpace2),
+              child: _QuickAmountChip(
+                label: '+$v',
+                onTap: () => _addAmount(v),
+              ),
+            ),
+          for (final v in custom)
+            Padding(
+              padding: const EdgeInsets.only(right: kSpace2),
+              child: _QuickAmountChip(
+                label: '+¥$v',
+                onTap: () => _addAmount(v),
+                onLongPress: () => _removeCustomAmount(v),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.only(right: kSpace2),
             child: _QuickAmountChip(
-              label: '+$v',
-              onTap: () => _addAmount(v),
+              label: '+ 自定义',
+              onTap: _addCustomAmount,
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -551,6 +571,48 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     final next = (current + yuan * 100).clamp(0, 99999999);
     _amountController.text = (next / 100).toStringAsFixed(2);
     setState(() {});
+  }
+
+  /// 长按删除自定义金额
+  void _removeCustomAmount(int yuan) {
+    context.read<AppState>().removeCustomQuickAmount(yuan);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已删除自定义金额 +¥$yuan')),
+    );
+  }
+
+  /// 弹窗添加自定义常用金额（元）
+  Future<void> _addCustomAmount() async {
+    final controller = TextEditingController();
+    final value = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('添加常用金额'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(
+              labelText: '金额（元）', isDense: true, prefixText: '¥ '),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              final v = double.tryParse(controller.text.trim());
+              Navigator.of(ctx).pop(v == null || v <= 0 ? null : v.round());
+            },
+            child: const Text('添加'),
+          ),
+        ],
+      ),
+    );
+    if (value != null && value > 0 && mounted) {
+      await context.read<AppState>().addCustomQuickAmount(value);
+    }
   }
 
   Widget _buildKeypad() {
@@ -1100,15 +1162,21 @@ class _RecentChip extends StatelessWidget {
 
 
 class _QuickAmountChip extends StatelessWidget {
-  const _QuickAmountChip({required this.label, required this.onTap});
+  const _QuickAmountChip({
+    required this.label,
+    required this.onTap,
+    this.onLongPress,
+  });
 
   final String label;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       borderRadius: BorderRadius.circular(kRadiusTable),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: kSpace3, vertical: 6),

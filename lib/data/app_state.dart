@@ -40,6 +40,7 @@ class AppState extends ChangeNotifier {
   bool _statsRangeMode = false;
   DateTime? _statsRangeStart;
   DateTime? _statsRangeEnd;
+  List<int> _customQuickAmounts = [];
   String _lastAccountId = 'alipay';
   bool _onboarded = false;
   bool _loaded = false;
@@ -93,6 +94,7 @@ class AppState extends ChangeNotifier {
     _statsRangeMode = statsRange.mode;
     _statsRangeStart = statsRange.start;
     _statsRangeEnd = statsRange.end;
+    _customQuickAmounts = await _repository.loadCustomQuickAmounts();
     _budgetNotify = await _repository.loadBudgetNotify();
     _onboarded = await _repository.loadOnboarded();
     _rules = await _repository.loadRecurringRules();
@@ -511,6 +513,26 @@ class AppState extends ChangeNotifier {
     _statsRangeStart = start;
     _statsRangeEnd = end;
     await _repository.saveStatsRange(mode: mode, start: start, end: end);
+    notifyListeners();
+  }
+
+  /// 自定义常用金额（元，升序）
+  List<int> get customQuickAmounts => List.unmodifiable(_customQuickAmounts);
+
+  Future<void> addCustomQuickAmount(int yuan) async {
+    if (yuan <= 0) return;
+    if (_customQuickAmounts.contains(yuan)) return;
+    _customQuickAmounts = [..._customQuickAmounts, yuan]..sort();
+    await _repository.saveCustomQuickAmounts(_customQuickAmounts);
+    notifyListeners();
+  }
+
+  Future<void> removeCustomQuickAmount(int yuan) async {
+    _customQuickAmounts = [
+      for (final a in _customQuickAmounts)
+        if (a != yuan) a,
+    ];
+    await _repository.saveCustomQuickAmounts(_customQuickAmounts);
     notifyListeners();
   }
 

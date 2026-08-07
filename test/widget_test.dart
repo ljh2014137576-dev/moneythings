@@ -4013,4 +4013,41 @@ void main() {
     expect(find.textContaining('今日项'), findsOneWidget);
     expect(find.textContaining('昨日项'), findsNothing);
   });
+  test('自定义常用金额增删持久化', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    expect(state.customQuickAmounts, isEmpty);
+    await state.addCustomQuickAmount(128);
+    await state.addCustomQuickAmount(66);
+    await state.addCustomQuickAmount(128); // 去重
+    expect(state.customQuickAmounts, [66, 128]); // 升序
+    final state2 = AppState();
+    await state2.load();
+    expect(state2.customQuickAmounts, [66, 128]);
+    await state2.removeCustomQuickAmount(66);
+    expect(state2.customQuickAmounts, [128]);
+  });
+
+  testWidgets('记一笔添加自定义常用金额', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('记一笔'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('+ 自定义'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, '128');
+    await tester.tap(find.text('添加'));
+    await tester.pumpAndSettle();
+    expect(state.customQuickAmounts, [128]);
+    expect(find.text('+¥128'), findsOneWidget);
+    // 点击自定义金额填入金额框
+    await tester.tap(find.text('+¥128'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextField, '128.00'), findsOneWidget);
+  });
 }

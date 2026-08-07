@@ -25,6 +25,7 @@ class TransactionRepository {
   static const String _kDailyReminderKey = 'daily_reminder_v1';
   static const String _kRecurringRemindKey = 'recurring_remind_v1';
   static const String _kStatsRangeKey = 'stats_range_v1';
+  static const String _kQuickAmountsKey = 'custom_quick_amounts_v1';
   static const String _kLastAccountKey = 'last_account_v1';
   static const String _kRecentSearchesKey = 'recent_searches_v1';
   static const String _kRecurringRulesKey = 'recurring_rules_v1';
@@ -151,6 +152,22 @@ class TransactionRepository {
         'end': end?.toIso8601String(),
       }),
     );
+  }
+
+  /// 自定义常用金额（元，升序）
+  Future<List<int>> loadCustomQuickAmounts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList(_kQuickAmountsKey) ?? const [];
+    return [
+      for (final s in list)
+        if (int.tryParse(s) != null && (int.tryParse(s)!) > 0) int.parse(s),
+    ];
+  }
+
+  Future<void> saveCustomQuickAmounts(List<int> amounts) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+        _kQuickAmountsKey, [for (final a in amounts) '$a']);
   }
 
   Future<String> loadLastAccountId() async {
