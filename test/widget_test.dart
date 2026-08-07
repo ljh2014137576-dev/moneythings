@@ -2275,4 +2275,68 @@ void main() {
     expect(find.textContaining('已用 68%'), findsOneWidget);
     expect(find.textContaining('剩余'), findsOneWidget);
   });
+  test('周期规则立即生成本次且不重复', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    await state.addRecurringRule(RecurringRule(
+      id: 'gn1',
+      type: TxType.expense,
+      amount: 100000,
+      categoryId: 'home',
+      accountId: 'alipay',
+      note: '房租',
+      date: today,
+      nextDate: DateTime(now.year, now.month, now.day + 5),
+      frequency: RecurFrequency.monthly,
+    ));
+    final before = state.transactions.length;
+    await state.generateRecurringNow('gn1');
+    expect(state.transactions.length, before + 1);
+    expect(state.transactions.first.note, '房租');
+    expect(state.transactions.first.date, today);
+    // nextDate 已推进到未来，正常补生成不再产生新流水
+    final after = state.transactions.length;
+    await state.generateDueRecurring();
+    expect(state.transactions.length, after);
+  });
+
+  testWidgets('我的页周期规则可立即生成本次', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    await state.addRecurringRule(RecurringRule(
+      id: 'gn2',
+      type: TxType.expense,
+      amount: 5000,
+      categoryId: 'food',
+      accountId: 'wechat',
+      note: '订阅',
+      date: today,
+      nextDate: DateTime(now.year, now.month, now.day + 3),
+      frequency: RecurFrequency.weekly,
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.textContaining('每周 · 餐饮'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byTooltip('立即生成本次'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('立即生成本次'));
+    await tester.pumpAndSettle();
+    expect(state.transactions.any((t) => t.note == '订阅'), isTrue);
+    expect(state.transactions.first.date, today);
+  });
 }

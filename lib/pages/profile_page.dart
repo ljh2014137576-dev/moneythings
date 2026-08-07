@@ -370,6 +370,7 @@ class _ProfilePageState extends State<ProfilePage> {
             _RecurringRow(
               rule: rules[i],
               onEdit: () => _editRecurring(state, rules[i]),
+              onGenerate: () => state.generateRecurringNow(rules[i].id),
               onToggle: (v) => state.updateRecurringRule(
                   rules[i].copyWith(active: v)),
               onDelete: () => state.deleteRecurringRule(rules[i].id),
@@ -849,7 +850,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.10.0',
+            Text('版本 4.11.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -858,7 +859,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.10 统计页预算对比\nv4.9 明细多选批量修改\nv4.8 金额区间预设 · 周期后续预览\nv4.7 周期规则编辑\nv4.6 周期记账（每周/每月/每年自动生成）',
+            Text('v4.11 周期规则立即生成本次\nv4.10 统计页预算对比\nv4.9 明细多选批量修改\nv4.8 金额区间预设 · 周期后续预览\nv4.7 周期规则编辑',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),
@@ -1292,12 +1293,14 @@ class _RecurringRow extends StatelessWidget {
   const _RecurringRow({
     required this.rule,
     required this.onEdit,
+    required this.onGenerate,
     required this.onToggle,
     required this.onDelete,
   });
 
   final RecurringRule rule;
   final VoidCallback onEdit;
+  final VoidCallback onGenerate;
   final ValueChanged<bool> onToggle;
   final VoidCallback onDelete;
 
@@ -1340,6 +1343,12 @@ class _RecurringRow extends StatelessWidget {
             ),
           ),
           Switch(value: rule.active, onChanged: onToggle),
+          IconButton(
+            tooltip: '立即生成本次',
+            onPressed: onGenerate,
+            icon: const Icon(Icons.play_arrow_rounded,
+                size: 20, color: kAccentBlue),
+          ),
           IconButton(
             tooltip: '删除周期规则',
             onPressed: onDelete,

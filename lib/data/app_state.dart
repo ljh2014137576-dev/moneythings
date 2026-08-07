@@ -191,6 +191,45 @@ class AppState extends ChangeNotifier {
     return generated;
   }
 
+  /// 立即生成本次周期流水：未来规则按今天生成并推进 nextDate；过期规则走正常补生成
+  Future<void> generateRecurringNow(String ruleId) async {
+    final idx = _rules.indexWhere((r) => r.id == ruleId);
+    if (idx < 0) return;
+    final r = _rules[idx];
+    if (!r.active || r.bookId != _currentBookId) return;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    if (!r.nextDate.isAfter(today)) {
+      await generateDueRecurring();
+      return;
+    }
+    _transactions = [
+      ..._transactions,
+      Transaction(
+        id: 'rc_${DateTime.now().microsecondsSinceEpoch}_now',
+        type: r.type,
+        amount: r.amount,
+        categoryId: r.categoryId,
+        accountId: r.accountId,
+        transferToAccountId: r.transferToAccountId,
+        note: r.note,
+        date: today,
+        bookId: r.bookId,
+      ),
+    ]
+      ..sort((a, b) => b.date.compareTo(a.date));
+    _rules = [
+      for (final x in _rules)
+        x.id == ruleId
+            ? x.copyWith(
+                nextDate: RecurringRule.nextAfter(today, x.frequency))
+            : x,
+    ];
+    await _persist();
+    await _repository.saveRecurringRules(_rules);
+    notifyListeners();
+  }
+
   Future<void> addRecurringRule(RecurringRule rule) async {
     _rules = [..._rules, rule];
     await _repository.saveRecurringRules(_rules);
