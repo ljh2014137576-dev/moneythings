@@ -950,6 +950,48 @@ void main() {
     expect(week!.expense, 5000);
   });
 
+  test('本周支出分类排行 weekCategoryRanking', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final monday = today.subtract(Duration(days: now.weekday - 1));
+    // 本周：餐饮 500、购物 300
+    await state.addTransaction(Transaction(
+      id: 'wcr1',
+      type: TxType.expense,
+      amount: 500,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: monday,
+    ));
+    await state.addTransaction(Transaction(
+      id: 'wcr2',
+      type: TxType.expense,
+      amount: 300,
+      categoryId: 'shopping',
+      accountId: 'alipay',
+      date: today,
+    ));
+    // 上周：餐饮 9999（不应计入本周）
+    await state.addTransaction(Transaction(
+      id: 'wcr3',
+      type: TxType.expense,
+      amount: 9999,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: monday.subtract(const Duration(days: 7)),
+    ));
+    final ranking = state.weekCategoryRanking();
+    expect(ranking.length, 2);
+    expect(ranking[0].category.name, '餐饮');
+    expect(ranking[0].amount, 500);
+    expect(ranking[1].category.name, '购物');
+    expect(ranking[1].amount, 300);
+  });
+
   testWidgets('首页切换本周概览', (tester) async {
     SharedPreferences.setMockInitialValues({'onboarded_v1': true});
     final state = AppState();
@@ -966,9 +1008,11 @@ void main() {
     await tester.pumpWidget(MoneyApp(state: state));
     await tester.pumpAndSettle();
     expect(find.text('本月支出'), findsOneWidget);
+    expect(find.text('本月支出分类'), findsOneWidget);
     await tester.tap(find.text('本周'));
     await tester.pumpAndSettle();
     expect(find.text('本周支出'), findsOneWidget);
+    expect(find.text('本周支出分类'), findsOneWidget);
     expect(find.text('¥88.00'), findsWidgets);
   });
 

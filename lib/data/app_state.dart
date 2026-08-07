@@ -859,6 +859,25 @@ class AppState extends ChangeNotifier {
   }
 
   /// 某月分类支出排行（降序）
+  /// 本周（周一起）支出分类排行
+  List<({TxCategory category, int amount})> weekCategoryRanking() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final monday = today.subtract(Duration(days: now.weekday - 1));
+    final map = <String, int>{};
+    for (final t in _bookTx) {
+      if (t.type == TxType.expense &&
+          !t.date.isBefore(monday) &&
+          !t.date.isAfter(today)) {
+        map[t.categoryId] = (map[t.categoryId] ?? 0) + t.amount;
+      }
+    }
+    final ranked = map.entries
+        .map((e) => (category: TxCategories.byId(e.key), amount: e.value))
+        .toList()
+      ..sort((a, b) => b.amount.compareTo(a.amount));
+    return ranked;
+  }
   List<({TxCategory category, int amount})> categoryExpenseRanking(DateTime month) {
     final map = <String, int>{};
     for (final t in ofMonth(month)) {

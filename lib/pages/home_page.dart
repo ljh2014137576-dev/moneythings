@@ -58,7 +58,9 @@ class _HomePageState extends State<HomePage> {
             : state.ofMonth(_month))
         .take(6)
         .toList();
-    final ranking = state.categoryExpenseRanking(_month);
+    final ranking = _weekly
+        ? state.weekCategoryRanking()
+        : state.categoryExpenseRanking(_month);
     final isCurrentMonth = _isCurrent(_month);
     final budget = isCurrentMonth ? state.monthlyBudget : 0;
     final spent = isCurrentMonth ? state.currentMonthExpense : 0;
@@ -114,7 +116,10 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: kSpace6),
             _buildRecent(recent),
             const SizedBox(height: kSpace4),
-            _buildRanking(ranking),
+            _buildRanking(
+              ranking,
+              title: _weekly ? '本周支出分类' : '本月支出分类',
+            ),
             const SizedBox(height: kSpace4),
             _buildBalanceMini(balanceSeries),
           ],
@@ -273,9 +278,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildRanking(
-      List<({TxCategory category, int amount})> ranking) {
+      List<({TxCategory category, int amount})> ranking, {
+      required String title}) {
     return PaperGroup(
-      title: '支出分类',
+      title: title,
       padding: const EdgeInsets.all(kSpace4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
