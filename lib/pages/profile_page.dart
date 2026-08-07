@@ -389,6 +389,7 @@ class _ProfilePageState extends State<ProfilePage> {
       builder: (context) => _RecurringEditSheet(
         initial: rule,
         onSave: (edited) => state.updateRecurringRule(edited),
+        onSkip: () => state.skipNextOccurrence(rule.id),
       ),
     );
   }
@@ -955,7 +956,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.14.0',
+            Text('版本 4.15.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -964,7 +965,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.14 账户页转账统计\nv4.13 统计页年度汇总\nv4.12 自定义账户（增删改·图标）\nv4.11 周期规则立即生成本次\nv4.10 统计页预算对比',
+            Text('v4.15 周期规则跳过下次\nv4.14 账户页转账统计\nv4.13 统计页年度汇总\nv4.12 自定义账户（增删改·图标）\nv4.11 周期规则立即生成本次',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),
@@ -1468,10 +1469,15 @@ class _RecurringRow extends StatelessWidget {
 }
 
 class _RecurringEditSheet extends StatefulWidget {
-  const _RecurringEditSheet({required this.initial, required this.onSave});
+  const _RecurringEditSheet({
+    required this.initial,
+    required this.onSave,
+    required this.onSkip,
+  });
 
   final RecurringRule initial;
   final ValueChanged<RecurringRule> onSave;
+  final VoidCallback onSkip;
 
   @override
   State<_RecurringEditSheet> createState() => _RecurringEditSheetState();
@@ -1692,6 +1698,15 @@ class _RecurringEditSheetState extends State<_RecurringEditSheet> {
                   Navigator.of(context).pop();
                 },
                 child: const Text('保存'),
+              ),
+              const SizedBox(height: kSpace2),
+              TextButton(
+                onPressed: () {
+                  widget.onSkip();
+                  Navigator.of(context).pop();
+                },
+                child: const Text('跳过下次（不生成本次）',
+                    style: TextStyle(fontSize: 13, color: kInkSecondary)),
               ),
             ],
           ),

@@ -192,6 +192,24 @@ class AppState extends ChangeNotifier {
     return generated;
   }
 
+  /// 跳过下次：nextDate 推进一期且不生成流水
+  Future<void> skipNextOccurrence(String ruleId) async {
+    final idx = _rules.indexWhere((r) => r.id == ruleId);
+    if (idx < 0) return;
+    final r = _rules[idx];
+    if (!r.active || r.bookId != _currentBookId) return;
+    _rules = [
+      for (final x in _rules)
+        x.id == ruleId
+            ? x.copyWith(
+                nextDate:
+                    RecurringRule.nextAfter(x.nextDate, x.frequency))
+            : x,
+    ];
+    await _repository.saveRecurringRules(_rules);
+    notifyListeners();
+  }
+
   /// 立即生成本次周期流水：未来规则按今天生成并推进 nextDate；过期规则走正常补生成
   Future<void> generateRecurringNow(String ruleId) async {
     final idx = _rules.indexWhere((r) => r.id == ruleId);

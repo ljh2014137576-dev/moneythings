@@ -2538,4 +2538,63 @@ void main() {
     expect(find.textContaining('本月转账：转出 50.00'), findsOneWidget);
     expect(find.textContaining('转入 0.00'), findsOneWidget);
   });
+  test('周期规则跳过下次不生成流水', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addRecurringRule(RecurringRule(
+      id: 'sk1',
+      type: TxType.expense,
+      amount: 100000,
+      categoryId: 'home',
+      accountId: 'alipay',
+      note: '房租',
+      date: DateTime(2026, 8, 1),
+      nextDate: DateTime(2026, 9, 1),
+      frequency: RecurFrequency.monthly,
+    ));
+    final before = state.transactions.length;
+    await state.skipNextOccurrence('sk1');
+    expect(state.transactions.length, before); // 不生成流水
+    expect(state.recurringRules.first.nextDate, DateTime(2026, 10, 1));
+  });
+
+  testWidgets('编辑弹层跳过下次生效', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addRecurringRule(RecurringRule(
+      id: 'sk2',
+      type: TxType.expense,
+      amount: 5000,
+      categoryId: 'food',
+      accountId: 'wechat',
+      note: '订阅',
+      date: DateTime(2026, 8, 1),
+      nextDate: DateTime(2026, 9, 1),
+      frequency: RecurFrequency.weekly,
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.textContaining('每周 · 餐饮'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.textContaining('每周 · 餐饮'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('每周 · 餐饮'));
+    await tester.pumpAndSettle();
+    expect(find.text('编辑周期规则'), findsOneWidget);
+    await tester.ensureVisible(find.text('跳过下次（不生成本次）'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('跳过下次（不生成本次）'));
+    await tester.pumpAndSettle();
+    expect(state.recurringRules.first.nextDate, DateTime(2026, 9, 8));
+  });
 }
