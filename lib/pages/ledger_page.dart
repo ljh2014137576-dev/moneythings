@@ -256,6 +256,9 @@ class _LedgerPageState extends State<LedgerPage> {
                           onDismiss: _deleteWithUndo,
                           onLongPressItem: _longPress,
                           selectedIds: _selectedIds,
+                          bookNames: {
+                            for (final b in state.books) b.id: b.name,
+                          },
                         ),
                       ],
                     ],
@@ -1788,6 +1791,7 @@ class _DayGroup extends StatelessWidget {
     required this.selectedIds,
     required this.onLongPressItem,
     required this.onDismiss,
+    this.bookNames = const {},
   });
 
   final DateTime date;
@@ -1796,6 +1800,7 @@ class _DayGroup extends StatelessWidget {
   final Set<String> selectedIds;
   final ValueChanged<Transaction> onLongPressItem;
   final ValueChanged<Transaction> onDismiss;
+  final Map<String, String> bookNames;
 
   @override
   Widget build(BuildContext context) {
@@ -1863,6 +1868,7 @@ class _DayGroup extends StatelessWidget {
                 onTap: () => onTapItem(items[i]),
                 onLongPress: () => onLongPressItem(items[i]),
                 selected: selectedIds.contains(items[i].id),
+                bookName: bookNames[items[i].bookId],
               ),
             ),
           ],

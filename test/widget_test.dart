@@ -4536,4 +4536,54 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('待报销 5.00'), findsOneWidget);
   });
+  testWidgets('明细全部账本模式显示账本名', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.addBook('旅行账本');
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'bn1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: now,
+      note: '默认本',
+    ));
+    final tripId = state.books.firstWhere((b) => b.name == '旅行账本').id;
+    await state.setCurrentBook(tripId);
+    await state.addTransaction(Transaction(
+      id: 'bn2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'shopping',
+      accountId: 'alipay',
+      date: now,
+      note: '旅行本',
+    ));
+    await state.setCurrentBook(state.books.first.id);
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    final ledger = find.byType(LedgerPage);
+    // 当前账本：旅行本不可见
+    expect(
+      find.descendant(of: ledger, matching: find.textContaining('旅行本')),
+      findsNothing,
+    );
+    // 切全部账本：旅行本出现且带账本名
+    await tester.tap(find.text('全部账本'));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: ledger, matching: find.textContaining('旅行本')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: ledger, matching: find.textContaining('旅行账本')),
+      findsWidgets,
+    );
+  });
 }

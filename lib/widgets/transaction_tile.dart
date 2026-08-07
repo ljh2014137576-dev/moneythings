@@ -17,6 +17,7 @@ class TransactionTile extends StatelessWidget {
     this.onLongPress,
     this.showAccount = true,
     this.selected = false,
+    this.bookName,
   });
 
   final Transaction transaction;
@@ -24,6 +25,7 @@ class TransactionTile extends StatelessWidget {
   final VoidCallback? onLongPress;
   final bool showAccount;
   final bool selected;
+  final String? bookName;
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +96,8 @@ class TransactionTile extends StatelessWidget {
                         '${account.name} → ${toAccount.name}'
                       else if (showAccount)
                         account.name,
+                      if (bookName != null && bookName!.isNotEmpty)
+                        '📚 $bookName',
                     ].join(' · '),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

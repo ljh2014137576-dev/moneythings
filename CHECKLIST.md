@@ -33,5 +33,5 @@
 - [ ] 大字体与无障碍：语义标签已覆盖主要交互（读屏可操作）
 
 ## 6. 版本管理
-- [ ] 每次发版更新 `pubspec.yaml` version（当前 4.52.0+92）
+- [ ] 每次发版更新 `pubspec.yaml` version（当前 4.53.0+93）
 - [ ] 更新 `worklog.md` 与 `STORE_TEXT.md` 版本号
