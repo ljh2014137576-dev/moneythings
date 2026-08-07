@@ -876,3 +876,19 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 97/97；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：无阻塞（沿用 UTF-8 安全编辑与既有导出模式）。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-09 21:00 — 迭代 v4.19：记一笔自定义数字键盘 + 版本号 4.19.0 + 最终 release
+
+- 任务内容：
+  - A. 记一笔自定义数字键盘：金额输入框改为 `TextInputType.none`（不弹系统键盘），下方新增应用内键盘（1-9 / . / 0 / ⌫ 四行，纸面容器 + 细分隔线 + 黑色数字，符合设计规范）；`_appendToAmount`（两位小数规则、重复小数点忽略、0 起始替换）、`_backspaceAmount`、`_KeypadKey`（带读屏语义：数字 N / 删除一位）。
+  - B. 关键验证：先写实验确认 `tester.enterText` 在 `TextInputType.none` 下仍可用，避免破坏既有金额 enterText 测试；98/98 全绿（含全部既有测试）。
+  - C. web 冒烟：记一笔页键盘渲染（语义标签齐全），点 1/5/./0 → 金额输入框出现清除按钮（金额已录入）；零控制台错误。截图 63-amount-keypad.png。
+  - D. 版本号 4.19.0+59（aapt 校验 versionName=4.19.0/versionCode=59）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `DC614B3D...61C5`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/add_transaction_page.dart`（_buildKeypad/_appendToAmount/_backspaceAmount/_KeypadKey；金额框 TextInputType.none）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/63-amount-keypad.png`（新增）
+- commit hash：`a4a861e`；已 push（2779c26..a4a861e master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 98/98；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：`find.bySemanticsLabel('删除一位')` 匹配不到（语义扁平化）→ 改用 `find.text('⌫')`。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
