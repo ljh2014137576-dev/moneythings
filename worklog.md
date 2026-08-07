@@ -789,3 +789,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 88/88；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：统计页测试交易在 1 月而默认当月为空 → 改当月交易避免空状态无 Scrollable；web 语义标题不进 innerText → 用整段文本验证。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-09 11:00 — 迭代 v4.14：账户页转账统计 + 版本号 4.14.0 + 最终 release
+
+- 任务内容：
+  - A. 账户页转账统计：`AppState.monthlyTransferSummaryOfAccount(accountId, month)` 计算本月转出/转入 金额与笔数；账户菜单（点账户行弹出）头部显示「本月转账：转出 ¥X · N 笔　转入 ¥Y · M 笔」（无转账则不显示）。
+  - B. 测试：新增 2 项（转账统计计算含跨月过滤、账户菜单展示），90/90 通过。
+  - C. web 冒烟：注入一笔支付宝→微信转账 → 我的页点支付宝账户 → 菜单显示「本月转账：转出 50.00 · 1 笔　转入 0.00 · 0 笔」，账户余额同步 -¥2,949 → -¥2,999；零控制台错误。截图 58-account-transfer.png。
+  - D. 版本号 4.14.0+54（aapt 校验 versionName=4.14.0/versionCode=54）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `FDE36040...26C`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（monthlyTransferSummaryOfAccount）
+  - `lib/pages/profile_page.dart`（账户菜单转账统计行）
+  - `pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/58-account-transfer.png`（新增）
+- commit hash：`bd42c23`；已 push（8ba141b..bd42c23 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 90/90；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：相邻字符串拼接漏闭合引号（同 v4.5 教训）→ 补 `'`。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
