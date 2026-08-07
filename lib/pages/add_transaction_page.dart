@@ -255,6 +255,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         }
       }
     }
+    String? createdRuleId;
     final tx = Transaction(
       id: widget.editing?.id ?? _newId(),
       type: _type,
@@ -270,7 +271,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     } else {
       await state.addTransaction(tx);
       if (_recur != RecurFrequency.none) {
-        await state.addRecurringRule(RecurringRule(
+        final rule = RecurringRule(
           id: 'rc_${DateTime.now().microsecondsSinceEpoch}',
           type: _type,
           amount: amount,
@@ -283,7 +284,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           nextDate: RecurringRule.nextAfter(_date, _recur),
           frequency: _recur,
           bookId: state.currentBookId,
-        ));
+        );
+        createdRuleId = rule.id;
+        await state.addRecurringRule(rule);
       }
     }
     if (!mounted) return;
@@ -294,16 +297,37 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text('已保存 \${AmountText.format(amount)}'),
-          action: SnackBarAction(
-            label: '继续记一笔',
-            onPressed: () {
-              navigator.push(
-                MaterialPageRoute(
-                  builder: (_) => const AddTransactionPage(),
+          content: Row(
+            children: [
+              Expanded(
+                child: Text('已保存 ${AmountText.format(amount)}'),
+              ),
+              if (!_isEdit) ...[
+                TextButton(
+                  style: TextButton.styleFrom(
+                      foregroundColor: kAccentBlue),
+                  onPressed: () {
+                    state.deleteTransaction(tx.id);
+                    if (createdRuleId != null) {
+                      state.deleteRecurringRule(createdRuleId);
+                    }
+                  },
+                  child: const Text('撤销'),
                 ),
-              );
-            },
+              ],
+              TextButton(
+                style:
+                    TextButton.styleFrom(foregroundColor: kAccentBlue),
+                onPressed: () {
+                  navigator.push(
+                    MaterialPageRoute(
+                      builder: (_) => const AddTransactionPage(),
+                    ),
+                  );
+                },
+                child: const Text('继续记一笔'),
+              ),
+            ],
           ),
         ),
       );

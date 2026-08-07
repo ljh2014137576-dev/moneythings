@@ -2890,4 +2890,32 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('导入周期规则 (CSV)'), findsOneWidget);
   });
+  testWidgets('记一笔保存后撤销删除', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('记一笔').first);
+    await tester.pumpAndSettle();
+    // 键盘输入 12
+    await tester.tap(find.text('1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('2'));
+    await tester.pumpAndSettle();
+    // 保存
+    await tester.ensureVisible(find.text('保存'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+    expect(state.transactions.length, 1);
+    // SnackBar 含撤销与继续记一笔
+    expect(find.text('撤销'), findsOneWidget);
+    expect(find.text('继续记一笔'), findsOneWidget);
+    // 撤销删除
+    await tester.tap(find.text('撤销'));
+    await tester.pumpAndSettle();
+    expect(state.transactions.isEmpty, isTrue);
+  });
 }
