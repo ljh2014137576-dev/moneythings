@@ -1,4 +1,4 @@
-﻿/// 首页：本月概览 + 记一笔 + 最近流水 + 支出分类 + 结余走势
+/// 首页：本月概览 + 记一笔 + 最近流水 + 支出分类 + 结余走势
 library;
 
 import 'package:flutter/material.dart';
@@ -302,29 +302,56 @@ class _HomePageState extends State<HomePage> {
     return PaperGroup(
       title: '结余走势',
       padding: const EdgeInsets.all(kSpace4),
-      trailing: Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: Text(
-          '总资产 ${AmountText.format(context.read<AppState>().totalAssets)}',
-          style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: kInkPrimary,
-              fontFeatures: [FontFeature.tabularFigures()]),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          for (final e in series)
-            Expanded(
-              child: _MiniBar(
-                month: e.month,
-                balance: e.balance,
-                maxAbs: maxAbs,
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              '总资产 ${AmountText.format(context.read<AppState>().totalAssets)}',
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: kInkPrimary,
+                  fontFeatures: [FontFeature.tabularFigures()]),
+            ),
+          ),
+          const SizedBox(width: kSpace2),
+          InkWell(
+            onTap: widget.onGoStats,
+            borderRadius: BorderRadius.circular(kRadiusTable),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('查看统计',
+                      style: TextStyle(
+                          fontSize: 12, color: kAccentBlue)),
+                  Icon(Icons.chevron_right_rounded,
+                      size: 14, color: kAccentBlue),
+                ],
               ),
             ),
+          ),
         ],
+      ),
+      child: InkWell(
+        onTap: widget.onGoStats,
+        borderRadius: BorderRadius.circular(kRadiusTable),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            for (final e in series)
+              Expanded(
+                child: _MiniBar(
+                  month: e.month,
+                  balance: e.balance,
+                  maxAbs: maxAbs,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

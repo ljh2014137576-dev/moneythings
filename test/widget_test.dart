@@ -2753,4 +2753,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('1.5'), findsOneWidget);
   });
+  testWidgets('首页结余走势查看统计进入统计页', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('查看统计'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('查看统计'));
+    await tester.pumpAndSettle();
+    expect(find.text('预算对比'), findsOneWidget);
+  });
 }
