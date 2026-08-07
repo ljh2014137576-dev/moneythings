@@ -1582,3 +1582,18 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 156/156；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：新增测试后「周期规则全部补生成」偶发失败 → 根因是 scrollUntilVisible 用 Scrollable.last 在 IndexedStack 下会错选滚动容器 → 改用 ProfilePage 限定 descendant 加固多处。
 - 下一步：首页今日模式预算显示，或「明细」按月导出；上架执行只差 Play 账号。
+## 2026-08-09 01:30 — 迭代 v4.60：统计自定义范围小结复制 + 版本号 4.60.0 + 最终 release
+
+- 任务内容：
+  - A. 统计自定义范围汇总卡新增「复制」按钮：一键复制范围收支小结文本（起止日期/支出/收入/结余/笔数/日均支出）到剪贴板，SnackBar「已复制范围小结」。
+  - B. 测试：新增组件测试「统计自定义范围复制小结」（mock 平台通道断言 Clipboard.setData + SnackBar），157/157 通过；加固「周期规则全部补生成」测试（tap 前 ensureVisible，消除偶发 miss）。
+  - C. web 冒烟：统计自定义 8月1日~8月7日 → 汇总卡显示「复制」按钮并可点击（剪贴板/提示由组件测试 mock 验证）；截图 104-range-copy.png。
+  - D. 版本号 4.60.0+100（aapt 校验 versionName=4.60.0/versionCode=100）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `82D447E6...866C`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/stats_page.dart`（范围汇总复制按钮 + _copyRangeSummary + services 导入）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/104-range-copy.png`（新增）
+- commit hash：`d83ad26`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 157/157（连续 3 次全绿）；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：完整套件下「周期规则全部补生成」偶发失败（scrollUntilVisible 后 tap 未命中）→ tap 前 ensureVisible；web 语义树不暴露 SnackBar 文本 → 剪贴板行为以组件测试 mock 为准。
+- 下一步：首页今日模式预算显示，或「明细」按月导出；上架执行只差 Play 账号。
