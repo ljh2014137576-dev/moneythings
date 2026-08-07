@@ -675,6 +675,15 @@ class _StatsPageState extends State<StatsPage> {
     if (ys.count == 0) return const SizedBox.shrink();
     return PaperGroup(
       title: '$year 年汇总',
+      trailing: InkWell(
+        onTap: () => _copyYearSummary(state, year),
+        borderRadius: BorderRadius.circular(kRadiusTable),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Text('复制',
+              style: TextStyle(fontSize: 12, color: kAccentBlue)),
+        ),
+      ),
       padding: const EdgeInsets.all(kSpace4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -708,6 +717,21 @@ class _StatsPageState extends State<StatsPage> {
     );
   }
 
+  /// 复制年度收支小结文本到剪贴板
+  void _copyYearSummary(AppState state, int year) {
+    final ys = state.yearSummary(year, allBooks: _allBooks);
+    if (ys.count == 0) return;
+    final text = '$year 年收支小结\n'
+        '总支出 ${AmountText.format(ys.expense, showSymbol: false)}\n'
+        '总收入 ${AmountText.format(ys.income, showSymbol: false)}\n'
+        '结余 ${AmountText.format(ys.income - ys.expense, showSymbol: false)}\n'
+        '日均支出 ${AmountText.format(ys.dailyExpense, showSymbol: false)}\n'
+        '全年 ${ys.count} 笔 · 支出最多：${ys.topCategoryName}';
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('已复制年度小结')),
+    );
+  }
   Widget _ysCell(String label, String value, Color color) {
     return Expanded(
       child: Column(

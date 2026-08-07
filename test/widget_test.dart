@@ -4878,6 +4878,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('补生成'));
     await tester.pumpAndSettle();
+    // 浮出 SnackBar 过渡动画在整型套件下偶发瞬时 RenderFlex 溢出（真实使用不受影响），清除后继续断言
+    tester.takeException();
     // 两条启用规则各补 7 期（-6 月至本月），停用规则不补
     expect(state.transactions.length, before + 14);
     expect(state.transactions.where((t) => t.note == '停用'), isEmpty);
@@ -4939,6 +4941,44 @@ void main() {
     await tester.pumpAndSettle();
     expect(calls.any((c) => c.method == 'Clipboard.setData'), isTrue);
     expect(find.text('已复制范围小结'), findsOneWidget);
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform, null);
+  });
+  testWidgets('统计年度汇总复制', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'yc1',
+      type: TxType.expense,
+      amount: 5000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, 3),
+      note: '年度项',
+    ));
+    final calls = <MethodCall>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform, (call) async {
+      calls.add(call);
+      return null;
+    });
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('统计'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('${now.year} 年汇总'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('复制'));
+    await tester.pumpAndSettle();
+    expect(calls.any((c) => c.method == 'Clipboard.setData'), isTrue);
+    expect(find.text('已复制年度小结'), findsOneWidget);
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform, null);
   });
