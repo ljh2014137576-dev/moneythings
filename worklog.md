@@ -1174,3 +1174,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 120/120；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：web 冒烟首次点击开关未生效（滚动未稳定）→ 重新定位 switch 节点后第二次点击成功；测试环境通知为 no-op（未 init 直接返回），不影响断言。
 - 下一步：真机通知冒烟（SMOKE_TEST.md 补充周期提醒条目）或首页细节增强；上架执行只差 Play 账号。
+## 2026-08-08 01:30 — 迭代 v4.36：首页本周支出分类排行联动 + 版本号 4.36.0 + 最终 release
+
+- 任务内容：
+  - A. `AppState.weekCategoryRanking()`：本周（周一起）支出分类排行（仅统计周一至今天，按金额降序）。
+  - B. 首页「本周/本月」切换：支出分类卡片标题随模式变为「本周支出分类 / 本月支出分类」，数据源切换为 weekCategoryRanking / categoryExpenseRanking，修复本周模式下排行仍显示整月的问题。
+  - C. 测试：新增单元测试「本周支出分类排行 weekCategoryRanking」（本周餐饮 500/购物 300，上周餐饮 9999 不计）；扩展组件测试「首页切换本周概览」断言「本月支出分类」「本周支出分类」标题，121/121 通过。
+  - D. web 冒烟：首页默认「本月支出分类」（居住 220 第一）→ 切「本周」→「本周支出分类」（人情 160 第一，与整月明显不同）验证联动；截图 80-home-week-ranking.png。
+  - E. 版本号 4.36.0+76（aapt 校验 versionName=4.36.0/versionCode=76）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.5MB，SHA-256 `F60EAD27...744D`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（weekCategoryRanking）
+  - `lib/pages/home_page.dart`（ranking 数据源联动 + 动态标题）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/80-home-week-ranking.png`（新增）
+- commit hash：`0c13a4a`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 121/121；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：PS 双引号字符串中 `\n` 不是换行转义 → 多行替换需用反引号 `` `n ``，已修复误插的「\n」字面量。
+- 下一步：统计页「自定义范围」记住上次选择，或首页「最近流水」本周过滤；上架执行只差 Play 账号。
