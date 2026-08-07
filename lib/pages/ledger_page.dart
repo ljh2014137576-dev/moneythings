@@ -817,6 +817,12 @@ class _LedgerPageState extends State<LedgerPage> {
               title: const Text('移动到其他账本'),
               onTap: () => Navigator.of(context).pop('movebook'),
             ),
+            ListTile(
+              leading: const Icon(Icons.category_outlined,
+                  size: 20, color: kInkPrimary),
+              title: const Text('按分类移动到其他账本'),
+              onTap: () => Navigator.of(context).pop('movecat'),
+            ),
           ],
         ),
       ),
@@ -826,6 +832,8 @@ class _LedgerPageState extends State<LedgerPage> {
       await _pickBulkCategory();
     } else if (action == 'movebook') {
       await _pickBulkBook();
+    } else if (action == 'movecat') {
+      await _pickBulkCategoryMove();
     } else {
       await _pickBulkAccount();
     }
@@ -933,6 +941,126 @@ class _LedgerPageState extends State<LedgerPage> {
     }
   }
 
+  /// 按分类批量移动到其他账本：选分类 → 选账本 → 确认后移动该分类全部流水
+  Future<void> _pickBulkCategoryMove() async {
+    final state = context.read<AppState>();
+    final categories = [
+      ...TxCategories.of(TxType.expense),
+      ...TxCategories.of(TxType.income),
+    ];
+    final category = await showModalBottomSheet<TxCategory>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(kSpace4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('选择分类',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+              const SizedBox(height: kSpace3),
+              Wrap(
+                spacing: kSpace2,
+                runSpacing: kSpace2,
+                children: [
+                  for (final c in categories)
+                    InkWell(
+                      onTap: () => Navigator.of(context).pop(c),
+                      borderRadius: BorderRadius.circular(kRadiusTable),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: kSpace3, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0F1EF),
+                          borderRadius: BorderRadius.circular(kRadiusTable),
+                        ),
+                        child: Text(c.name,
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w500)),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (category == null || !mounted) return;
+
+    final ids = state.currentBookTransactions
+        .where((t) => t.categoryId == category.id)
+        .map((t) => t.id)
+        .toList();
+    if (ids.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('该分类暂无流水')),
+      );
+      return;
+    }
+
+    final books = state.books
+        .where((b) => b.id != state.currentBookId)
+        .toList();
+    if (books.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('暂无其他账本')),
+      );
+      return;
+    }
+    final book = await showModalBottomSheet<Book>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(kSpace4, kSpace3, kSpace4, kSpace2),
+              child: Text('移动到账本',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
+            const Divider(height: 1),
+            for (final b in books)
+              ListTile(
+                leading: const Icon(Icons.menu_book_outlined,
+                    size: 20, color: kInkPrimary),
+                title: Text(b.name),
+                onTap: () => Navigator.of(context).pop(b),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (book == null || !mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('按分类移动到其他账本'),
+        content: Text(
+            '将移动「${category.name}」分类全部 ${ids.length} 笔流水到「${book.name}」，确认？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('移动'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await state.moveTransactionsToBook(ids, book.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已移动 ${ids.length} 笔到「${book.name}」')),
+    );
+    _exitSelection();
+  }
   Future<void> _pickBulkAccount() async {
     final picked = await showModalBottomSheet<Account>(
       context: context,

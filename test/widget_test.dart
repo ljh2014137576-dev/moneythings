@@ -3306,4 +3306,71 @@ void main() {
     // 锚点月起 3 期（-2、-1、本月 1 日）已补生成
     expect(state.transactions.where((t) => t.note == '补生测试').length, 3);
   });
+  testWidgets('明细按分类批量移动到其他账本', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addBook('旅行账本');
+    await state.addTransaction(Transaction(
+      id: 'cmv1',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '餐一',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'cmv2',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '餐二',
+    ));
+    await state.addTransaction(Transaction(
+      id: 'cmv3',
+      type: TxType.expense,
+      amount: 300,
+      categoryId: 'shopping',
+      accountId: 'alipay',
+      date: DateTime(now.year, now.month, now.day),
+      note: '购物一',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.textContaining('餐一'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('多选删除'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('全选'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('修改选中'));
+    await tester.pumpAndSettle();
+    expect(find.text('按分类移动到其他账本'), findsOneWidget);
+    await tester.tap(find.text('按分类移动到其他账本'));
+    await tester.pumpAndSettle();
+    // 分类选择（弹层在最后，取 .last）
+    await tester.tap(find.text('餐饮').last);
+    await tester.pumpAndSettle();
+    // 账本选择
+    await tester.tap(find.text('旅行账本'));
+    await tester.pumpAndSettle();
+    // 确认对话框：餐饮分类 2 笔
+    expect(find.textContaining('2 笔流水到「旅行账本」'), findsOneWidget);
+    await tester.tap(find.text('移动'));
+    await tester.pumpAndSettle();
+    // 餐饮 2 笔已移动，购物分类保留在当前账本
+    expect(state.currentBookTransactions.any((t) => t.note == '餐一'), isFalse);
+    expect(state.currentBookTransactions.any((t) => t.note == '餐二'), isFalse);
+    expect(state.currentBookTransactions.any((t) => t.note == '购物一'), isTrue);
+    final bookId = state.books.firstWhere((b) => b.name == '旅行账本').id;
+    await state.setCurrentBook(bookId);
+    expect(state.currentBookTransactions.length, 2);
+  });
 }
