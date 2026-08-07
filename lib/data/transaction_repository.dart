@@ -24,6 +24,7 @@ class TransactionRepository {
   static const String _kBudgetNotifyKey = 'budget_notify_v1';
   static const String _kDailyReminderKey = 'daily_reminder_v1';
   static const String _kRecurringRemindKey = 'recurring_remind_v1';
+  static const String _kStatsRangeKey = 'stats_range_v1';
   static const String _kLastAccountKey = 'last_account_v1';
   static const String _kRecentSearchesKey = 'recent_searches_v1';
   static const String _kRecurringRulesKey = 'recurring_rules_v1';
@@ -111,6 +112,45 @@ class TransactionRepository {
   Future<void> saveRecurringRemind(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kRecurringRemindKey, value);
+  }
+
+  /// 统计页自定义范围记忆（模式 + 起止日期）
+  Future<({bool mode, DateTime? start, DateTime? end})> loadStatsRange() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kStatsRangeKey);
+    if (raw == null || raw.isEmpty) {
+      return (mode: false, start: null, end: null);
+    }
+    try {
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+      return (
+        mode: map['mode'] as bool? ?? false,
+        start: map['start'] != null
+            ? DateTime.parse(map['start'] as String)
+            : null,
+        end: map['end'] != null
+            ? DateTime.parse(map['end'] as String)
+            : null,
+      );
+    } catch (_) {
+      return (mode: false, start: null, end: null);
+    }
+  }
+
+  Future<void> saveStatsRange({
+    required bool mode,
+    DateTime? start,
+    DateTime? end,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _kStatsRangeKey,
+      jsonEncode({
+        'mode': mode,
+        'start': start?.toIso8601String(),
+        'end': end?.toIso8601String(),
+      }),
+    );
   }
 
   Future<String> loadLastAccountId() async {

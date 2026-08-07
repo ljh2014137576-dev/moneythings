@@ -3721,4 +3721,39 @@ void main() {
     expect(find.textContaining('本周项'), findsOneWidget);
     expect(find.textContaining('上周项'), findsNothing);
   });
+  test('统计自定义范围记忆持久化', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    expect(state.statsRangeMode, isFalse);
+    await state.setStatsRange(
+        mode: true,
+        start: DateTime(2026, 8, 1),
+        end: DateTime(2026, 8, 7, 23, 59, 59));
+    expect(state.statsRangeMode, isTrue);
+    expect(state.statsRangeStart, DateTime(2026, 8, 1));
+    final state2 = AppState();
+    await state2.load();
+    expect(state2.statsRangeMode, isTrue);
+    expect(state2.statsRangeStart, DateTime(2026, 8, 1));
+    expect(state2.statsRangeEnd, DateTime(2026, 8, 7, 23, 59, 59));
+  });
+
+  testWidgets('统计页恢复上次自定义范围', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.setStatsRange(
+        mode: true,
+        start: DateTime(2026, 8, 1),
+        end: DateTime(2026, 8, 7, 23, 59, 59));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('统计'));
+    await tester.pumpAndSettle();
+    // 自定义范围已恢复：显示「从 8月1日」「至 8月7日」
+    expect(find.textContaining('从 8月1日'), findsOneWidget);
+    expect(find.textContaining('至 8月7日'), findsOneWidget);
+  });
 }

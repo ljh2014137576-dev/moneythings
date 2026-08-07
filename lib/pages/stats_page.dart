@@ -173,6 +173,11 @@ class _StatsPageState extends State<StatsPage> {
     super.initState();
     final now = DateTime.now();
     _month = DateTime(now.year, now.month);
+    // 恢复上次自定义范围
+    final st = context.read<AppState>();
+    _rangeMode = st.statsRangeMode;
+    _rangeStart = st.statsRangeStart;
+    _rangeEnd = st.statsRangeEnd;
   }
 
   @override
@@ -1154,13 +1159,21 @@ class _StatsPageState extends State<StatsPage> {
         _ChartModeTag(
           label: '本月',
           selected: !_rangeMode,
-          onTap: () => setState(() => _rangeMode = false),
+          onTap: () {
+            setState(() => _rangeMode = false);
+            context.read<AppState>().setStatsRange(
+                mode: false, start: _rangeStart, end: _rangeEnd);
+          },
         ),
         const SizedBox(width: kSpace2),
         _ChartModeTag(
           label: '自定义',
           selected: _rangeMode,
-          onTap: () => setState(() => _rangeMode = true),
+          onTap: () {
+            setState(() => _rangeMode = true);
+            context.read<AppState>().setStatsRange(
+                mode: true, start: _rangeStart, end: _rangeEnd);
+          },
         ),
         if (_rangeMode) ...[
           const SizedBox(width: kSpace2),
@@ -1215,6 +1228,9 @@ class _StatsPageState extends State<StatsPage> {
           _rangeEnd = _rangeStart;
         }
       });
+      await context
+          .read<AppState>()
+          .setStatsRange(mode: true, start: _rangeStart, end: _rangeEnd);
     }
   }
 
@@ -1237,6 +1253,9 @@ class _StatsPageState extends State<StatsPage> {
           _rangeStart = DateTime(picked.year, picked.month, picked.day);
         }
       });
+      await context
+          .read<AppState>()
+          .setStatsRange(mode: true, start: _rangeStart, end: _rangeEnd);
     }
   }
 

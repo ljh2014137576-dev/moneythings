@@ -37,6 +37,9 @@ class AppState extends ChangeNotifier {
   bool _budgetNotify = true;
   bool _dailyReminder = false;
   bool _recurringRemind = true;
+  bool _statsRangeMode = false;
+  DateTime? _statsRangeStart;
+  DateTime? _statsRangeEnd;
   String _lastAccountId = 'alipay';
   bool _onboarded = false;
   bool _loaded = false;
@@ -86,6 +89,10 @@ class AppState extends ChangeNotifier {
     _recentSearches = await _repository.loadRecentSearches();
     _dailyReminder = await _repository.loadDailyReminder();
     _recurringRemind = await _repository.loadRecurringRemind();
+    final statsRange = await _repository.loadStatsRange();
+    _statsRangeMode = statsRange.mode;
+    _statsRangeStart = statsRange.start;
+    _statsRangeEnd = statsRange.end;
     _budgetNotify = await _repository.loadBudgetNotify();
     _onboarded = await _repository.loadOnboarded();
     _rules = await _repository.loadRecurringRules();
@@ -490,6 +497,23 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  bool get statsRangeMode => _statsRangeMode;
+  DateTime? get statsRangeStart => _statsRangeStart;
+  DateTime? get statsRangeEnd => _statsRangeEnd;
+
+  /// 统计页自定义范围记忆（模式 + 起止日期）
+  Future<void> setStatsRange({
+    required bool mode,
+    DateTime? start,
+    DateTime? end,
+  }) async {
+    _statsRangeMode = mode;
+    _statsRangeStart = start;
+    _statsRangeEnd = end;
+    await _repository.saveStatsRange(mode: mode, start: start, end: end);
+    notifyListeners();
+  }
+
   bool get budgetNotify => _budgetNotify;
 
   Future<void> setBudgetNotify(bool value) async {
@@ -572,6 +596,7 @@ class AppState extends ChangeNotifier {
         'budgetNotify': _budgetNotify,
         'dailyReminder': _dailyReminder,
         'recurringRemind': _recurringRemind,
+        'statsRange': {'mode': _statsRangeMode, 'start': _statsRangeStart?.toIso8601String(), 'end': _statsRangeEnd?.toIso8601String()},
         'recurringRules': [for (final r in _rules) r.toJson()],
       });
 
@@ -606,6 +631,10 @@ class AppState extends ChangeNotifier {
       _budgetNotify = (map['budgetNotify'] as bool?) ?? true;
       _dailyReminder = (map['dailyReminder'] as bool?) ?? false;
       _recurringRemind = (map['recurringRemind'] as bool?) ?? true;
+      final statsRange = map['statsRange'] as Map<dynamic, dynamic>?;
+      _statsRangeMode = statsRange?['mode'] as bool? ?? false;
+      _statsRangeStart = statsRange?['start'] != null ? DateTime.parse(statsRange!['start'] as String) : null;
+      _statsRangeEnd = statsRange?['end'] != null ? DateTime.parse(statsRange!['end'] as String) : null;
       _rules = [
         for (final e in (map['recurringRules'] as List<dynamic>? ?? []))
           RecurringRule.fromJson(e as Map<String, dynamic>),
@@ -620,6 +649,8 @@ class AppState extends ChangeNotifier {
       await _repository.saveBudgetNotify(_budgetNotify);
       await _repository.saveDailyReminder(_dailyReminder);
       await _repository.saveRecurringRemind(_recurringRemind);
+      await _repository.saveStatsRange(
+          mode: _statsRangeMode, start: _statsRangeStart, end: _statsRangeEnd);
       await _repository.saveRecurringRules(_rules);
     await _syncRecurringNotifications();
       notifyListeners();
