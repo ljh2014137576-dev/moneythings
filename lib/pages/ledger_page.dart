@@ -428,6 +428,13 @@ class _LedgerPageState extends State<LedgerPage> {
     );
   }
 
+  /// 长按删除单条最近搜索
+  void _removeRecentSearch(String s) {
+    context.read<AppState>().removeRecentSearch(s);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已删除搜索「$s」')),
+    );
+  }
   Widget _buildRecentSearches() {
     final recents = context.watch<AppState>().recentSearches;
     if (recents.isEmpty) return const SizedBox.shrink();
@@ -453,6 +460,8 @@ class _LedgerPageState extends State<LedgerPage> {
                     style:
                         TextStyle(fontSize: 12, color: kInkDisabled)),
               ),
+              const Text('· 长按删除',
+                  style: TextStyle(fontSize: 11, color: kInkDisabled)),
             ],
           ),
           const SizedBox(height: 2),
@@ -466,6 +475,7 @@ class _LedgerPageState extends State<LedgerPage> {
                     _searchController.text = s;
                     setState(() => _query = s);
                   },
+                  onLongPress: () => _removeRecentSearch(s),
                   borderRadius: BorderRadius.circular(kRadiusTable),
                   child: Container(
                     padding: const EdgeInsets.symmetric(

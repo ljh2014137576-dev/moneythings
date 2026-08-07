@@ -5042,4 +5042,21 @@ void main() {
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform, null);
   });
+  testWidgets('明细最近搜索长按删除', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await state.recordSearch('咖啡');
+    await state.recordSearch('超市');
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    expect(state.recentSearches, ['超市', '咖啡']);
+    await tester.longPress(find.text('咖啡'));
+    await tester.pumpAndSettle();
+    expect(state.recentSearches, ['超市']);
+    expect(state.recentSearches.contains('咖啡'), isFalse);
+  });
 }

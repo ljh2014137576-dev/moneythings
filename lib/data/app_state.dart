@@ -477,6 +477,16 @@ class AppState extends ChangeNotifier {
     await _repository.saveRecentSearches([]);
     notifyListeners();
   }
+
+  /// 删除单条最近搜索
+  Future<void> removeRecentSearch(String s) async {
+    _recentSearches = [
+      for (final e in _recentSearches)
+        if (e != s) e,
+    ];
+    await _repository.saveRecentSearches(_recentSearches);
+    notifyListeners();
+  }
   bool get dailyReminder => _dailyReminder;
 
   Future<void> setDailyReminder(bool value) async {
