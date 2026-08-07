@@ -927,3 +927,25 @@
   2. 明细页 `find.byType(Scrollable).last` 命中横向筛选行 → 改用 `find.descendant(of: LedgerPage, matching: Scrollable).first`（纵向 ListView）。
   3. 年份标题把既有测试的「上月流水」挤出视口 → 测试加 scrollUntilVisible。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-10 05:00 — 迭代 v4.22：周期规则 CSV 导入 + 版本号 4.22.0 + 最终 release
+
+- 任务内容：
+  - A. 周期规则 CSV 导入：`CsvExporter.exportRecurringCsv` 补「转入账户」列（转账规则完整往返）；`CsvImporter.parseRecurringCsv` 解析（频率/类型/金额/分类/账户/下次日期/备注/转入账户，未知账户回落默认）；`AppState.importRecurringCsv`（按 频率+金额+备注 去重，写当前账本）；我的页数据管理新增「导入周期规则 (CSV)」入口（粘贴对话框 + 确认）。
+  - B. 测试：新增 3 项（导出导入往返含转账规则、导入去重、入口存在），并更新 v4.18 导出测试（新增转入账户列）；103/103 通过。
+  - C. web 冒烟：我的页点「导入周期规则」→ 粘贴规则 CSV → 确认导入 → localStorage 出现「房租」规则；零控制台错误。截图 66-recurring-import.png。
+  - D. 版本号 4.22.0+62（aapt 校验 versionName=4.22.0/versionCode=62）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（53.9MB，SHA-256 `AB374F88...A64F3`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/services/csv_exporter.dart`（exportRecurringCsv 补转入账户列）
+  - `lib/services/csv_importer.dart`（parseRecurringCsv + _parseRecurringDate）
+  - `lib/data/app_state.dart`（importRecurringCsv）
+  - `lib/models/recurring_rule.dart`（copyWith 补 bookId）
+  - `lib/pages/profile_page.dart`（导入入口 + _importRecurringCsv）
+  - `pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/66-recurring-import.png`（新增）
+- commit hash：`35c92af`；已 push（ca19a3d..35c92af master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 103/103；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：
+  1. `r'\r?\n'` 正则被 PowerShell 转义成 `r'\\r?\\n'`（匹配字面 `\n` 而非换行）→ 解析恒 0 条 → 修正为单反斜杠。
+  2. 调试 print 插入/删除时行错位弄坏 catch 与 hasHeader → 逐行核对修复。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
