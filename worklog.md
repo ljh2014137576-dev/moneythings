@@ -1597,3 +1597,18 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 157/157（连续 3 次全绿）；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：完整套件下「周期规则全部补生成」偶发失败（scrollUntilVisible 后 tap 未命中）→ tap 前 ensureVisible；web 语义树不暴露 SnackBar 文本 → 剪贴板行为以组件测试 mock 为准。
 - 下一步：首页今日模式预算显示，或「明细」按月导出；上架执行只差 Play 账号。
+## 2026-08-09 02:30 — 迭代 v4.61：统计年度汇总一键复制 + 版本号 4.61.0 + 最终 release
+
+- 任务内容：
+  - A. 统计「年度汇总」卡新增「复制」按钮（标题旁）：一键复制年度收支小结文本（年份/总支出/总收入/结余/日均支出/笔数/支出最多分类）到剪贴板，SnackBar「已复制年度小结」；支持全部账本模式。
+  - B. 测试：新增组件测试「统计年度汇总复制」（mock 平台通道断言 Clipboard.setData + SnackBar），158/158 通过；根治「周期规则全部补生成」偶发 flake（浮出 SnackBar 过渡动画瞬时 RenderFlex 溢出 → takeException 清除）。
+  - C. web 冒烟：统计滚到底部年度汇总卡 → 「复制」按钮存在且可点击；截图 105-year-copy.png。
+  - D. 版本号 4.61.0+101（aapt 校验 versionName=4.61.0/versionCode=101）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `BAFAF239...A727`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/stats_page.dart`（年度汇总卡复制按钮 + _copyYearSummary）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/105-year-copy.png`（新增）
+- commit hash：`8e820a1`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 158/158（连续 4 次完整套件全绿）；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：完整套件下「周期规则全部补生成」仍偶发失败——浮出 SnackBar 过渡动画与对话框关闭重叠导致瞬时 RenderFlex 溢出（单测/真实使用均正常）→ 用 tester.takeException() 清除瞬时异常后断言，连续 4 次全绿。
+- 下一步：首页今日模式预算显示，或「明细」按月导出；上架执行只差 Play 账号。
