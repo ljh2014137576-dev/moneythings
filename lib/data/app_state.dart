@@ -11,6 +11,7 @@ import '../models/transaction.dart';
 import '../models/recurring_rule.dart';
 import 'transaction_repository.dart';
 import '../services/csv_importer.dart';
+import '../services/notification_service.dart';
 
 /// 某自然月的收支统计
 class MonthSummary {
@@ -35,6 +36,7 @@ class AppState extends ChangeNotifier {
   String _currentBookId = kDefaultBook.id;
   bool _budgetNotify = true;
   bool _dailyReminder = false;
+  bool _recurringRemind = true;
   String _lastAccountId = 'alipay';
   bool _onboarded = false;
   bool _loaded = false;
@@ -83,6 +85,7 @@ class AppState extends ChangeNotifier {
     _lastAccountId = await _repository.loadLastAccountId();
     _recentSearches = await _repository.loadRecentSearches();
     _dailyReminder = await _repository.loadDailyReminder();
+    _recurringRemind = await _repository.loadRecurringRemind();
     _budgetNotify = await _repository.loadBudgetNotify();
     _onboarded = await _repository.loadOnboarded();
     _rules = await _repository.loadRecurringRules();
@@ -215,6 +218,7 @@ class AppState extends ChangeNotifier {
     if (changed) {
       _rules = rules;
       await _repository.saveRecurringRules(_rules);
+    await _syncRecurringNotifications();
     }
     if (generated > 0) {
       _transactions.sort((a, b) => b.date.compareTo(a.date));
@@ -239,6 +243,7 @@ class AppState extends ChangeNotifier {
             : x,
     ];
     await _repository.saveRecurringRules(_rules);
+    await _syncRecurringNotifications();
     notifyListeners();
   }
 
@@ -278,6 +283,7 @@ class AppState extends ChangeNotifier {
     ];
     await _persist();
     await _repository.saveRecurringRules(_rules);
+    await _syncRecurringNotifications();
     notifyListeners();
   }
 
@@ -371,12 +377,14 @@ class AppState extends ChangeNotifier {
     ];
     await _persist();
     await _repository.saveRecurringRules(_rules);
+    await _syncRecurringNotifications();
     notifyListeners();
     return created.length;
   }
   Future<void> addRecurringRule(RecurringRule rule) async {
     _rules = [..._rules, rule];
     await _repository.saveRecurringRules(_rules);
+    await _syncRecurringNotifications();
     notifyListeners();
   }
 
@@ -385,12 +393,14 @@ class AppState extends ChangeNotifier {
       for (final r in _rules) r.id == rule.id ? rule : r,
     ];
     await _repository.saveRecurringRules(_rules);
+    await _syncRecurringNotifications();
     notifyListeners();
   }
 
   Future<void> deleteRecurringRule(String id) async {
     _rules = [for (final r in _rules) if (r.id != id) r];
     await _repository.saveRecurringRules(_rules);
+    await _syncRecurringNotifications();
     notifyListeners();
   }
 
@@ -412,6 +422,7 @@ class AppState extends ChangeNotifier {
     }
     if (added > 0) {
       await _repository.saveRecurringRules(_rules);
+    await _syncRecurringNotifications();
       notifyListeners();
     }
     return added;
@@ -457,6 +468,26 @@ class AppState extends ChangeNotifier {
     _dailyReminder = value;
     await _repository.saveDailyReminder(value);
     notifyListeners();
+  }
+
+  bool get recurringRemind => _recurringRemind;
+
+  /// 周期记账到期提醒开关：开启时重排全部提醒，关闭时取消
+  Future<void> setRecurringRemind(bool value) async {
+    _recurringRemind = value;
+    await _repository.saveRecurringRemind(value);
+    await _syncRecurringNotifications();
+    notifyListeners();
+  }
+
+  /// 同步周期记账到期提醒（规则增删改/开关后调用）
+  Future<void> _syncRecurringNotifications() async {
+    if (!_loaded) return;
+    if (_recurringRemind) {
+      await NotificationService.instance.scheduleRecurringReminders(_rules);
+    } else {
+      await NotificationService.instance.cancelRecurringReminders();
+    }
   }
 
   bool get budgetNotify => _budgetNotify;
@@ -540,6 +571,7 @@ class AppState extends ChangeNotifier {
         'bookBudgets': _bookBudgets,
         'budgetNotify': _budgetNotify,
         'dailyReminder': _dailyReminder,
+        'recurringRemind': _recurringRemind,
         'recurringRules': [for (final r in _rules) r.toJson()],
       });
 
@@ -573,6 +605,7 @@ class AppState extends ChangeNotifier {
           (map['bookBudgets'] as Map<dynamic, dynamic>?) ?? {});
       _budgetNotify = (map['budgetNotify'] as bool?) ?? true;
       _dailyReminder = (map['dailyReminder'] as bool?) ?? false;
+      _recurringRemind = (map['recurringRemind'] as bool?) ?? true;
       _rules = [
         for (final e in (map['recurringRules'] as List<dynamic>? ?? []))
           RecurringRule.fromJson(e as Map<String, dynamic>),
@@ -586,7 +619,9 @@ class AppState extends ChangeNotifier {
       await _repository.saveBookBudgets(_bookBudgets);
       await _repository.saveBudgetNotify(_budgetNotify);
       await _repository.saveDailyReminder(_dailyReminder);
+      await _repository.saveRecurringRemind(_recurringRemind);
       await _repository.saveRecurringRules(_rules);
+    await _syncRecurringNotifications();
       notifyListeners();
       return null;
     } catch (_) {

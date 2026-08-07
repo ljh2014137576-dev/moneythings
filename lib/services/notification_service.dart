@@ -1,13 +1,16 @@
-﻿/// 本地通知服务：预算超支提醒 + 每日记账提醒
+/// 本地通知服务：预算超支提醒 + 每日记账提醒 + 周期记账到期提醒
 library;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../widgets/amount_text.dart';
+import '../models/recurring_rule.dart';
+import '../models/transaction.dart';
 
 class NotificationService {
   NotificationService._();
@@ -92,6 +95,53 @@ class NotificationService {
   Future<void> cancelDailyReminder() async {
     if (kIsWeb) return;
     await _plugin.cancel(id: _reminderId);
+  }
+
+  final Set<int> _recurringIds = {};
+
+  /// 周期记账到期提醒：为每个启用规则在其 nextDate 当天 09:00 调度通知；
+  /// 先取消旧调度（规则增删/开关后调用方负责重新调度）
+  Future<void> scheduleRecurringReminders(List<RecurringRule> rules) async {
+    if (kIsWeb || !_inited) return;
+    for (final id in _recurringIds) {
+      await _plugin.cancel(id: id);
+    }
+    _recurringIds.clear();
+    const details = AndroidNotificationDetails(
+      'recurring',
+      '周期记账提醒',
+      channelDescription: '周期规则到期当天提醒',
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+    );
+    final now = tz.TZDateTime.now(tz.local);
+    for (final r in rules) {
+      if (!r.active) continue;
+      final id = r.id.hashCode & 0x7fffffff;
+      final d = r.nextDate;
+      var scheduled = tz.TZDateTime(tz.local, d.year, d.month, d.day, 9, 0);
+      if (!scheduled.isAfter(now)) {
+        scheduled = scheduled.add(const Duration(days: 1));
+      }
+      await _plugin.zonedSchedule(
+        id: id,
+        title: '周期记账：${TxCategories.byId(r.categoryId).name}',
+        body: '${DateFormat('M月d日', 'zh_CN').format(d)} 需记一笔 ${AmountText.format(r.amount)}',
+        scheduledDate: scheduled,
+        notificationDetails: const NotificationDetails(android: details),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+      _recurringIds.add(id);
+    }
+  }
+
+  /// 取消全部周期记账提醒
+  Future<void> cancelRecurringReminders() async {
+    if (kIsWeb) return;
+    for (final id in _recurringIds) {
+      await _plugin.cancel(id: id);
+    }
+    _recurringIds.clear();
   }
 }
 

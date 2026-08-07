@@ -979,6 +979,30 @@ class _ProfilePageState extends State<ProfilePage> {
                       await NotificationService.instance.cancelDailyReminder();
                     }
                   },
+                ),              ],
+            ),
+          ),
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: kSpace4, vertical: 6),
+            child: Row(
+              children: [
+                const Icon(Icons.repeat_rounded,
+                    size: 20, color: kInkSecondary),
+                const SizedBox(width: kSpace3),
+                const Expanded(
+                  child: Text('周期记账提醒（到期当天）',
+                      style: TextStyle(fontSize: 14, color: kInkPrimary)),
+                ),
+                Switch(
+                  value: state.recurringRemind,
+                  activeTrackColor: kAccentBlue,
+                  onChanged: (v) async {
+                    await state.setRecurringRemind(v);
+                    if (v) {
+                      await NotificationService.instance.requestPermission();
+                    }
+                  },
                 ),
               ],
             ),
@@ -1068,7 +1092,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.34.0',
+            Text('版本 4.35.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -1077,7 +1101,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.34 明细按分类批量删除\nv4.33 明细按分类批量修改账户\nv4.32 统计年度收入对比\nv4.31 明细按分类移动到其他账本\nv4.30 周期规则按月补生成\nv4.29 统计自定义范围结余走势\nv4.28 明细批量移动到其他账本\nv4.27 统计页自定义日期范围\nv4.26 我的页数据概况\nv4.25 明细复制到其他账本\nv4.24 首页总资产下钻账户',
+            Text('v4.35 周期记账到期提醒\nv4.34 明细按分类批量删除\nv4.33 明细按分类批量修改账户\nv4.32 统计年度收入对比\nv4.31 明细按分类移动到其他账本\nv4.30 周期规则按月补生成\nv4.29 统计自定义范围结余走势\nv4.28 明细批量移动到其他账本\nv4.27 统计页自定义日期范围\nv4.26 我的页数据概况\nv4.25 明细复制到其他账本\nv4.24 首页总资产下钻账户',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),

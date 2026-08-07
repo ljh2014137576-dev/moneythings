@@ -883,6 +883,18 @@ void main() {
     expect(state2.dailyReminder, isTrue);
   });
 
+  test('周期记账提醒开关持久化', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    expect(state.recurringRemind, isTrue);
+    await state.setRecurringRemind(false);
+    expect(state.recurringRemind, isFalse);
+    final state2 = AppState();
+    await state2.load();
+    expect(state2.recurringRemind, isFalse);
+  });
+
   testWidgets('记一笔复制上一条', (tester) async {
     SharedPreferences.setMockInitialValues({'onboarded_v1': true});
     final state = AppState();
@@ -3579,5 +3591,27 @@ void main() {
     await tester.tap(find.text('撤销'));
     await tester.pumpAndSettle();
     expect(state.currentBookTransactions.where((t) => t.categoryId == 'food').length, 2);
+  });
+  testWidgets('我的页周期记账提醒开关', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('周期记账提醒（到期当天）'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    final row = find.widgetWithText(Row, '周期记账提醒（到期当天）');
+    final sw = find.descendant(of: row, matching: find.byType(Switch));
+    expect(sw, findsOneWidget);
+    expect(state.recurringRemind, isTrue);
+    await tester.tap(sw);
+    await tester.pumpAndSettle();
+    expect(state.recurringRemind, isFalse);
   });
 }

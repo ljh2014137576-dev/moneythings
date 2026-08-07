@@ -23,6 +23,7 @@ class TransactionRepository {
   static const String _kBookBudgetsKey = 'book_budgets_v1';
   static const String _kBudgetNotifyKey = 'budget_notify_v1';
   static const String _kDailyReminderKey = 'daily_reminder_v1';
+  static const String _kRecurringRemindKey = 'recurring_remind_v1';
   static const String _kLastAccountKey = 'last_account_v1';
   static const String _kRecentSearchesKey = 'recent_searches_v1';
   static const String _kRecurringRulesKey = 'recurring_rules_v1';
@@ -100,6 +101,16 @@ class TransactionRepository {
   Future<void> saveDailyReminder(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kDailyReminderKey, value);
+  }
+
+  Future<bool> loadRecurringRemind() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_kRecurringRemindKey) ?? true;
+  }
+
+  Future<void> saveRecurringRemind(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kRecurringRemindKey, value);
   }
 
   Future<String> loadLastAccountId() async {
