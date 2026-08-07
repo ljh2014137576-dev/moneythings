@@ -47,6 +47,7 @@ class _LedgerPageState extends State<LedgerPage> {
   Timer? _searchDebounce;
   bool _showAll = false;
   bool _allBooks = false;
+  bool _reimbursableFilter = false;
   String _accountFilter = 'all';
   String _categoryFilter = 'all';
   int? _amountMin;
@@ -111,6 +112,9 @@ class _LedgerPageState extends State<LedgerPage> {
               (_amountMax == null || t.amount <= _amountMax!))
             t,
       ];
+    }
+    if (_reimbursableFilter) {
+      byType = [for (final t in byType) if (t.reimbursable) t];
     }
     if (_query.isEmpty) return byType;
     final q = _query.toLowerCase();
@@ -573,6 +577,13 @@ class _LedgerPageState extends State<LedgerPage> {
               _amountMin = null;
               _amountMax = null;
             })),
+          const SizedBox(width: kSpace3),
+          _rangeChip(
+            icon: Icons.receipt_long_outlined,
+            label: _reimbursableFilter ? '报销：可报销' : '报销：全部',
+            onTap: () =>
+                setState(() => _reimbursableFilter = !_reimbursableFilter),
+          ),
         ],
       ),
     );

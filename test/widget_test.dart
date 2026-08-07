@@ -4153,4 +4153,128 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('旅行本'), findsNothing);
   });
+  test('报销标记模型与 JSON 往返', () {
+    final t = Transaction(
+      id: 'rb1',
+      type: TxType.expense,
+      amount: 1000,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: DateTime(2026, 8, 1),
+      reimbursable: true,
+    );
+    expect(t.reimbursable, isTrue);
+    final restored = Transaction.fromJson(t.toJson());
+    expect(restored.reimbursable, isTrue);
+    final copy = t.copyWith(reimbursable: false);
+    expect(copy.reimbursable, isFalse);
+    // 旧数据缺字段默认 false
+    final legacy = Transaction.fromJson({
+      'id': 'x',
+      'type': 'expense',
+      'amount': 1,
+      'categoryId': 'food',
+      'accountId': 'alipay',
+      'date': '2026-08-01T00:00:00.000',
+    });
+    expect(legacy.reimbursable, isFalse);
+  });
+
+  testWidgets('记一笔可报销开关保存', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('记一笔'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, '88');
+    await tester.pumpAndSettle();
+    final row = find.widgetWithText(Row, '这笔可报销');
+    await tester.ensureVisible(row);
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(of: row, matching: find.byType(Switch)));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('保存'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+    expect(state.transactions.first.reimbursable, isTrue);
+  });
+
+  testWidgets('明细报销筛选', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addTransaction(Transaction(
+      id: 'rbA',
+      type: TxType.expense,
+      amount: 100,
+      categoryId: 'food',
+      accountId: 'alipay',
+      date: now,
+      note: '报一',
+      reimbursable: true,
+    ));
+    await state.addTransaction(Transaction(
+      id: 'rbB',
+      type: TxType.expense,
+      amount: 200,
+      categoryId: 'shopping',
+      accountId: 'alipay',
+      date: now,
+      note: '报二',
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('明细'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('报一'), findsWidgets);
+    expect(find.textContaining('报二'), findsWidgets);
+    // 报销筛选：只显示可报销
+    await tester.ensureVisible(find.text('报销：全部'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('报销：全部'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('报一'), findsWidgets);
+    expect(find.textContaining('报二'), findsNothing);
+    // 切回全部
+    await tester.tap(find.text('报销：可报销'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('报二'), findsWidgets);
+  });
+
+  test('CSV 报销列往返', () {
+    final txs = [
+      Transaction(
+        id: 'rbx1',
+        type: TxType.expense,
+        amount: 1000,
+        categoryId: 'food',
+        accountId: 'alipay',
+        date: DateTime(2026, 8, 1),
+        note: '可报销项',
+        reimbursable: true,
+      ),
+      Transaction(
+        id: 'rbx2',
+        type: TxType.expense,
+        amount: 500,
+        categoryId: 'food',
+        accountId: 'alipay',
+        date: DateTime(2026, 8, 2),
+        note: '普通项',
+      ),
+    ];
+    final csv = CsvExporter.exportCsv(txs);
+    expect(csv.contains(',报销'), isTrue);
+    final result = CsvImporter.parseCsv(csv);
+    expect(result.errors, isEmpty);
+    expect(result.transactions.length, 2);
+    expect(result.transactions.first.reimbursable, isTrue);
+    expect(result.transactions.last.reimbursable, isFalse);
+  });
 }

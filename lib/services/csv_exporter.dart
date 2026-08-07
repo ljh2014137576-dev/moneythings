@@ -18,7 +18,7 @@ class CsvExporter {
     for (final m in metaLines) {
       buf.writeln('# $m');
     }
-    buf.writeln('日期,类型,分类,金额(元),账户,账本,备注,转入账户');
+    buf.writeln('日期,类型,分类,金额(元),账户,账本,备注,转入账户,报销');
     for (final t in transactions) {
       final d = t.date;
       final date =
@@ -39,7 +39,8 @@ class CsvExporter {
           : accountById(t.transferToAccountId!).name;
       buf.writeln(
           '$date,$type,$category,$amount,$account,${_escape(book)},'
-          '${_escape(t.note)},${_escape(toAccount)}');
+          '${_escape(t.note)},${_escape(toAccount)},'
+          '${t.reimbursable ? '是' : '否'}');
     }
     return buf.toString();
   }

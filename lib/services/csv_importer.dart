@@ -112,6 +112,7 @@ class CsvImporter {
           continue;
         }
 
+        final reimbursable = cols.length > 8 && cols[8].trim() == '是';
         final tx = Transaction(
           id: 'imp_${DateTime.now().microsecondsSinceEpoch}_$i',
           type: type,
@@ -121,6 +122,7 @@ class CsvImporter {
           transferToAccountId: toAccountId,
           note: note,
           date: date,
+          reimbursable: reimbursable,
         );
         final fp = _fingerprint(tx);
         if (seen.contains(fp)) {

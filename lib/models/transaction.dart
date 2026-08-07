@@ -95,6 +95,7 @@ class Transaction {
     this.bookId = 'default',
     this.transferToAccountId,
     this.note = '',
+    this.reimbursable = false,
   });
 
   final String id;
@@ -109,6 +110,9 @@ class Transaction {
   /// 转账目标账户 id（仅 type == transfer 时有值）
   final String? transferToAccountId;
 
+  /// 是否可报销（支出报销跟踪）
+  final bool reimbursable;
+
   Transaction copyWith({
     String? id,
     TxType? type,
@@ -119,6 +123,7 @@ class Transaction {
     DateTime? date,
     String? bookId,
     String? transferToAccountId,
+    bool? reimbursable,
   }) {
     return Transaction(
       id: id ?? this.id,
@@ -130,6 +135,7 @@ class Transaction {
       date: date ?? this.date,
       bookId: bookId ?? this.bookId,
       transferToAccountId: transferToAccountId ?? this.transferToAccountId,
+      reimbursable: reimbursable ?? this.reimbursable,
     );
   }
 
@@ -143,6 +149,7 @@ class Transaction {
         'date': date.toIso8601String(),
         'bookId': bookId,
         'transferToAccountId': transferToAccountId,
+        'reimbursable': reimbursable,
       };
 
   factory Transaction.fromJson(Map<String, dynamic> json) => Transaction(
@@ -155,6 +162,7 @@ class Transaction {
         date: DateTime.parse(json['date'] as String),
         bookId: (json['bookId'] as String?) ?? 'default',
         transferToAccountId: json['transferToAccountId'] as String?,
+        reimbursable: json['reimbursable'] as bool? ?? false,
       );
 }
 

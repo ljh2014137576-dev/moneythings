@@ -1,4 +1,4 @@
-﻿/// 流水单行：分类图标 + 名称/备注 + 右侧金额
+/// 流水单行：分类图标 + 名称/备注 + 右侧金额
 library;
 
 import 'package:flutter/material.dart';
@@ -53,13 +53,38 @@ class TransactionTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    isTransfer ? '转账' : category.name,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: kInkPrimary,
-                    ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          isTransfer ? '转账' : category.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: kInkPrimary,
+                          ),
+                        ),
+                      ),
+                      if (transaction.reimbursable) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: kAccentSoft,
+                            borderRadius: BorderRadius.circular(3),
+                            border:
+                                Border.all(color: kAccentBlue, width: 0.5),
+                          ),
+                          child: const Text('报',
+                              style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                  color: kAccentBlue)),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 2),
                   Text(

@@ -48,6 +48,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   late String _toAccountId;
   late DateTime _date;
   RecurFrequency _recur = RecurFrequency.none;
+  bool _reimbursable = false;
   String _note = '';
   final _noteController = TextEditingController();
   final _amountController = TextEditingController();
@@ -71,6 +72,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         context.read<AppState>().lastAccountId;
     _date = e?.date ?? DateTime.now();
     _note = src?.note ?? '';
+    _reimbursable = src?.reimbursable ?? false;
     _noteController.text = _note;
     if (src != null && src.amount > 0) {
       _amountController.text = (src.amount / 100).toStringAsFixed(2);
@@ -265,6 +267,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       note: _noteController.text.trim(),
       transferToAccountId: _type == TxType.transfer ? _toAccountId : null,
       date: _date,
+      reimbursable: _reimbursable,
     );
     if (_isEdit) {
       await state.updateTransaction(tx);
@@ -913,6 +916,29 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
             value: _recur.label,
             onTap: _pickRecur,
           ),
+          if (_type == TxType.expense) ...[
+            const Divider(indent: 52),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: kSpace4, vertical: 2),
+              child: Row(
+                children: [
+                  const Icon(Icons.receipt_long_outlined,
+                      size: 18, color: kInkSecondary),
+                  const SizedBox(width: kSpace3),
+                  const Expanded(
+                    child: Text('这笔可报销',
+                        style: TextStyle(fontSize: 14, color: kInkPrimary)),
+                  ),
+                  Switch(
+                    value: _reimbursable,
+                    activeTrackColor: kAccentBlue,
+                    onChanged: (v) => setState(() => _reimbursable = v),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
