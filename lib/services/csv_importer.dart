@@ -9,6 +9,7 @@ class CsvImportResult {
     required this.transactions,
     required this.skipped,
     required this.errors,
+    this.unknownAccountNames = const {},
   });
 
   final List<Transaction> transactions;
@@ -16,6 +17,9 @@ class CsvImportResult {
   /// 因重复/非法而跳过的行数
   final int skipped;
   final List<String> errors;
+
+  /// 未知账户占位 id → 账户名（导入时自动创建自定义账户并映射）
+  final Map<String, String> unknownAccountNames;
 }
 
 class CsvImporter {
@@ -50,7 +54,16 @@ class CsvImporter {
     };
     final out = <Transaction>[];
     final errors = <String>[];
+    final unknownAccountNames = <String, String>{};
     int skipped = 0;
+
+    String resolveAccount(String name, {String prefix = 'imp'}) {
+      final id = accountIdByName(name);
+      if (id != null) return id;
+      final ph = '${prefix}_unknown_${unknownAccountNames.length}';
+      unknownAccountNames[ph] = name;
+      return ph;
+    }
 
     for (int i = 0; i < rows.length; i++) {
       final cols = rows[i];
@@ -82,10 +95,10 @@ class CsvImporter {
         final accountName = cols.length > 4 ? cols[4].trim() : '';
         final note = cols.length > 5 ? cols[5].trim() : '';
 
-        final accountId = _accountIdByName(accountName);
+        final accountId = resolveAccount(accountName);
         final toAccountName = cols.length > 7 ? cols[7].trim() : '';
         final toAccountId = type == TxType.transfer && toAccountName.isNotEmpty
-            ? _accountIdByName(toAccountName)
+            ? resolveAccount(toAccountName, prefix: 'to')
             : null;
         if (type == TxType.transfer && toAccountId == null) {
           errors.add('第 ${i + 1} 行转账缺少转入账户');
@@ -121,7 +134,11 @@ class CsvImporter {
       }
     }
 
-    return CsvImportResult(transactions: out, skipped: skipped, errors: errors);
+    return CsvImportResult(
+        transactions: out,
+        skipped: skipped,
+        errors: errors,
+        unknownAccountNames: unknownAccountNames);
   }
 
   /// 简易 CSV 行解析（支持引号包裹的逗号/引号）
@@ -187,9 +204,6 @@ class CsvImporter {
     return type == TxType.expense ? 'other_e' : 'other_i';
   }
 
-  static String _accountIdByName(String name) {
-    return accountIdByName(name) ?? kDefaultAccounts.first.id;
-  }
 
   static String _fingerprint(Transaction t) {
     final d = t.date;

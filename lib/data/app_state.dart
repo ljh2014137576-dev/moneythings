@@ -445,15 +445,43 @@ class AppState extends ChangeNotifier {
       return '备份文件解析失败，请检查内容是否完整';
     }
   }
-Future<CsvImportResult> importCsv(String csv) async {
+  Future<CsvImportResult> importCsv(String csv) async {
     final result = CsvImporter.parseCsv(csv, existing: _transactions);
     if (result.transactions.isNotEmpty) {
-    final imported = [
-      for (final t in result.transactions)
-        t.copyWith(bookId: _currentBookId),
-    ];
-    _transactions = [..._transactions, ...imported]
-        ..sort((a, b) => b.date.compareTo(a.date));
+      // 为未知账户自动创建自定义账户并映射
+      final nameToId = <String, String>{};
+      for (final name in result.unknownAccountNames.values.toSet()) {
+        final existingId = accountIdByName(name);
+        if (existingId != null) {
+          nameToId[name] = existingId;
+        } else {
+          final account = Account.custom(
+            id: 'a_${DateTime.now().microsecondsSinceEpoch}_${nameToId.length}',
+            name: name,
+            iconKey: 'card_gift',
+          );
+          _accounts = [..._accounts, account];
+          nameToId[name] = account.id;
+        }
+      }
+      if (nameToId.isNotEmpty) {
+        _syncAccounts();
+        await _repository.saveAccounts(_accounts);
+      }
+      final imported = [
+        for (final t in result.transactions)
+          t.copyWith(
+            bookId: _currentBookId,
+            accountId: nameToId[result.unknownAccountNames[t.accountId]] ??
+                t.accountId,
+            transferToAccountId: t.transferToAccountId != null
+                ? nameToId[result.unknownAccountNames[t.transferToAccountId!]] ??
+                    t.transferToAccountId
+                : null,
+          ),
+      ];
+      _transactions = [..._transactions, ...imported]
+          ..sort((a, b) => b.date.compareTo(a.date));
       await _persist();
       notifyListeners();
     }

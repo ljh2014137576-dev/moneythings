@@ -2635,4 +2635,32 @@ void main() {
     // 多选栏出现「导出选中」入口（导出流程复用 CsvExporter/exportCsvFile，文件写入由真机/浏览器验证）
     expect(find.byTooltip('导出选中'), findsOneWidget);
   });
+  test('CsvImporter 未知账户占位', () {
+    const csv = '日期,类型,分类,金额(元),账户,账本,备注,转入账户\n'
+        '2026-08-01 10:00,支出,餐饮,20,招商卡,默认账本,午饭,\n';
+    final result = CsvImporter.parseCsv(csv);
+    expect(result.unknownAccountNames.length, 1);
+    final ph = result.unknownAccountNames.keys.first;
+    expect(result.unknownAccountNames[ph], '招商卡');
+    expect(result.transactions.first.accountId, ph);
+  });
+
+  test('导入未知账户自动创建并映射', () async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    const csv = '日期,类型,分类,金额(元),账户,账本,备注,转入账户\n'
+        '2026-08-01 10:00,支出,餐饮,20,招商卡,默认账本,午饭,\n'
+        '2026-08-02 10:00,支出,交通,5,招商卡,默认账本,地铁,\n';
+    final result = await state.importCsv(csv);
+    expect(result.transactions.length, 2);
+    expect(state.accounts.any((a) => a.name == '招商卡'), isTrue);
+    final newId = state.accounts.firstWhere((a) => a.name == '招商卡').id;
+    expect(state.transactions.every((t) => t.accountId == newId), isTrue);
+    // 再导入同账户名不重复创建账户
+    final before = state.accounts.length;
+    await state.importCsv(csv);
+    expect(state.accounts.length, before);
+  });
 }
