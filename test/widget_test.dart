@@ -4670,4 +4670,41 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('支出 1.00 · 收入 2.00'), findsOneWidget);
   });
+  testWidgets('我的页周期规则编辑下次日期 +1期', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await state.clearAll();
+    final now = DateTime.now();
+    await state.addRecurringRule(RecurringRule(
+      id: 'np1',
+      type: TxType.expense,
+      amount: 5000,
+      categoryId: 'food',
+      accountId: 'wechat',
+      note: '订阅',
+      date: now,
+      nextDate: DateTime(now.year, now.month, now.day + 3),
+      frequency: RecurFrequency.monthly,
+    ));
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.textContaining('每月 · 餐饮'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('每月 · 餐饮'));
+    await tester.pumpAndSettle();
+    final before =
+        tester.widget<Text>(find.textContaining('下次：')).data!;
+    await tester.tap(find.text('＋1期'));
+    await tester.pumpAndSettle();
+    final after =
+        tester.widget<Text>(find.textContaining('下次：')).data!;
+    expect(after, isNot(before));
+  });
 }
