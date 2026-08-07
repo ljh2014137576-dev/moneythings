@@ -1035,3 +1035,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 110/110；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：结束日期取午夜会排除当天中午后流水 → 结束日期存 23:59:59。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-10 17:00 — 迭代 v4.28：明细批量移动到其他账本 + 版本号 4.28.0 + 最终 release
+
+- 任务内容：
+  - A. 明细多选批量「移动到其他账本」：`AppState.moveTransactionsToBook(ids, bookId)`（批量改 bookId，当前账本移除）；多选「修改选中」弹层新增「移动到其他账本」→ 账本选择弹层 → 移动并提示。
+  - B. 测试：新增 2 项（批量移动流水到其他账本、明细多选批量移动全流程），112/112 通过。
+  - C. web 冒烟：注入「旅行账本」→ 明细多选全选 18 笔 → 修改选中 → 移动到其他账本 → 选旅行账本 → localStorage 旅行账本 0→18、总数 95 不变；零控制台错误。截图 72-move-book.png。
+  - D. 版本号 4.28.0+68（aapt 校验 versionName=4.28.0/versionCode=68）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.1MB，SHA-256 `B7DD27A5...2C04`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（moveTransactionsToBook）
+  - `lib/pages/ledger_page.dart`（批量弹层「移动到其他账本」+ _pickBulkBook + Book import）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/72-move-book.png`（新增）
+- commit hash：`b601584`；已 push（20789c9..b601584 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 112/112；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：`use_build_context_synchronously` lint → await 后补 `mounted` 检查。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
