@@ -1277,3 +1277,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 129/129；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：stats ListView 懒加载，环图在视口外时 finder 找不到 → 测试用 scrollUntilVisible 滚动到目标；同名「收入」文本（年度卡片 vs 每日切换）→ 给切换钮加 ValueKey 精确定位。
 - 下一步：统计/明细「全部账本」范围切换，或「记一笔」今日快捷；上架执行只差 Play 账号。
+## 2026-08-08 07:30 — 迭代 v4.42：首页今日概览模式 + 版本号 4.42.0 + 最终 release
+
+- 任务内容：
+  - A. `AppState`：新增 `todaySummary`（今日收支）、`todayTransactions`（今日流水倒序）、`todayCategoryRanking()`（今日支出分类排行）。
+  - B. 首页时间范围切换从「本周/本月」扩为「今日/本周/本月」三档：概览（今日支出/本周支出/本月支出）、最近流水、支出分类排行、空态文案全部随模式联动；月份选择器仅在「本月」模式显示；预算仍仅本月生效。
+  - C. 测试：新增单元测试「今日概览 todaySummary/流水/排行」（今日 2 笔 + 昨日 1 笔不计）+ 组件测试「首页今日概览」（今日支出/今日支出分类出现、昨日项不出现），131/131 通过。
+  - D. web 冒烟：首页切「今日」→ 今日支出 ¥100、最近流水仅今日 2 笔（购物 40/娱乐 60）、今日支出分类（娱乐 60/购物 40）；截图 86-home-today.png。
+  - E. 版本号 4.42.0+82（aapt 校验 versionName=4.42.0/versionCode=82）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.5MB，SHA-256 `5DF05BAD...4073`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（todaySummary/todayTransactions/todayCategoryRanking）
+  - `lib/pages/home_page.dart`（三档切换 + 数据/标题/空态联动）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/86-home-today.png`（新增）
+- commit hash：`c5eb292`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 131/131；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：PS 双引号字符串再次把 `\n` 当字面量插入（_buildRecent 签名/空态标题）→ 改用反引号转义修复。
+- 下一步：统计/明细「全部账本」范围切换，或明细「金额区间+日期范围」组合记忆；上架执行只差 Play 账号。
