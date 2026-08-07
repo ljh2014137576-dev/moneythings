@@ -1017,3 +1017,21 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 108/108；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：数据概况卡把下方内容挤出视口（3 个既有测试失败）→ 加滚动；「账户」与卡片标签撞名导致 finder 二义 → 改用「数据概况」断言。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-10 15:00 — 迭代 v4.27：统计页自定义日期范围 + 版本号 4.27.0 + 最终 release
+
+- 任务内容：
+  - A. 统计页自定义日期范围：月份选择器下方新增「范围：本月 / 自定义」切换；自定义时显示 起始/结束日期 选择器（日期选择器，含边界钳制）；`AppState` 新增 inRange / rangeSummary / rangeDailySeries / rangeCategoryRanking（转账不计）。
+  - B. 范围模式渲染：范围汇总条（起止日期 + 支出/收入/结余/笔数/日均支出）、每日支出柱状图、支出/收入分类排行；隐藏月维度的预算/结余走势/年度对比/周切换。
+  - C. 测试：新增 2 项（范围汇总与序列含转账不计、统计页自定义范围全流程），110/110 通过。
+  - D. web 冒烟：自定义 8月7日~8月7日 → 「汇总 ¥100.00 · 收入 ¥0 · 结余 -¥100 · 2 笔 · 日均 ¥100」+ 每日支出图 + 分类排行；零控制台错误。截图 71-range-mode.png。
+  - E. 版本号 4.27.0+67（aapt 校验 versionName=4.27.0/versionCode=67）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.1MB，SHA-256 `D03FD529...144B`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（inRange/rangeSummary/rangeDailySeries/rangeCategoryRanking）
+  - `lib/pages/stats_page.dart`（范围切换/日期选择/范围分支/_buildRangeSummaryStrip/_buildRangeBarChart）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/71-range-mode.png`（新增）
+- commit hash：`e208391`；已 push（643e387..e208391 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 110/110；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：结束日期取午夜会排除当天中午后流水 → 结束日期存 23:59:59。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
