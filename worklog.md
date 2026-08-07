@@ -1675,3 +1675,18 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 161/161；release 构建（连续两次 Gradle 失败为已知 Metaspace 问题，第三次杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：web 端预算卡文本为合并语义节点 → 用 textContent 包含「已用 50%」定位点击；预算输入为元 → 断言按分换算。
 - 下一步：首页今日模式预算显示，或「明细」按月导出；上架执行只差 Play 账号。
+## 2026-08-09 07:30 — 迭代 v4.66：明细空态「去记一笔」快捷入口 + 版本号 4.66.0 + 最终 release
+
+- 任务内容：
+  - A. 明细空态新增「去记一笔」按钮（无搜索时）：点击直接打开记一笔页；搜索无结果时按钮变「清除搜索」（清空搜索词）。
+  - B. 测试：新增组件测试「明细空态去记一笔」（空态显示 → 点去记一笔 → 记一笔页打开），162/162 通过。
+  - C. web 冒烟：清空流水 → 明细空态显示「本月还没有流水 + 去记一笔」→ 点击 → 记一笔页打开；截图 110-empty-add.png。
+  - D. 版本号 4.66.0+106（aapt 校验 versionName=4.66.0/versionCode=106）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.7MB，SHA-256 `245464E7...C274`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/ledger_page.dart`（空态 actionLabel/onAction）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/110-empty-add.png`（新增）
+- commit hash：`71a6eb1`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 162/162；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：空态按钮在头部下方需 ensureVisible 再点（测试）。
+- 下一步：首页今日模式预算显示，或「明细」按月导出；上架执行只差 Play 账号。
