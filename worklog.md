@@ -1261,3 +1261,19 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 128/128；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：无新坑。
 - 下一步：统计/明细「全部账本」范围切换，或「记一笔」今日快捷；上架执行只差 Play 账号。
+## 2026-08-08 06:30 — 迭代 v4.41：统计收入占比环图 + 版本号 4.41.0 + 最终 release
+
+- 任务内容：
+  - A. 统计页占比环图随「支出/收入」切换联动：`_incomeChart` 时显示收入占比（categoryIncomeRanking），否则支出占比；标题动态「收入占比 / 支出占比」。
+  - B. `_ChartModeTag` 支持 key，给收入切换钮加 ValueKey('incomeToggleTag') 便于测试定位（避免与年度卡片同名文本混淆）。
+  - C. 测试：新增组件测试「统计页收入占比环图」（滚动到环图断言支出占比 → 切收入 → 断言收入占比、支出占比消失），129/129 通过。
+  - D. web 冒烟：统计页滚动到环图「支出占比 居住 22%...」→ 切「收入」→ 每日图变「每日收入」、环图变「收入占比 理财 100%」；截图 85-income-donut.png。
+  - E. 版本号 4.41.0+81（aapt 校验 versionName=4.41.0/versionCode=81）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.5MB，SHA-256 `14056C7B...2E2EF`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/pages/stats_page.dart`（环图收入联动 + _ChartModeTag key + 收入切换钮 key）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/85-income-donut.png`（新增）
+- commit hash：`cd26834`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 129/129；release 构建（首轮 Gradle 失败为已知 Metaspace 问题，杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：stats ListView 懒加载，环图在视口外时 finder 找不到 → 测试用 scrollUntilVisible 滚动到目标；同名「收入」文本（年度卡片 vs 每日切换）→ 给切换钮加 ValueKey 精确定位。
+- 下一步：统计/明细「全部账本」范围切换，或「记一笔」今日快捷；上架执行只差 Play 账号。
