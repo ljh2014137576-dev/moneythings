@@ -1000,3 +1000,20 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 107/107；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：Transaction.copyWith 缺 id 参数 → 补；ledger 缺 Book import → 补。
 - 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
+
+## 2026-08-10 13:00 — 迭代 v4.26：我的页数据概况 + 版本号 4.26.0 + 最终 release
+
+- 任务内容：
+  - A. 我的页「数据概况」卡：总资产下方新增卡片，显示 流水笔数 / 账户数 / 账本数 / 周期规则数（全账本）；`AppState.recurringRuleCount` 全量规则计数 getter。
+  - B. 测试：新增 1 项（数据概况显示 2 笔/4 个/1 个/1 条），并更新 3 个既有测试（周期记账区块/账户菜单转账/首页总资产下钻）适配卡片导致的下移滚动；108/108 通过。
+  - C. web 冒烟：我的页顶部「数据概况 95 笔 流水 4 个 账户 1 个 账本 0 条 周期规则」渲染正常；零控制台错误。截图 70-data-overview.png。
+  - D. 版本号 4.26.0+66（aapt 校验 versionName=4.26.0/versionCode=66）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.0MB，SHA-256 `F316CBDF...2458`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/app_state.dart`（recurringRuleCount）
+  - `lib/pages/profile_page.dart`（_buildDataOverview + _overviewCell + 插入总资产下方）
+  - `pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/70-data-overview.png`（新增）
+- commit hash：`0aed876`；已 push（deff034..0aed876 master -> master）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 108/108；release 构建 + apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：数据概况卡把下方内容挤出视口（3 个既有测试失败）→ 加滚动；「账户」与卡片标签撞名导致 finder 二义 → 改用「数据概况」断言。
+- 下一步：上架执行（RELEASE.md）只差 Play 账号；真机通知冒烟（SMOKE_TEST.md）。
