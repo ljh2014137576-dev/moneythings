@@ -1294,3 +1294,22 @@
 - 验证：`flutter analyze` 0 问题；`flutter test` 131/131；release 构建（一次成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
 - 遇到的问题与解决方案：PS 双引号字符串再次把 `\n` 当字面量插入（_buildRecent 签名/空态标题）→ 改用反引号转义修复。
 - 下一步：统计/明细「全部账本」范围切换，或明细「金额区间+日期范围」组合记忆；上架执行只差 Play 账号。
+## 2026-08-08 08:30 — 迭代 v4.43：记一笔常用金额自定义 + 版本号 4.43.0 + 最终 release
+
+- 任务内容：
+  - A. `TransactionRepository`：`custom_quick_amounts_v1`（StringList 存元整数）；`AppState.customQuickAmounts` + `addCustomQuickAmount`（去重升序）/`removeCustomQuickAmount`。
+  - B. 记一笔常用金额行：固定预设 +10/50/100/500 + 自定义金额 chips（+¥X，点击累加金额，**长按删除**）+ 「+ 自定义」弹窗添加（金额输入 → 添加，去重）；行改横向滚动防溢出。
+  - C. `_QuickAmountChip` 支持 onLongPress。
+  - D. 测试：新增单元测试「自定义常用金额增删持久化」（去重/升序/重载/删除）+ 组件测试「记一笔添加自定义常用金额」（+ 自定义 → 输 128 → 添加 → chip +¥128 → 点击填入 128.00），133/133 通过。
+  - E. web 冒烟：记一笔 → 「+ 自定义」→ 输 128 → 添加 → chip +¥128 出现、localStorage `["128"]` → 点击填入金额；截图 87-quick-amount-custom.png。
+  - F. 版本号 4.43.0+83（aapt 校验 versionName=4.43.0/versionCode=83）；README/RELEASE/CHECKLIST/关于对话框同步；最终 release 重建（54.5MB，SHA-256 `8671FD9C...6E85`，MoneyThings 签名校验通过）。
+- 修改文件：
+  - `lib/data/transaction_repository.dart`（custom_quick_amounts_v1）
+  - `lib/data/app_state.dart`（customQuickAmounts + 增删）
+  - `lib/pages/add_transaction_page.dart`（常用金额行 + 自定义弹窗 + 长按删除 + chip onLongPress）
+  - `lib/pages/profile_page.dart`、`pubspec.yaml`、`README.md`、`RELEASE.md`、`CHECKLIST.md`、`test/widget_test.dart`
+  - `screenshots/87-quick-amount-custom.png`（新增）
+- commit hash：`27486e9`；已 push（见下方状态）。
+- 验证：`flutter analyze` 0 问题；`flutter test` 133/133；release 构建（连续两次 Gradle 失败为已知 Metaspace 问题，第三次杀进程重试成功）+ apksigner 签名校验（CN=MoneyThings）+ aapt versionName 校验；web 冒烟零控制台错误。
+- 遇到的问题与解决方案：SharedPreferences 无 getIntList/setIntList → 改 StringList 存取；插入方法时误复制 _addAmount 重复定义 → 去重修复；await 后 context.mounted → 改 mounted（State）。
+- 下一步：统计/明细「全部账本」范围切换，或「记一笔」常用备注自定义；上架执行只差 Play 账号。
