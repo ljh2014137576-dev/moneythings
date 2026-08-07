@@ -1033,7 +1033,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('版本 4.23.0',
+            Text('版本 4.24.0',
                 style: TextStyle(fontSize: 14, color: kInkPrimary)),
             SizedBox(height: kSpace2),
             Text('一款本地记账应用：所有数据仅保存在设备上，不上传云端。',
@@ -1042,7 +1042,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text('更新日志',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             SizedBox(height: kSpace2),
-            Text('v4.23 记一笔保存撤销\nv4.22 周期规则 CSV 导入\nv4.21 明细全部时间年份分组\nv4.20 首页结余走势下钻统计\nv4.19 记一笔数字键盘',
+            Text('v4.24 首页总资产下钻账户\nv4.23 记一笔保存撤销\nv4.22 周期规则 CSV 导入\nv4.21 明细全部时间年份分组\nv4.20 首页结余走势下钻统计',
                 style: TextStyle(fontSize: 11, color: kInkSecondary, height: 1.6)),
           ],
         ),

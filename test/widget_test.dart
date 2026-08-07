@@ -1167,7 +1167,12 @@ void main() {
       await tester.pumpAndSettle();
     }
     await pumpPage(
-        HomePage(onAdd: () {}, onGoLedger: () {}, onGoStats: () {}));
+        HomePage(
+            onAdd: () {},
+            onGoLedger: () {},
+            onGoStats: () {},
+            onGoProfile: () {},
+          ));
     await pumpPage(const LedgerPage());
     await pumpPage(const StatsPage());
     await pumpPage(const ProfilePage());
@@ -2917,5 +2922,18 @@ void main() {
     await tester.tap(find.text('撤销'));
     await tester.pumpAndSettle();
     expect(state.transactions.isEmpty, isTrue);
+  });
+  testWidgets('首页总资产点击进入我的账户', (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded_v1': true});
+    final state = AppState();
+    await state.load();
+    await tester.pumpWidget(MoneyApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.textContaining('总资产'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('总资产'));
+    await tester.pumpAndSettle();
+    expect(find.text('我的'), findsWidgets);
+    expect(find.text('账户'), findsOneWidget);
   });
 }

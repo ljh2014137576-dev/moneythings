@@ -23,11 +23,13 @@ class HomePage extends StatefulWidget {
     required this.onAdd,
     required this.onGoLedger,
     required this.onGoStats,
+    required this.onGoProfile,
   });
 
   final VoidCallback onAdd;
   final VoidCallback onGoLedger;
   final VoidCallback onGoStats;
+  final VoidCallback onGoProfile;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -305,15 +307,19 @@ class _HomePageState extends State<HomePage> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              '总资产 ${AmountText.format(context.read<AppState>().totalAssets)}',
-              style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: kInkPrimary,
-                  fontFeatures: [FontFeature.tabularFigures()]),
+          InkWell(
+            onTap: widget.onGoProfile,
+            borderRadius: BorderRadius.circular(kRadiusTable),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                '总资产 ${AmountText.format(context.read<AppState>().totalAssets)}',
+                style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: kInkPrimary,
+                    fontFeatures: [FontFeature.tabularFigures()]),
+              ),
             ),
           ),
           const SizedBox(width: kSpace2),

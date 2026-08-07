@@ -1,4 +1,4 @@
-﻿/// 记账本 · 本地记账 App
+/// 记账本 · 本地记账 App
 library;
 
 import 'dart:async';
@@ -78,6 +78,7 @@ class _HomeShellState extends State<HomeShell> {
                       onAdd: _openAdd,
                       onGoLedger: () => setState(() => _index = 1),
                       onGoStats: () => setState(() => _index = 2),
+                      onGoProfile: () => setState(() => _index = 3),
                     ),
                 1 => const LedgerPage(),
                 2 => const StatsPage(),
